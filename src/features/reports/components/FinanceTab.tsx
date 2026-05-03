@@ -15,7 +15,6 @@ const pieData = [
   { name: "Overdue", value: feeCollectionSummary.overdue },
 ];
 
-const formatCurrency = (val: number) => `₹${(val / 1000).toFixed(0)}K`;
 
 export const FinanceTab = () => (
   <div className="space-y-8">
@@ -62,7 +61,7 @@ export const FinanceTab = () => (
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => [`₹${(value / 1000).toFixed(0)}K`, ""]}
+                formatter={(value) => [`₹${(Number(value) / 1000).toFixed(0)}K`, ""]}
                 contentStyle={{ borderRadius: 12, border: "1px solid #f1f5f9", fontSize: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}
               />
             </PieChart>
@@ -99,7 +98,7 @@ export const FinanceTab = () => (
             <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
             <Tooltip
               contentStyle={{ borderRadius: 12, border: "1px solid #f1f5f9", fontSize: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}
-              formatter={(value: number) => [`${value}%`, "Collection Rate"]}
+              formatter={(value) => [`${value}%`, "Collection Rate"]}
             />
             <Bar dataKey="rate" name="Collection %" radius={[6, 6, 0, 0]} barSize={28}>
               {classWiseFeeData.map((entry, i) => (
