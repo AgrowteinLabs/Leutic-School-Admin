@@ -60,11 +60,11 @@ export const ClassDetailsPage = () => {
         subtitle={`Lead Teacher: ${classData.teacher} | ${classData.room}`}
         actions={
           <>
-            <button className="px-4 py-2 bg-white border border-slate-100 rounded-xl text-[13px] font-semibold text-slate-500 hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm shadow-slate-100/30">
+            <button className="btn-outline px-6 h-10 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 transition-all">
               <span className="material-symbols-outlined text-lg">edit</span>
               Manage Class
             </button>
-            <button className="px-4 py-2 bg-primary text-secondary rounded-xl text-[13px] font-semibold shadow-sm shadow-slate-100/30 hover:opacity-90 transition-all flex items-center gap-2 active:scale-95">
+            <button className="px-6 h-10 btn-primary rounded-[10px] text-[13px] font-semibold transition-all flex items-center gap-2">
               <span className="material-symbols-outlined text-lg">mail</span>
               Message Parents
             </button>
@@ -75,7 +75,7 @@ export const ClassDetailsPage = () => {
       <div className="px-8 pt-6 pb-4 shrink-0 border-b border-slate-100">
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div className="flex flex-col gap-1">
-            <nav className="flex items-center gap-2 text-xs font-medium text-slate-300 capitalize tracking-[0.2em]">
+            <nav className="flex items-center gap-2 text-xs font-medium text-[#B0AFA8] capitalize tracking-wide">
               <button
                 onClick={() => navigate("/classes")}
                 className="hover:text-primary transition-colors"
@@ -85,7 +85,7 @@ export const ClassDetailsPage = () => {
               <span className="material-symbols-outlined text-[10px]">
                 chevron_right
               </span>
-              <span className="text-slate-500">
+              <span className="text-[#444441]">
                 {classData.grade}-{classData.section}
               </span>
             </nav>
@@ -120,7 +120,7 @@ export const ClassDetailsPage = () => {
               icon: "flag",
               trend: "Action required for 1",
               trendType: "down" as const,
-              iconBg: "bg-red-500/10 text-red-700 border border-red-500",
+              iconBg: "bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]",
             },
           ].map((stat, i) => (
             <StatCard key={i} {...stat} />
@@ -129,100 +129,110 @@ export const ClassDetailsPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3 space-y-6">
-            <section className="bg-white rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
-                <h2 className="text-secondary text-[16px] font-semibold tracking-tight">
-                  Students in Class
-                </h2>
+            <section className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+              <div className="flex items-center justify-between px-8 py-4 border-b border-slate-100">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-foreground text-[16px] font-bold tracking-tight">
+                    Students in Class
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full bg-[#F7F8F4] border border-slate-100 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider">
+                    {classData.students.length} Total
+                  </span>
+                </div>
                 <div className="relative group">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-sm">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-sm">
                     search
                   </span>
                   <input
-                    className="pl-9 pr-4 py-2 text-xs border border-slate-100 rounded-xl bg-white/50 focus:ring-2 focus:ring-primary w-64 outline-none transition-all focus:bg-white"
+                    className="pl-9 pr-4 h-9 text-xs border border-slate-100 rounded-[10px] bg-[#F7F8F4]/50 focus:ring-2 focus:ring-primary/20 w-64 outline-none transition-all focus:bg-white"
                     placeholder="Search students..."
                     type="text"
                   />
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-slate-50/50 border-b border-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      <th className="px-6 py-4">Student Name</th>
-                      <th className="px-6 py-4">Participation</th>
-                      <th className="px-6 py-4 text-center">Aura Score</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {classData.students.map((student, i) => (
-                      <tr
-                        key={i}
-                        className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="size-8 rounded-full bg-primary flex items-center justify-center text-xs font-black text-secondary border border-slate-100">
-                              {student.initials}
-                            </div>
-                            <span className="text-[13px] font-semibold text-secondary group-hover:underline decoration-primary underline-offset-4">
-                              {student.name}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-24 h-1.5 bg-slate-50 rounded-full overflow-hidden">
-                              <div
-                                className={cn(
-                                  "h-full transition-all",
-                                  student.participation > 80
-                                    ? "bg-primary"
-                                    : student.participation > 60
-                                      ? "bg-secondary"
-                                      : "bg-red-500",
-                                )}
-                                style={{ width: `${student.participation}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs font-black text-slate-600">
-                              {student.participation}%
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="px-2 py-1 rounded bg-primary/20 text-secondary text-xs font-medium border border-primary/30 tracking-widest shadow-sm shadow-slate-100/30">
-                            {student.auraScore}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={cn(
-                              "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize border",
-                              student.statusType === "normal"
-                                ? "bg-primary text-secondary border-slate-100"
-                                : "bg-secondary/10 text-secondary border border-secondary",
-                            )}
-                          >
-                            {student.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button className="text-slate-300 hover:text-secondary transition-colors">
-                            <span className="material-symbols-outlined text-xl">
-                              more_vert
-                            </span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* Column Headers */}
+              <div className="flex items-center gap-8 px-8 py-3 text-[10px] font-extrabold text-[#B0AFA8] uppercase tracking-[0.15em]">
+                <div className="flex-1">Student Profile</div>
+                <div className="w-[180px] px-6">Participation</div>
+                <div className="w-24 text-center">Aura</div>
+                <div className="w-32">Standing</div>
+                <div className="w-10"></div>
               </div>
-              <div className="p-4 bg-slate-50/50 border-t border-slate-50 flex justify-center">
-                <button className="text-xs font-medium text-slate-400 hover:text-secondary capitalize tracking-[0.2em] transition-colors">
+
+              <div className="px-4 pb-4 pt-1 space-y-3">
+                {classData.students.map((student, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-8 p-5 rounded-[22px] bg-white border border-slate-100 hover:border-primary/30 hover:bg-[#F7F8F4]/20 transition-all duration-500 cursor-pointer group"
+                  >
+                    {/* Student Identity */}
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="relative size-12 shrink-0">
+                        <div className="absolute inset-0 rounded-2xl bg-primary/10 group-hover:scale-110 transition-transform duration-500" />
+                        <div 
+                          className="absolute inset-0 rounded-2xl bg-cover bg-center border-2 border-white shadow-sm z-10"
+                          style={{ backgroundImage: `url("https://images.unsplash.com/photo-${i % 2 === 0 ? '1531123897727-8f129e16fd3c' : '1507003211169-0a1dd7228f2d'}?w=200&h=200&fit=crop")` }}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[14px] font-black text-foreground tracking-tight group-hover:text-primary transition-colors">
+                          {student.name}
+                        </span>
+                        <span className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest leading-none">ST-2024-0{i+1}</span>
+                      </div>
+                    </div>
+
+                    {/* Participation Gauge */}
+                    <div className="flex items-center gap-4 w-[180px] px-6 border-x border-slate-50/50">
+                        <div className="relative size-10 shrink-0">
+                            <svg className="size-full -rotate-90">
+                                <circle cx="20" cy="20" r="17" fill="none" strokeWidth="2.5" stroke="#F7F8F4" />
+                                <circle cx="20" cy="20" r="17" fill="none" strokeWidth="2.5"
+                                    strokeDasharray={2 * Math.PI * 17}
+                                    strokeDashoffset={2 * Math.PI * 17 * (1 - student.participation / 100)}
+                                    stroke={student.participation > 80 ? "#2E7D32" : student.participation > 60 ? "#EF9800" : "#E63535"}
+                                    strokeLinecap="round"
+                                />
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-[9px] font-black text-foreground">{student.participation}%</span>
+                            </div>
+                        </div>
+                        <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wide">
+                          {student.participation > 85 ? "Exceptional" : student.participation > 70 ? "Consistent" : "Developing"}
+                        </span>
+                    </div>
+
+                    {/* Aura Score */}
+                    <div className="flex flex-col items-center w-24">
+                        <span className="text-[14px] font-semibold text-foreground">
+                          {student.auraScore}
+                        </span>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="flex items-center w-32">
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-4 py-1 rounded-full text-[9px] font-black capitalize border tracking-tight",
+                            student.statusType === "normal"
+                              ? "bg-[#EAF2D7] text-[#2E7D32] border-[#D9EA85]"
+                              : "bg-[#FEE2E2] text-[#B91C1C] border-[#FECACA]",
+                          )}
+                        >
+                          {student.status}
+                        </span>
+                    </div>
+
+                    {/* Action */}
+                    <button className="size-9 rounded-xl bg-[#F7F8F4] border border-slate-100 text-[#B0AFA8] hover:text-foreground hover:bg-white transition-all flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="p-4 bg-[#F7F8F4]/50 border-t border-slate-50 flex justify-center">
+                <button className="text-xs font-medium text-[#3D6B2C] hover:text-foreground capitalize  transition-colors">
                   Load More Students
                 </button>
               </div>
@@ -230,10 +240,14 @@ export const ClassDetailsPage = () => {
           </div>
 
           <aside className="space-y-6">
-            <h2 className="text-secondary text-base font-black capitalize tracking-[0.2em] leading-none mb-2 pl-2">
+            <h2 className="text-foreground text-[15px] font-bold tracking-tight mb-6 pl-2 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-xl">history</span>
               Class Activity
             </h2>
-            <div className="flex flex-col gap-4">
+            <div className="relative pl-4 space-y-8">
+              {/* Vertical Timeline Line */}
+              <div className="absolute left-[27px] top-2 bottom-2 w-[1px] bg-slate-100" />
+
               {[
                 {
                   type: "Curriculum",
@@ -241,7 +255,7 @@ export const ClassDetailsPage = () => {
                   msg: "Unit 4: Modern History essays assigned to all students.",
                   time: "1h ago",
                   icon: "inventory",
-                  color: "bg-primary",
+                  color: "bg-[#EAF2D7] text-[#2E7D32]",
                 },
                 {
                   type: "Programs",
@@ -249,8 +263,7 @@ export const ClassDetailsPage = () => {
                   msg: "12 students from 10-B registered for the Regional Science Fair.",
                   time: "4h ago",
                   icon: "groups",
-                  color: "bg-secondary",
-                  dark: true,
+                  color: "bg-[#F7F8F4] text-[#444441]",
                 },
                 {
                   type: "Alert",
@@ -258,8 +271,7 @@ export const ClassDetailsPage = () => {
                   msg: "Emily Stone has reached 5 consecutive absences.",
                   time: "Yesterday",
                   icon: "notification_important",
-                  color: "bg-red-500",
-                  dark: true,
+                  color: "bg-red-50 text-red-600",
                   action: "Contact Guardian",
                 },
                 {
@@ -268,79 +280,45 @@ export const ClassDetailsPage = () => {
                   msg: "Ms. Vance will cover the afternoon session on Oct 26.",
                   time: "2d ago",
                   icon: "forum",
-                  color: "bg-white",
+                  color: "bg-[#F7F8F4] text-[#444441]",
                 },
               ].map((activity, i) => (
                 <div
                   key={i}
-                  className={cn(
-                    "p-4 rounded-2xl border shadow-sm shadow-slate-100/30 transition-all hover:scale-[1.02]",
-                    activity.dark
-                      ? "bg-secondary border-white/10"
-                      : "bg-white border-slate-100",
-                  )}
+                  className="relative flex items-start gap-6 group cursor-pointer"
                 >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "p-1.5 rounded-xl shrink-0",
-                        activity.color,
-                        activity.dark
-                          ? "text-primary"
-                          : "text-secondary",
-                      )}
-                    >
-                      <span className="material-symbols-outlined text-sm">
-                        {activity.icon}
+                  {/* Timeline Dot/Icon */}
+                  <div
+                    className={cn(
+                      "size-7 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-sm transition-transform group-hover:scale-110",
+                      activity.color
+                    )}
+                  >
+                    <span className="material-symbols-outlined text-[14px]">
+                      {activity.icon}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col flex-1 min-w-0 -mt-0.5">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#B0AFA8]">
+                        {activity.type}
+                      </span>
+                      <span className="text-[10px] font-medium text-[#B0AFA8]">
+                        {activity.time}
                       </span>
                     </div>
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <div className="flex justify-between items-center mb-1">
-                        <span
-                          className={cn(
-                            "text-xs font-medium capitalize",
-                            activity.dark
-                              ? "text-primary/60"
-                              : "text-slate-400",
-                          )}
-                        >
-                          {activity.type}
-                        </span>
-                        <span
-                          className={cn(
-                            "text-xs font-medium",
-                            activity.dark
-                              ? "text-white/30"
-                              : "text-secondary/20",
-                          )}
-                        >
-                          {activity.time}
-                        </span>
-                      </div>
-                      <p
-                        className={cn(
-                          "text-xs font-black leading-tight mb-1",
-                          activity.dark ? "text-white" : "text-secondary",
-                        )}
-                      >
-                        {activity.title}
-                      </p>
-                      <p
-                        className={cn(
-                          "text-[10px] leading-relaxed mb-2 opacity-60 font-medium",
-                          activity.dark
-                            ? "text-white/70"
-                            : "text-slate-600",
-                        )}
-                      >
-                        {activity.msg}
-                      </p>
-                      {activity.action && (
-                        <button className="text-xs font-medium text-primary capitalize hover:underline text-left">
-                          {activity.action}
-                        </button>
-                      )}
-                    </div>
+                    <p className="text-[13px] font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
+                      {activity.title}
+                    </p>
+                    <p className="text-[12px] text-[#444441] leading-relaxed opacity-80 mb-2">
+                      {activity.msg}
+                    </p>
+                    {activity.action && (
+                      <button className="text-[11px] font-bold text-primary uppercase tracking-wider hover:underline text-left">
+                        {activity.action}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

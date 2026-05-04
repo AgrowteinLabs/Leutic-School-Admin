@@ -19,9 +19,9 @@ export const TransportationHubPage = () => {
           subtitle="Real-time bus locations and driver management"
           actions={
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={() => navigate("/transportation/add-vehicle")}
-                className="bg-primary text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-sm shadow-slate-100/30"
+                className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30"
               >
                 <span className="material-symbols-outlined text-sm">
                   directions_bus
@@ -48,8 +48,8 @@ export const TransportationHubPage = () => {
                 className={cn(
                   "flex items-center gap-2 pb-4 text-[13px] font-semibold tracking-tight transition-all relative mt-4",
                   activeTab === tab.id
-                    ? "text-secondary"
-                    : "text-slate-400 hover:text-secondary",
+                    ? "text-foreground"
+                    : "text-[#B0AFA8] hover:text-foreground",
                 )}
               >
                 <span className="material-symbols-outlined text-lg">

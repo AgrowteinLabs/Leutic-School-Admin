@@ -80,13 +80,13 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           subtitle="Explore student enrichment and school initiatives"
           actions={
             <>
-              <button className="px-4 py-2 bg-white border border-slate-100 rounded-xl flex items-center gap-2 text-[13px] font-semibold text-slate-500 hover:bg-slate-50 transition-colors">
+              <button className="px-4 py-2 bg-white border border-slate-100 rounded-xl flex items-center gap-2 text-[13px] font-semibold text-[#444441] hover:bg-[#F7F8F4] transition-colors">
                 <span className="material-symbols-outlined text-lg">
                   auto_graph
                 </span>
                 View Reports
               </button>
-              <button className="bg-primary text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-sm shadow-slate-100/30">
+              <button className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30">
                 <span className="material-symbols-outlined text-sm">
                   add_circle
                 </span>
@@ -126,25 +126,25 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-wrap gap-4 items-center">
             <div className="flex-1 min-w-[250px]">
               <div className="relative group">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-secondary transition-colors">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-foreground transition-colors">
                   search
                 </span>
                 <input
-                  className="w-full bg-slate-50/50 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary text-secondary placeholder-slate-300"
+                  className="w-full bg-[#F7F8F4] border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary text-foreground placeholder-[#B0AFA8]"
                   placeholder="Search programs..."
                   type="text"
                 />
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <select className="bg-white border border-slate-100 rounded-xl text-sm px-3 py-2 text-secondary font-bold focus:ring-primary outline-none">
+              <select className="bg-white border border-slate-100 rounded-xl text-sm px-3 py-2 text-foreground font-bold focus:ring-primary outline-none">
                 <option>All Categories</option>
                 <option>Academic</option>
                 <option>Sports</option>
                 <option>Creative Arts</option>
                 <option>Technology</option>
               </select>
-              <select className="bg-white border border-slate-100 rounded-xl text-sm px-3 py-2 text-secondary font-bold focus:ring-primary outline-none">
+              <select className="bg-white border border-slate-100 rounded-xl text-sm px-3 py-2 text-foreground font-bold focus:ring-primary outline-none">
                 <option>Status</option>
                 <option>Active</option>
                 <option>Planning</option>

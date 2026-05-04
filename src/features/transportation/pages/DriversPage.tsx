@@ -12,7 +12,7 @@ const DriverRow = ({
   return (
     <tr
       onClick={() => onClick(driver)}
-      className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
+      className="hover:bg-[#F7F8F4] transition-colors group cursor-pointer"
     >
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
@@ -20,16 +20,16 @@ const DriverRow = ({
             className="size-8 rounded-full bg-cover bg-center border border-slate-100"
             style={{ backgroundImage: `url("${driver.img}")` }}
           ></div>
-          <span className="text-[13px] font-semibold text-secondary group-hover:underline decoration-primary underline-offset-4">
+          <span className="text-[13px] font-semibold text-foreground group-hover:underline decoration-primary underline-offset-4">
             {driver.name}
           </span>
         </div>
       </td>
-      <td className="px-6 py-4 text-sm text-slate-500 font-mono">
+      <td className="px-6 py-4 text-sm text-[#444441] font-mono">
         {driver.id}
       </td>
-      <td className="px-6 py-4 text-sm text-secondary">{driver.bus}</td>
-      <td className="px-6 py-4 text-sm text-slate-500">
+      <td className="px-6 py-4 text-sm text-foreground">{driver.bus}</td>
+      <td className="px-6 py-4 text-sm text-[#444441]">
         {driver.license}
       </td>
       <td className="px-6 py-4">
@@ -37,15 +37,15 @@ const DriverRow = ({
           className={cn(
             "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize border",
             driver.status === "Active"
-              ? "bg-emerald-500/10 text-emerald-700 border border-emerald-500"
-              : "bg-red-500/10 text-red-700 border border-red-500",
+              ? "bg-[#EAF2D7]0/10 text-[#2E7D32] border border-[#D9EA85]"
+              : "bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]",
           )}
         >
           {driver.status}
         </span>
       </td>
       <td className="px-6 py-4 text-right">
-        <button className="text-slate-400 hover:text-secondary transition-colors">
+        <button className="text-[#B0AFA8] hover:text-foreground transition-colors">
           <span className="material-symbols-outlined text-xl">more_vert</span>
         </button>
       </td>
@@ -103,13 +103,13 @@ export const DriversPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           subtitle="Manage driver profiles, licenses, and bus assignments."
           actions={
             <div className="flex items-center gap-3">
-              <button className="bg-white border border-slate-100 text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm shadow-slate-100/30">
+              <button className="bg-white border border-slate-100 text-foreground px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-[#F7F8F4] transition-all shadow-sm shadow-slate-100/30">
                 <span className="material-symbols-outlined text-lg">
                   upload_file
                 </span>
                 Bulk CSV Import
               </button>
-              <button className="bg-primary text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-sm shadow-slate-100/30 active:scale-95">
+              <button className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30 ">
                 <span className="material-symbols-outlined text-sm">
                   person_add
                 </span>
@@ -125,23 +125,23 @@ export const DriversPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="bg-[#F7F8F4] border-b border-slate-100">
+                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider">
                     Driver Name
                   </th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider">
                     ID
                   </th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider">
                     Bus Assignment
                   </th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider">
                     License No
                   </th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">
+                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider text-right">
                     Actions
                   </th>
                 </tr>

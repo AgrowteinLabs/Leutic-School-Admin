@@ -15,18 +15,18 @@ export const EnrollStudentPage = () => {
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white">
-            <TopBar 
+            <TopBar
                 title="Enroll New Student"
                 subtitle="Complete institutional registration for new admissions"
                 actions={
                     <div className="flex gap-3">
-                        <button 
+                        <button
                             onClick={() => navigate(-1)}
-                            className="px-4 py-2 rounded-xl text-[13px] font-bold text-slate-400 hover:bg-slate-50 transition-all"
+                            className="px-4 py-2 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:bg-[#F7F8F4] transition-all"
                         >
                             Cancel
                         </button>
-                        <button className="bg-primary text-secondary px-6 py-2 rounded-xl text-[13px] font-bold hover:opacity-90 transition-all shadow-sm shadow-slate-100/30">
+                        <button className="btn-primary px-6 py-2 rounded-xl text-[13px] font-bold  transition-all shadow-sm shadow-slate-100/30">
                             {step === 3 ? "Complete Enrollment" : "Save & Continue"}
                         </button>
                     </div>
@@ -37,17 +37,17 @@ export const EnrollStudentPage = () => {
                 <div className="max-w-[1000px] mx-auto px-8 py-10">
                     {/* Stepper */}
                     <div className="flex items-center justify-between mb-12 relative">
-                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-50 -translate-y-1/2 z-0" />
+                        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-[#F7F8F4] -translate-y-1/2 z-0" />
                         {steps.map((s) => (
                             <div key={s.id} className="relative z-10 flex flex-col items-center gap-3">
-                                <div 
+                                <div
                                     className={cn(
                                         "size-12 rounded-2xl flex items-center justify-center transition-all duration-300 border-2",
-                                        step === s.id 
-                                            ? "bg-primary border-primary text-secondary shadow-lg shadow-primary/20 scale-110" 
-                                            : step > s.id 
-                                                ? "bg-secondary border-secondary text-white" 
-                                                : "bg-white border-slate-100 text-slate-300 pointer-events-none"
+                                        step === s.id
+                                            ? "bg-primary border-primary text-foreground shadow-lg shadow-primary/20 scale-110"
+                                            : step > s.id
+                                                ? "bg-secondary border-secondary text-white"
+                                                : "bg-white border-slate-100 text-[#B0AFA8] pointer-events-none"
                                     )}
                                     onClick={() => step > s.id && setStep(s.id)}
                                 >
@@ -57,7 +57,7 @@ export const EnrollStudentPage = () => {
                                 </div>
                                 <span className={cn(
                                     "text-[11px] font-bold uppercase tracking-widest",
-                                    step === s.id ? "text-secondary" : "text-slate-400"
+                                    step === s.id ? "text-foreground" : "text-[#B0AFA8]"
                                 )}>
                                     {s.label}
                                 </span>
@@ -69,13 +69,13 @@ export const EnrollStudentPage = () => {
                         {step === 1 && (
                             <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
                                 <div className="flex items-center gap-6 pb-8 border-b border-slate-50">
-                                    <div className="size-24 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-300 hover:border-primary hover:text-primary transition-all cursor-pointer">
+                                    <div className="size-24 rounded-3xl bg-[#F7F8F4] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-[#B0AFA8] hover:border-primary hover:text-primary transition-all cursor-pointer">
                                         <span className="material-symbols-outlined text-2xl">add_a_photo</span>
                                         <span className="text-[10px] font-bold uppercase">Upload</span>
                                     </div>
                                     <div>
-                                        <h4 className="text-secondary font-bold text-lg">Student Profile Photo</h4>
-                                        <p className="text-slate-400 text-sm">Clear, passport-sized photo for institutional records.</p>
+                                        <h4 className="text-foreground font-bold text-lg">Student Profile Photo</h4>
+                                        <p className="text-[#B0AFA8] text-sm">Clear, passport-sized photo for institutional records.</p>
                                     </div>
                                 </div>
 
@@ -97,10 +97,10 @@ export const EnrollStudentPage = () => {
                                     {/* Father's Info */}
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-3 pb-2 border-b border-slate-50">
-                                            <div className="size-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center">
+                                            <div className="size-8 rounded-xl bg-[#DBEAFE] text-[#1565C0] flex items-center justify-center">
                                                 <span className="material-symbols-outlined text-[18px]">person</span>
                                             </div>
-                                            <h5 className="text-[14px] font-bold text-secondary tracking-tight">Father's Information</h5>
+                                            <h5 className="text-[14px] font-bold text-foreground tracking-tight">Father's Information</h5>
                                         </div>
                                         <div className="space-y-4">
                                             <FormGroup label="Father's Full Name" placeholder="e.g. Suresh Sharma" />
@@ -116,7 +116,7 @@ export const EnrollStudentPage = () => {
                                             <div className="size-8 rounded-xl bg-pink-50 text-pink-500 flex items-center justify-center">
                                                 <span className="material-symbols-outlined text-[18px]">person_3</span>
                                             </div>
-                                            <h5 className="text-[14px] font-bold text-secondary tracking-tight">Mother's Information</h5>
+                                            <h5 className="text-[14px] font-bold text-foreground tracking-tight">Mother's Information</h5>
                                         </div>
                                         <div className="space-y-4">
                                             <FormGroup label="Mother's Full Name" placeholder="e.g. Principal" />
@@ -130,15 +130,15 @@ export const EnrollStudentPage = () => {
                                 {/* Guardian Info */}
                                 <div className="space-y-6 pt-10 border-t border-slate-100">
                                     <div className="flex items-center gap-3 pb-2">
-                                        <div className="size-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center">
+                                        <div className="size-8 rounded-xl bg-[#F0F0EC] text-[#444441] flex items-center justify-center">
                                             <span className="material-symbols-outlined text-[18px]">family_restroom</span>
                                         </div>
                                         <div>
-                                            <h5 className="text-[14px] font-bold text-secondary tracking-tight">Guardian / Emergency Contact</h5>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Capture details if assigned instead of parents</p>
+                                            <h5 className="text-[14px] font-bold text-foreground tracking-tight">Guardian / Emergency Contact</h5>
+                                            <p className="text-[10px] text-[#B0AFA8] font-bold uppercase tracking-wider mt-0.5">Capture details if assigned instead of parents</p>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8 bg-slate-50/50 rounded-[24px] border border-slate-100/50">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8 bg-[#F7F8F4] rounded-[24px] border border-slate-100/50">
                                         <FormGroup label="Guardian Full Name" placeholder="Full Legal Name" />
                                         <FormGroup label="Relationship" placeholder="e.g. Grandparent" />
                                         <FormGroup label="Contact Number" placeholder="+91 XXXXX XXXXX" icon="call" />
@@ -155,11 +155,11 @@ export const EnrollStudentPage = () => {
                                     <FormGroup label="Admission Number" placeholder="Auto-generated: OA-2024-XXX" disabled />
                                     <FormGroup label="Bus Transportation" type="select" options={["Not Required", "Route A - North", "Route B - Central", "Route C - Suburban"]} />
                                     <div className="col-span-2 space-y-1.5">
-                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-1">
-                                            Residential Address <span className="text-[10px] text-slate-300 font-medium normal-case">(Optional)</span>
+                                        <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest px-1">
+                                            Residential Address <span className="text-[10px] text-[#B0AFA8] font-medium normal-case">(Optional)</span>
                                         </label>
-                                        <textarea 
-                                            className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl px-5 py-4 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-secondary placeholder-slate-300 min-h-[120px] resize-none transition-all"
+                                        <textarea
+                                            className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl px-5 py-4 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] min-h-[120px] resize-none transition-all"
                                             placeholder="Enter full residential address..."
                                         />
                                     </div>
@@ -168,18 +168,18 @@ export const EnrollStudentPage = () => {
                         )}
 
                         <div className="flex justify-between items-center mt-12 pt-8 border-t border-slate-50">
-                            <button 
+                            <button
                                 onClick={() => setStep(prev => Math.max(1, prev - 1))}
                                 className={cn(
-                                    "px-8 py-3.5 rounded-2xl border border-slate-100 text-[13px] font-bold text-slate-400 hover:bg-slate-50 transition-all",
+                                    "px-8 py-3.5 rounded-2xl border border-slate-100 text-[13px] font-bold text-[#B0AFA8] hover:bg-[#F7F8F4] transition-all",
                                     step === 1 && "invisible"
                                 )}
                             >
                                 Back
                             </button>
-                            <button 
+                            <button
                                 onClick={() => step < 3 ? setStep(prev => prev + 1) : navigate("/directory")}
-                                className="bg-secondary text-white px-10 py-3.5 rounded-2xl text-[13px] font-bold hover:shadow-xl hover:shadow-secondary/20 transition-all active:scale-95 shadow-lg shadow-secondary/10"
+                                className="bg-secondary text-white px-10 py-3.5 rounded-2xl text-[13px] font-bold hover:shadow-xl  transition-all  shadow-lg shadow-secondary/10"
                             >
                                 {step === 3 ? "Register Student" : "Proceed to Guardian Info"}
                             </button>
@@ -193,21 +193,21 @@ export const EnrollStudentPage = () => {
 
 const FormGroup = ({ label, placeholder, icon, type = "input", options = [], disabled = false, optional = false }: any) => (
     <div className="space-y-1.5 group">
-        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-1 group-focus-within:text-primary transition-colors flex items-center justify-between">
+        <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest px-1 group-focus-within:text-primary transition-colors flex items-center justify-between">
             {label}
-            {optional && <span className="text-[10px] text-slate-300 font-medium normal-case tracking-normal">(Optional)</span>}
+            {optional && <span className="text-[10px] text-[#B0AFA8] font-medium normal-case tracking-normal">(Optional)</span>}
         </label>
         <div className="relative">
             {icon && (
-                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-[18px] group-focus-within:text-secondary transition-colors">
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px] group-focus-within:text-foreground transition-colors">
                     {icon}
                 </span>
             )}
             {type === "input" && (
-                <input 
+                <input
                     disabled={disabled}
                     className={cn(
-                        "w-full bg-slate-50/50 border border-slate-100 rounded-2xl py-3.5 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-secondary placeholder-slate-300 transition-all",
+                        "w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl py-3.5 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] transition-all",
                         icon ? "pl-12 pr-5" : "px-5",
                         disabled && "opacity-50 cursor-not-allowed"
                     )}
@@ -215,14 +215,14 @@ const FormGroup = ({ label, placeholder, icon, type = "input", options = [], dis
                 />
             )}
             {type === "select" && (
-                <select className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-secondary appearance-none cursor-pointer">
+                <select className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-foreground appearance-none cursor-pointer">
                     {options.map((opt: string) => (
                         <option key={opt}>{opt}</option>
                     ))}
                 </select>
             )}
             {type === "select" && (
-                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
+                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] pointer-events-none">
                     expand_more
                 </span>
             )}

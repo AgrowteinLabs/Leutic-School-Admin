@@ -91,13 +91,13 @@ export const ExamDetailsPage = () => {
         subtitle={`Exam ID: ${examData.id} | Status: ${examData.status}`}
         actions={
           <div className="flex items-center gap-3">
-            <button className="bg-white border border-slate-100 text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm shadow-slate-100/30">
+            <button className="bg-white border border-slate-100 text-foreground px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-[#F7F8F4] transition-all shadow-sm shadow-slate-100/30">
               <span className="material-symbols-outlined text-lg">
                 download
               </span>
               Export CSV
             </button>
-            <button className="bg-secondary text-white px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-lg active:scale-95">
+            <button className="bg-secondary text-white px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-lg ">
               <span className="material-symbols-outlined text-sm">publish</span>
               Upload Marks (CSV)
             </button>
@@ -106,7 +106,7 @@ export const ExamDetailsPage = () => {
       />
 
       <div className="px-8 pt-6 pb-4 shrink-0 border-b border-slate-100">
-        <nav className="flex items-center gap-2 text-xs font-medium text-slate-300 capitalize tracking-[0.2em]">
+        <nav className="flex items-center gap-2 text-xs font-medium text-[#B0AFA8] capitalize tracking-[0.2em]">
           <button
             onClick={() => navigate("/examinations")}
             className="hover:text-primary transition-colors"
@@ -116,7 +116,7 @@ export const ExamDetailsPage = () => {
           <span className="material-symbols-outlined text-[10px]">
             chevron_right
           </span>
-          <span className="text-slate-500">{examData.id}</span>
+          <span className="text-[#444441]">{examData.id}</span>
         </nav>
       </div>
 
@@ -124,7 +124,7 @@ export const ExamDetailsPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Subject-wise Marks Status */}
           <div className="lg:col-span-2 space-y-6">
-            <h2 className="text-secondary text-base font-black capitalize tracking-[0.15em] leading-none mb-4 pl-2">
+            <h2 className="text-foreground text-base font-black capitalize tracking-[0.15em] leading-none mb-4 pl-2">
               Subject Summary
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -135,10 +135,10 @@ export const ExamDetailsPage = () => {
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="text-[13px] font-semibold text-secondary">
+                      <h3 className="text-[13px] font-semibold text-foreground">
                         {subject.name}
                       </h3>
-                      <p className="text-[10px] font-medium text-slate-400">
+                      <p className="text-[10px] font-medium text-[#B0AFA8]">
                         {subject.teacher}
                       </p>
                     </div>
@@ -146,8 +146,8 @@ export const ExamDetailsPage = () => {
                       className={cn(
                         "text-xs font-medium capitalize px-3 py-1 rounded-full border",
                         subject.status === "Published"
-                          ? "bg-emerald-500/10 text-emerald-700 border border-emerald-500"
-                          : "bg-amber-500/10 text-amber-700 border border-amber-500",
+                          ? "bg-[#EAF2D7]0/10 text-[#2E7D32] border border-[#D9EA85]"
+                          : "bg-[#FEF3C7]0/10 text-[#B45309] border border-[#FDE68A]",
                       )}
                     >
                       {subject.status}
@@ -155,18 +155,18 @@ export const ExamDetailsPage = () => {
                   </div>
                   <div className="flex justify-between items-end mt-2">
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-300 capitalize">
+                      <p className="text-xs font-medium text-[#B0AFA8] capitalize">
                         Avg. Score
                       </p>
-                      <p className="text-2xl font-black text-secondary tracking-tighter">
+                      <p className="text-2xl font-black text-foreground tracking-tighter">
                         {subject.avgScore}%
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-medium text-slate-300 capitalize leading-none mb-1">
+                      <p className="text-xs font-medium text-[#B0AFA8] capitalize leading-none mb-1">
                         Submissions
                       </p>
-                      <p className="text-xs font-medium text-secondary">
+                      <p className="text-xs font-medium text-foreground">
                         {subject.submissions}
                       </p>
                     </div>
@@ -177,28 +177,28 @@ export const ExamDetailsPage = () => {
 
             {/* Student Performance Details */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 overflow-hidden mt-8">
-              <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                <h3 className="text-secondary text-[16px] font-semibold tracking-tight">
+              <div className="p-6 border-b border-slate-100 bg-[#F7F8F4]">
+                <h3 className="text-foreground text-[16px] font-semibold tracking-tight">
                   Student-wise Performance Breakdown
                 </h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="bg-slate-50/50 border-b border-slate-100">
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <tr className="bg-[#F7F8F4] border-b border-slate-100">
+                      <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider">
                         Student
                       </th>
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">
+                      <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider text-center">
                         Math
                       </th>
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">
+                      <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider text-center">
                         Science
                       </th>
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">
+                      <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider text-center">
                         History
                       </th>
-                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">
+                      <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider text-right">
                         GPA
                       </th>
                     </tr>
@@ -207,7 +207,7 @@ export const ExamDetailsPage = () => {
                     {examData.studentPerformance.map((student, i) => (
                       <tr
                         key={i}
-                        className="hover:bg-slate-50/50 transition-colors"
+                        className="hover:bg-[#F7F8F4] transition-colors"
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -218,10 +218,10 @@ export const ExamDetailsPage = () => {
                               }}
                             ></div>
                             <div>
-                              <p className="text-[13px] font-semibold text-secondary">
+                              <p className="text-[13px] font-semibold text-foreground">
                                 {student.name}
                               </p>
-                              <p className="text-[10px] font-medium text-slate-400">
+                              <p className="text-[10px] font-medium text-[#B0AFA8]">
                                 Section {student.grade}
                               </p>
                             </div>
@@ -232,21 +232,21 @@ export const ExamDetailsPage = () => {
                             className={cn(
                               "text-xs font-medium",
                               student.math < 50
-                                ? "text-red-500"
-                                : "text-secondary",
+                                ? "text-[#B91C1C]"
+                                : "text-foreground",
                             )}
                           >
                             {student.math}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center text-xs font-medium text-secondary">
+                        <td className="px-6 py-4 text-center text-xs font-medium text-foreground">
                           {student.science}
                         </td>
-                        <td className="px-6 py-4 text-center text-xs font-medium text-secondary">
+                        <td className="px-6 py-4 text-center text-xs font-medium text-foreground">
                           {student.history}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <span className="px-2 py-1 rounded bg-primary text-secondary text-xs font-medium border border-slate-100 shadow-sm shadow-slate-100/30">
+                          <span className="px-2 py-1 rounded btn-primary text-xs font-medium border border-slate-100 shadow-sm shadow-slate-100/30">
                             {student.gpa.toFixed(1)}
                           </span>
                         </td>
@@ -262,7 +262,7 @@ export const ExamDetailsPage = () => {
           <aside className="space-y-6">
             <div className="bg-secondary rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden group">
               <div className="absolute -right-10 -bottom-10 size-40 bg-primary opacity-[0.05] rounded-full group-hover:scale-125 transition-transform duration-700"></div>
-              <h3 className="text-[18px] font-semibold tracking-tight text-secondary leading-tight mb-6 flex items-center gap-2">
+              <h3 className="text-[18px] font-semibold tracking-tight text-foreground leading-tight mb-6 flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">
                   insert_chart
                 </span>
@@ -285,10 +285,10 @@ export const ExamDetailsPage = () => {
                     <p className="text-xs font-medium text-white/40 capitalize">
                       Passing Rate
                     </p>
-                    <p className="text-lg font-black text-emerald-400">92.1%</p>
+                    <p className="text-lg font-black text-[#2E7D32]">92.1%</p>
                   </div>
                   <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-400 w-[92.1%] rounded-full shadow-[0_0_10px_rgba(52,211,153,0.3)]"></div>
+                    <div className="h-full bg-[#2E7D32] w-[92.1%] rounded-full shadow-[0_0_10px_rgba(52,211,153,0.3)]"></div>
                   </div>
                 </div>
                 <div className="pt-4 border-t border-white/5 space-y-3">
@@ -296,7 +296,7 @@ export const ExamDetailsPage = () => {
                     Internal Flags
                   </p>
                   <div className="flex items-center gap-3 text-xs text-white/70">
-                    <span className="material-symbols-outlined text-red-500 text-sm">
+                    <span className="material-symbols-outlined text-[#B91C1C] text-sm">
                       warning
                     </span>
                     4 students below threshold
@@ -314,14 +314,14 @@ export const ExamDetailsPage = () => {
               </div>
             </div>
 
-            <div className="bg-primary rounded-2xl p-6 text-secondary shadow-lg border-2 border-slate-50">
+            <div className="bg-primary rounded-2xl p-6 text-foreground shadow-lg border-2 border-slate-50">
               <h3 className="text-lg font-black italic tracking-tighter mb-2 underline decoration-white/50 underline-offset-4">
                 CSV Template
               </h3>
               <p className="text-[11px] font-medium mb-4 opacity-70">
                 Download the standard template for bulk mark uploads.
               </p>
-              <button className="w-full bg-secondary text-white py-3 rounded-2xl text-xs font-medium flex items-center justify-center gap-2 shadow-xl hover:opacity-90 transition-all">
+              <button className="w-full bg-secondary text-white py-3 rounded-2xl text-xs font-medium flex items-center justify-center gap-2 shadow-xl  transition-all">
                 <span className="material-symbols-outlined text-lg">
                   download
                 </span>

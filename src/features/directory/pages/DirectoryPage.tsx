@@ -209,16 +209,16 @@ export const DirectoryPage = () => {
           subtitle="Manage students, teachers and institutional profiles"
           actions={
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={() => setShowBulkModal(true)}
-                className="bg-white border border-slate-100 text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-slate-50 transition-all active:scale-95"
+                className="btn-outline h-10 px-6 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 transition-all"
               >
                 <span className="material-symbols-outlined text-sm">upload_file</span>
                 Import List
               </button>
               <button
                 onClick={handleCreateAction}
-                className="bg-primary text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-sm shadow-slate-100/30 active:scale-95"
+                className="btn-primary h-10 px-6 rounded-xl text-[13px] font-semibold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30"
               >
                 <span className="material-symbols-outlined text-sm">person_add</span>
                 {activeTab === "staff" ? "Add Staff" : activeTab === "students" ? "Enroll Student" : "Add Driver"}
@@ -233,35 +233,35 @@ export const DirectoryPage = () => {
                 <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-8 space-y-8 animate-in zoom-in-95 duration-300">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h3 className="text-secondary text-2xl font-bold">Import {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} List</h3>
-                            <p className="text-sm text-slate-400 font-medium mt-1">Upload CSV or Excel files to enroll multiple {activeTab} at once.</p>
+                            <h3 className="text-foreground text-2xl font-bold">Import {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} List</h3>
+                            <p className="text-sm text-[#B0AFA8] font-medium mt-1">Upload CSV or Excel files to enroll multiple {activeTab} at once.</p>
                         </div>
-                        <button onClick={() => setShowBulkModal(false)} className="size-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-300 transition-all">
+                        <button onClick={() => setShowBulkModal(false)} className="size-10 rounded-full hover:bg-[#F7F8F4] flex items-center justify-center text-[#B0AFA8] transition-all">
                             <span className="material-symbols-outlined">close</span>
                         </button>
                     </div>
 
-                    <div className="border-2 border-dashed border-slate-200 rounded-2xl p-12 flex flex-col items-center justify-center text-center bg-slate-50 group hover:border-primary transition-all cursor-pointer">
-                        <div className="size-16 rounded-3xl bg-white shadow-sm flex items-center justify-center text-slate-300 mb-4 group-hover:bg-primary group-hover:text-secondary transition-all">
+                    <div className="border-2 border-dashed border-slate-200 rounded-2xl p-12 flex flex-col items-center justify-center text-center bg-[#F7F8F4] group hover:border-primary transition-all cursor-pointer">
+                        <div className="size-16 rounded-3xl bg-white shadow-sm flex items-center justify-center text-[#B0AFA8] mb-4 group-hover:bg-primary group-hover:text-foreground transition-all">
                             <span className="material-symbols-outlined text-3xl">cloud_upload</span>
                         </div>
-                        <p className="text-[15px] font-bold text-secondary">Drop your file here</p>
-                        <p className="text-[12px] text-slate-400 font-medium mt-1">Supports .csv, .xls, .xlsx (Max 10MB)</p>
+                        <p className="text-[15px] font-bold text-foreground">Drop your file here</p>
+                        <p className="text-[12px] text-[#B0AFA8] font-medium mt-1">Supports .csv, .xls, .xlsx (Max 10MB)</p>
                     </div>
 
-                    <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex items-center justify-between">
+                    <div className="bg-[#F7F8F4] rounded-2xl p-5 border border-slate-100 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <span className="material-symbols-outlined text-primary">download</span>
                             <div className="text-left">
-                                <p className="text-[12px] font-bold text-secondary">Download Template</p>
-                                <p className="text-[10px] text-slate-400 font-medium">Pre-formatted sheet</p>
+                                <p className="text-[12px] font-bold text-foreground">Download Template</p>
+                                <p className="text-[10px] text-[#B0AFA8] font-medium">Pre-formatted sheet</p>
                             </div>
                         </div>
                         <button className="text-[11px] font-bold text-primary hover:underline">Download CSV</button>
                     </div>
 
                     <div className="flex gap-3 pt-4 border-t border-slate-50">
-                        <button onClick={() => setShowBulkModal(false)} className="flex-1 py-3.5 rounded-2xl border border-slate-100 text-[13px] font-bold text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
+                        <button onClick={() => setShowBulkModal(false)} className="flex-1 py-3.5 rounded-2xl border border-slate-100 text-[13px] font-bold text-[#B0AFA8] hover:bg-[#F7F8F4] transition-all">Cancel</button>
                         <button disabled className="flex-1 py-3.5 rounded-2xl bg-secondary text-white text-[13px] font-bold opacity-50 cursor-not-allowed">Start Validation</button>
                     </div>
                 </div>
@@ -274,67 +274,67 @@ export const DirectoryPage = () => {
                 <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-8 space-y-6 animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto no-scrollbar">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h3 className="text-secondary text-2xl font-bold">Add New {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h3>
-                            <p className="text-sm text-slate-400 font-medium mt-1">Enter profile details to create a new institutional record.</p>
+                            <h3 className="text-foreground text-2xl font-bold">Add New {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h3>
+                            <p className="text-sm text-[#B0AFA8] font-medium mt-1">Enter profile details to create a new institutional record.</p>
                         </div>
-                        <button onClick={() => setShowAddModal(false)} className="size-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-300 transition-all">
+                        <button onClick={() => setShowAddModal(false)} className="size-10 rounded-full hover:bg-[#F7F8F4] flex items-center justify-center text-[#B0AFA8] transition-all">
                             <span className="material-symbols-outlined">close</span>
                         </button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-semibold text-slate-400">Full Name</label>
-                            <input className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-secondary" placeholder="e.g. Rahul Sharma" />
+                            <label className="text-[11px] font-semibold text-[#B0AFA8]">Full Name</label>
+                            <input className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-foreground" placeholder="e.g. Rahul Sharma" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-semibold text-slate-400">ID / Registration Number</label>
-                            <input className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-secondary" placeholder="#2024-XXX" />
+                            <label className="text-[11px] font-semibold text-[#B0AFA8]">ID / Registration Number</label>
+                            <input className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-foreground" placeholder="#2024-XXX" />
                         </div>
-                        
+
                         {activeTab === "drivers" && (
                              <div className="space-y-1.5">
-                                <label className="text-[11px] font-semibold text-slate-400">Bus License Number</label>
-                                <input className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-secondary" placeholder="DL-XXX-XXX" />
+                                <label className="text-[11px] font-semibold text-[#B0AFA8]">Bus License Number</label>
+                                <input className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-foreground" placeholder="DL-XXX-XXX" />
                              </div>
                         )}
 
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-semibold text-slate-400">
+                            <label className="text-[11px] font-semibold text-[#B0AFA8]">
                                 {activeTab === "staff" ? "Designation" : activeTab === "students" ? "Grade" : "Assigned Bus Route"}
                             </label>
-                            <input className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-secondary" placeholder="..." />
+                            <input className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-foreground" placeholder="..." />
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-semibold text-slate-400">Contact Email</label>
-                            <input className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-secondary" placeholder="email@institution.com" />
+                            <label className="text-[11px] font-semibold text-[#B0AFA8]">Contact Email</label>
+                            <input className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-foreground" placeholder="email@institution.com" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-semibold text-slate-400">Mobile Number</label>
-                            <input className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-secondary" placeholder="+91 XXXX" />
+                            <label className="text-[11px] font-semibold text-[#B0AFA8]">Mobile Number</label>
+                            <input className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-semibold text-foreground" placeholder="+91 XXXX" />
                         </div>
                     </div>
 
-                    <div className="bg-slate-50 rounded-2xl p-6 space-y-4 border border-slate-100">
-                        <h4 className="text-[11px] font-semibold text-secondary">Access Permissions</h4>
+                    <div className="bg-[#F7F8F4] rounded-2xl p-6 space-y-4 border border-slate-100">
+                        <h4 className="text-[11px] font-semibold text-foreground">Access Permissions</h4>
                         <div className="flex gap-6">
                              <div className="flex items-center gap-3">
-                                <div className="size-5 rounded bg-primary flex items-center justify-center text-secondary">
+                                <div className="size-5 rounded bg-primary flex items-center justify-center text-foreground">
                                     <span className="material-symbols-outlined text-sm font-bold">check</span>
                                 </div>
-                                <span className="text-[12px] font-bold text-slate-600">Mobile App Access</span>
+                                <span className="text-[12px] font-bold text-[#444441]">Mobile App Access</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="size-5 rounded border border-slate-300 bg-white" />
-                                <span className="text-[12px] font-bold text-slate-600">SMS Alerts</span>
+                                <span className="text-[12px] font-bold text-[#444441]">SMS Alerts</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="flex gap-3 pt-4">
-                        <button onClick={() => setShowAddModal(false)} className="flex-1 py-3.5 rounded-2xl border border-slate-100 text-[13px] font-bold text-slate-400 hover:bg-slate-50 transition-all">Cancel</button>
-                        <button onClick={() => handleAddMember({ name: "Rahul Sharma", id: "#REF-2024-00X", status: "Active" })} className="flex-1 py-3.5 rounded-2xl bg-secondary text-white text-[13px] font-bold shadow-lg shadow-secondary/20 transition-all hover:-translate-y-0.5 active:scale-95">Complete Registration</button>
+                        <button onClick={() => setShowAddModal(false)} className="flex-1 py-3.5 rounded-2xl border border-slate-100 text-[13px] font-bold text-[#B0AFA8] hover:bg-[#F7F8F4] transition-all">Cancel</button>
+                        <button onClick={() => handleAddMember({ name: "Rahul Sharma", id: "#REF-2024-00X", status: "Active" })} className="flex-1 py-3.5 rounded-2xl bg-secondary text-white text-[13px] font-bold shadow-lg shadow-secondary/20 transition-all hover:-translate-y-0.5 ">Complete Registration</button>
                     </div>
                 </div>
             </div>
@@ -354,8 +354,8 @@ export const DirectoryPage = () => {
                 className={cn(
                   "flex items-center gap-2 pb-4 text-[13px] font-semibold tracking-tight transition-all relative mt-4 shrink-0",
                   activeTab === tab.id
-                    ? "text-secondary"
-                    : "text-slate-400 hover:text-secondary",
+                    ? "text-foreground"
+                    : "text-[#B0AFA8] hover:text-foreground",
                 )}
               >
                 <span className="material-symbols-outlined text-lg">
@@ -401,19 +401,19 @@ export const DirectoryPage = () => {
                                 {d.status}
                             </div>
                         </div>
-                        <h4 className="text-secondary font-bold text-lg">{d.name}</h4>
-                        <p className="text-[12px] text-slate-400 font-medium mb-4">{d.id}</p>
-                        
+                        <h4 className="text-foreground font-bold text-lg">{d.name}</h4>
+                        <p className="text-[12px] text-[#B0AFA8] font-medium mb-4">{d.id}</p>
+
                         <div className="space-y-3 pt-4 border-t border-slate-50">
                             <div className="flex justify-between items-center text-[12px]">
-                                <span className="font-bold text-slate-400">License</span>
-                                <span className="font-bold text-secondary">{d.licenseNo}</span>
+                                <span className="font-bold text-[#B0AFA8]">License</span>
+                                <span className="font-bold text-foreground">{d.licenseNo}</span>
                             </div>
                             <div className="flex justify-between items-center text-[12px]">
-                                <span className="font-bold text-slate-400">Performance</span>
+                                <span className="font-bold text-[#B0AFA8]">Performance</span>
                                 <span className="font-bold text-primary">{d.performance}%</span>
                             </div>
-                             <button className="w-full py-3 rounded-xl bg-secondary text-white text-[12px] font-bold hover:shadow-lg hover:shadow-secondary/20 transition-all">Live Tracking</button>
+                             <button className="w-full py-3 rounded-xl bg-secondary text-white text-[12px] font-bold hover:shadow-lg  transition-all">Live Tracking</button>
                         </div>
                     </div>
                 ))}

@@ -8,7 +8,7 @@ const FilterGroup = ({
   children: React.ReactNode;
 }) => (
   <div>
-    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+    <h3 className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-4">
       {title}
     </h3>
     <div className="flex flex-col gap-3.5">{children}</div>
@@ -26,12 +26,12 @@ const Checkbox = ({ label, checked }: { label: string; checked?: boolean }) => (
       )}
     >
       {checked && (
-        <span className="material-symbols-outlined text-secondary text-[14px] font-black">
+        <span className="material-symbols-outlined text-foreground text-[14px] font-black">
           check
         </span>
       )}
     </div>
-    <span className="text-[13px] font-medium text-slate-600 group-hover:text-secondary transition-colors">
+    <span className="text-[13px] font-medium text-[#444441] group-hover:text-foreground transition-colors">
       {label}
     </span>
   </label>
@@ -39,11 +39,11 @@ const Checkbox = ({ label, checked }: { label: string; checked?: boolean }) => (
 
 const Toggle = ({ label, enabled }: { label: string; enabled?: boolean }) => (
   <label className="flex items-center justify-between p-3.5 rounded-2xl bg-white border border-slate-100 shadow-sm shadow-slate-100/30 cursor-pointer group hover:border-slate-200 transition-all">
-    <span className="text-[13px] font-medium text-slate-600 group-hover:text-secondary transition-colors">{label}</span>
+    <span className="text-[13px] font-medium text-[#444441] group-hover:text-foreground transition-colors">{label}</span>
     <div
       className={cn(
         "w-9 h-5 rounded-full relative transition-colors shadow-inner",
-        enabled ? "bg-emerald-500" : "bg-slate-200",
+        enabled ? "bg-[#EAF2D7]0" : "bg-slate-200",
       )}
     >
       <div
@@ -68,17 +68,17 @@ export const CommunityFilters = () => {
         </FilterGroup>
 
         <div>
-          <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+          <h3 className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-4">
             Academic Level
           </h3>
           <div className="flex flex-wrap gap-2">
-            <button className="px-4 py-2 rounded-full bg-slate-50 text-[12px] font-semibold text-slate-500 hover:bg-slate-100 transition-all border border-transparent">
+            <button className="px-4 py-2 rounded-full bg-[#F7F8F4] text-[12px] font-semibold text-[#444441] hover:bg-[#F7F8F4] transition-all border border-transparent">
               Junior High
             </button>
-            <button className="px-4 py-2 rounded-full bg-primary text-secondary text-[12px] font-semibold shadow-sm transition-all border border-slate-100/50">
+            <button className="px-4 py-2 rounded-full btn-primary text-[12px] font-semibold shadow-sm transition-all border border-slate-100/50">
               Senior High
             </button>
-            <button className="px-4 py-2 rounded-full bg-slate-50 text-[12px] font-semibold text-slate-500 hover:bg-slate-100 transition-all border border-transparent">
+            <button className="px-4 py-2 rounded-full bg-[#F7F8F4] text-[12px] font-semibold text-[#444441] hover:bg-[#F7F8F4] transition-all border border-transparent">
               Faculty Only
             </button>
           </div>
@@ -90,7 +90,7 @@ export const CommunityFilters = () => {
         </FilterGroup>
 
         <div className="pt-6 border-t border-slate-100">
-          <button className="w-full py-2.5 rounded-xl bg-slate-50 text-[13px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-secondary transition-all">
+          <button className="w-full py-2.5 rounded-xl bg-[#F7F8F4] text-[13px] font-semibold text-[#444441] hover:bg-[#F7F8F4] hover:text-foreground transition-all">
             Reset Filters
           </button>
         </div>

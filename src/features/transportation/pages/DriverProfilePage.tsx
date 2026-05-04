@@ -60,7 +60,7 @@ export const DriverProfilePage = () => {
         onBack={() => navigate(-1)}
         actions={
           <div className="flex items-center gap-3">
-            <button className="bg-primary text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-sm shadow-slate-100/30">
+            <button className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30">
               <span className="material-symbols-outlined text-sm">call</span>
               Call Driver
             </button>
@@ -76,35 +76,35 @@ export const DriverProfilePage = () => {
           ></div>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
-              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-700 text-xs font-medium rounded-full border border-emerald-500 capitalize">
+              <span className="px-3 py-1 bg-[#EAF2D7]0/10 text-[#2E7D32] text-xs font-medium rounded-full border border-[#D9EA85] capitalize">
                 {driver.status}
               </span>
-              <p className="text-slate-500 text-[13px] font-medium">
+              <p className="text-[#444441] text-[13px] font-medium">
                 Assigned to: {driver.bus}
               </p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <p className="text-[11px] font-bold text-[#444441] uppercase tracking-wider mb-1">
                   License Number
                 </p>
-                <p className="text-[13px] font-semibold text-secondary">
+                <p className="text-[13px] font-semibold text-foreground">
                   {driver.license}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <p className="text-[11px] font-bold text-[#444441] uppercase tracking-wider mb-1">
                   Experience
                 </p>
-                <p className="text-[13px] font-semibold text-secondary">
+                <p className="text-[13px] font-semibold text-foreground">
                   {driver.experience}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <p className="text-[11px] font-bold text-[#444441] uppercase tracking-wider mb-1">
                   Phone
                 </p>
-                <p className="text-[13px] font-semibold text-secondary">
+                <p className="text-[13px] font-semibold text-foreground">
                   {driver.phone}
                 </p>
               </div>
@@ -112,8 +112,8 @@ export const DriverProfilePage = () => {
           </div>
         </div>
 
-        <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-6">
-          <h3 className="text-secondary text-base font-bold mb-4 flex items-center gap-2">
+        <div className="bg-[#F7F8F4] border border-slate-100 rounded-2xl p-6">
+          <h3 className="text-foreground text-base font-bold mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined">route</span>
             Current Route: North Corridor Area A
           </h3>
@@ -125,7 +125,7 @@ export const DriverProfilePage = () => {
             ].map((stop, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="size-2 rounded-full bg-primary"></div>
-                <p className="text-sm text-slate-500 font-medium">
+                <p className="text-sm text-[#444441] font-medium">
                   {stop}
                 </p>
               </div>

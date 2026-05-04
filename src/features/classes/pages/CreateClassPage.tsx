@@ -1,0 +1,292 @@
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { TopBar } from "../../../components/Header";
+import { cn } from "../../../lib/utils";
+
+export const CreateClassPage = () => {
+    const navigate = useNavigate();
+    const [selectedStudents, setSelectedStudents] = useState<any[]>([]);
+
+    const mockStudents = [
+        { id: 1, name: "Aavya S.",  grade: "Grade 10", img: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=100" },
+        { id: 2, name: "Ishaan K.", grade: "Grade 10", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" },
+        { id: 3, name: "Meera V.",  grade: "Grade 10", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
+        { id: 4, name: "Arjun T.",  grade: "Grade 10", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" },
+    ];
+
+    const toggleStudent = (student: any) => {
+        if (selectedStudents.find(s => s.id === student.id)) {
+            setSelectedStudents(selectedStudents.filter(s => s.id !== student.id));
+        } else {
+            setSelectedStudents([...selectedStudents, student]);
+        }
+    };
+
+    return (
+        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white font-sans">
+            <TopBar
+                title="Create New Class"
+                subtitle="Establish a new grade section and optionally map students"
+                actions={
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="btn-outline px-4 py-2 rounded-[10px] text-[13px] transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => navigate("/classes")}
+                            className="btn-primary px-6 py-2 rounded-[10px] text-[13px] font-semibold transition-all"
+                        >
+                            Finalize & Create Class
+                        </button>
+                    </div>
+                }
+            />
+
+            <div className="flex-1 overflow-y-auto no-scrollbar">
+                <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-6 space-y-8">
+
+                    {/* Basic Details */}
+                    <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-sm">
+                        <div className="space-y-10">
+                            <div className="space-y-6">
+                                <h3 className="text-foreground font-bold text-lg flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary">info</span>
+                                    Basic Details
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
+                                    <FormGroup label="Grade Level" type="select" options={["Grade 9", "Grade 10", "Grade 11", "Grade 12"]} />
+                                    <FormGroup label="Section" placeholder="e.g. A, B, C" uppercase />
+                                    <FormGroup
+                                        label="Primary Class Teacher"
+                                        type="select"
+                                        searchable
+                                        options={["Dr. Sarah Jenkins", "Prof. Michael Chen", "Ms. Elena Rodriguez", "Mr. David Thompson", "Dr. Anita Gupta", "Ms. Chloe Whitmore"]}
+                                        placeholder="Search and assign staff..."
+                                        icon="person_search"
+                                    />
+                                    <FormGroup label="Assigned Room / Lab" placeholder="E.g. Room 304" />
+                                    <FormGroup label="Daily Shift" type="select" options={["Morning Shift", "Afternoon Shift", "Evening Shift"]} />
+                                    <FormGroup label="Academic Session" type="select" options={["2025-26", "2024-25"]} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Map Students */}
+                    <div className="bg-white border border-slate-100 rounded-[32px] p-8 shadow-sm">
+                        <div className="space-y-8">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-foreground font-bold text-lg flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-primary">person_add</span>
+                                        Map Students <span className="text-[#B0AFA8] font-medium text-sm ml-1">(Optional)</span>
+                                    </h3>
+                                    <span className="px-3 py-1 bg-[#EAF2D7] text-foreground text-[11px] font-bold rounded-full border border-[#D9EA85]">
+                                        {selectedStudents.length} Selected
+                                    </span>
+                                </div>
+                                <p className="text-[#B0AFA8] text-sm">You can skip this step and map students later from the class details page.</p>
+                            </div>
+
+                            <div className="relative group max-w-2xl">
+                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px] group-focus-within:text-foreground transition-colors z-10">search</span>
+                                <input
+                                    type="text"
+                                    placeholder="Search students by name, ID or current grade..."
+                                    className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] pl-12 pr-6 text-[14px] font-semibold text-foreground focus:ring-2 focus:ring-primary/40 transition-all outline-none"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {mockStudents.map((student) => (
+                                    <div
+                                        key={student.id}
+                                        onClick={() => toggleStudent(student)}
+                                        className={cn(
+                                            "p-5 rounded-2xl border transition-all cursor-pointer flex items-center gap-4",
+                                            selectedStudents.find(s => s.id === student.id)
+                                                ? "bg-[#EAF2D7] border-[#D9EA85] shadow-sm"
+                                                : "bg-white border-slate-100 hover:border-slate-200 hover:bg-[#F7F8F4]"
+                                        )}
+                                    >
+                                        <img src={student.img} className="size-12 rounded-xl object-cover" />
+                                        <div className="flex-1">
+                                            <p className="text-[14px] font-bold text-foreground">{student.name}</p>
+                                            <p className="text-[12px] text-[#B0AFA8] font-medium">{student.grade}</p>
+                                        </div>
+                                        <div className={cn(
+                                            "size-6 rounded-full border-2 flex items-center justify-center transition-all",
+                                            selectedStudents.find(s => s.id === student.id)
+                                                ? "bg-primary border-primary text-foreground"
+                                                : "border-slate-200"
+                                        )}>
+                                            {selectedStudents.find(s => s.id === student.id) && (
+                                                <span className="material-symbols-outlined text-[16px] font-bold">check</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Action Bar */}
+                    <div className="flex justify-end items-center gap-4 py-8">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="btn-outline px-8 py-2.5 rounded-2xl text-[14px] font-bold transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => navigate("/classes")}
+                            className="btn-primary px-12 py-2.5 rounded-2xl text-[14px] font-bold transition-all shadow-lg"
+                        >
+                            Finalize & Create Class
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const CustomSelect = ({ options, value, onChange, placeholder = "Select option", searchable = false }: any) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) setSearchQuery(value || "");
+    }, [isOpen, value]);
+
+    const displayValue = (searchable && isOpen) ? searchQuery : (value || placeholder);
+
+    const filteredOptions = searchable
+        ? options.filter((opt: string) => opt.toLowerCase().includes(searchQuery.toLowerCase()))
+        : options;
+
+    return (
+        <div className="relative" ref={containerRef}>
+            <div className={cn(
+                "w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center justify-between cursor-pointer hover:border-slate-200 transition-all relative overflow-hidden h-12",
+                isOpen && "border-primary/50 bg-white"
+            )}>
+                {searchable ? (
+                    <input
+                        type="text"
+                        value={displayValue}
+                        onChange={(e) => { setSearchQuery(e.target.value); if (!isOpen) setIsOpen(true); }}
+                        onFocus={() => setIsOpen(true)}
+                        placeholder={placeholder}
+                        className="w-full h-full bg-transparent px-6 outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] z-10"
+                    />
+                ) : (
+                    <div
+                        onClick={() => setIsOpen(!isOpen)}
+                        className={cn("w-full px-6 text-[14px] font-semibold transition-colors flex items-center h-full", value ? "text-foreground" : "text-[#B0AFA8]")}
+                    >
+                        {displayValue}
+                    </div>
+                )}
+                <span
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={cn("material-symbols-outlined text-[#B0AFA8] absolute right-4 top-1/2 -translate-y-1/2 transition-transform duration-500 z-0", isOpen && "rotate-180 text-primary")}
+                >
+                    expand_more
+                </span>
+            </div>
+
+            {isOpen && (
+                <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-slate-100 rounded-[24px] shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300">
+                    <div className="max-h-64 overflow-y-auto no-scrollbar">
+                        {filteredOptions.length > 0 ? (
+                            filteredOptions.map((opt: string) => {
+                                const isSelected = value === opt;
+                                return (
+                                    <div
+                                        key={opt}
+                                        onClick={() => { onChange?.(opt); setIsOpen(false); }}
+                                        className={cn(
+                                            "px-4 py-3 mx-2 my-1 rounded-[10px] text-[14px] font-semibold cursor-pointer transition-all flex items-center justify-between group",
+                                            isSelected
+                                                ? "bg-[#EAF2D7] text-foreground border border-[#D9EA85]"
+                                                : "text-[#444441] hover:bg-[#F7F8F4] hover:text-foreground"
+                                        )}
+                                    >
+                                        <span className="flex-1">{opt}</span>
+                                        {isSelected && (
+                                            <span className="material-symbols-outlined text-[20px] text-foreground animate-in zoom-in duration-300">check_circle</span>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="px-6 py-8 text-center space-y-2">
+                                <span className="material-symbols-outlined text-[#B0AFA8] text-[40px]">person_search</span>
+                                <p className="text-[12px] font-bold text-[#B0AFA8]">No results found</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const FormGroup = ({ label, placeholder, icon, type = "input", options = [], searchable = false, disabled = false, optional = false, uppercase = false }: any) => {
+    const [selectedValue, setSelectedValue] = useState("");
+    const [inputValue, setInputValue] = useState("");
+
+    return (
+        <div className="space-y-2.5 group">
+            <label className="text-[13px] font-bold text-[#444441] px-1 group-focus-within:text-foreground transition-colors flex items-center justify-between">
+                {label}
+                {optional && <span className="text-[11px] text-[#B0AFA8] font-medium normal-case tracking-normal">(Optional)</span>}
+            </label>
+            <div className="relative">
+                {icon && type !== "select" && (
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px] group-focus-within:text-foreground transition-colors z-10">
+                        {icon}
+                    </span>
+                )}
+                {type === "input" && (
+                    <input
+                        disabled={disabled}
+                        value={inputValue}
+                        onChange={(e) => setInputValue(uppercase ? e.target.value.toUpperCase() : e.target.value)}
+                        className={cn(
+                            "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/20",
+                            icon ? "pl-12 pr-6" : "px-6",
+                            disabled && "opacity-50 cursor-not-allowed",
+                            uppercase && "uppercase placeholder:normal-case"
+                        )}
+                        placeholder={placeholder}
+                    />
+                )}
+                {type === "select" && (
+                    <CustomSelect
+                        options={options}
+                        value={selectedValue}
+                        onChange={setSelectedValue}
+                        placeholder={placeholder}
+                        searchable={searchable}
+                    />
+                )}
+            </div>
+        </div>
+    );
+};

@@ -31,7 +31,7 @@ export const CommunicationsHubPage = () => {
             <div className="flex gap-3">
               <button 
                 onClick={handleComposeClick}
-                className="bg-primary text-secondary px-6 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2 hover:bg-secondary hover:text-white transition-all shadow-sm active:scale-95"
+                className="btn-primary px-6 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2   transition-all shadow-sm "
               >
                 <span className="material-symbols-outlined text-sm">
                   {activeTab === "messages" ? "edit_square" : "campaign"}
@@ -59,8 +59,8 @@ export const CommunicationsHubPage = () => {
                 className={cn(
                   "flex items-center gap-2 pb-4 text-[13px] font-semibold tracking-tight transition-all relative mt-4 shrink-0",
                   activeTab === tab.id
-                    ? "text-secondary"
-                    : "text-slate-400 hover:text-secondary",
+                    ? "text-foreground"
+                    : "text-[#B0AFA8] hover:text-foreground",
                 )}
               >
                 <span className="material-symbols-outlined text-lg">
@@ -76,7 +76,7 @@ export const CommunicationsHubPage = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden flex flex-col bg-[#F9FAFB]/30">
+      <div className="flex-1 overflow-hidden flex flex-col bg-white">
         {activeTab === "messages" ? (
           <div className="flex-1 overflow-hidden">
             <CommunicationsPage isHubChild />

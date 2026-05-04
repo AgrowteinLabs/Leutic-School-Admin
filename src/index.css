@@ -7,11 +7,8 @@
 
 @layer base {
     :root {
-        /* --background: 0 0% 100%; */
-        --background: 69 62% 97%;
-        /* very light primary */
-
-        --foreground: 196 31% 12%;
+        --background: 75 22% 96%;      /* #F7F8F4 off-white */
+        --foreground: 196 31% 12%;     /* #152328 dark teal-navy */
 
         --card: 0 0% 100%;
         --card-foreground: 196 31% 12%;
@@ -19,27 +16,31 @@
         --popover: 0 0% 100%;
         --popover-foreground: 196 31% 12%;
 
-        --primary: 69 62% 74%;
-        /* #dbe890 approx */
+        --primary: 69 62% 71%;         /* #D9EA85 lime yellow */
         --primary-foreground: 196 31% 12%;
 
-        --secondary: 196 31% 12%;
-        --secondary-foreground: 69 62% 74%;
+        --secondary: 196 31% 12%;      /* #152328 dark teal-navy */
+        --secondary-foreground: 69 62% 71%;
 
-        --muted: 196 10% 96%;
-        --muted-foreground: 196 31% 12% / 0.6;
+        --muted: 80 14% 94%;
+        --muted-foreground: 60 3% 26%;
 
-        --accent: 69 62% 74% / 0.1;
+        --accent: 82 50% 89%;          /* #EAF2D7 pale lime tint */
         --accent-foreground: 196 31% 12%;
 
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 210 40% 98%;
+        --destructive: 0 84% 38%;      /* #B91C1C error red */
+        --destructive-foreground: 0 0% 100%;
 
         --border: 196 31% 12% / 0.1;
-        --input: 196 31% 12% / 0.1;
-        --ring: 69 62% 74%;
+        --input: 196 31% 12% / 0.08;
+        --ring: 69 62% 71%;
 
-        --radius: 0.5rem;
+        --radius: 0.625rem;            /* 10px */
+
+        /* Semantic status colors */
+        --success: 123 46% 34%;        /* #2E7D32 */
+        --warning: 27 92% 37%;         /* #B45309 */
+        --info: 213 82% 42%;           /* #1565C0 */
     }
 
     .dark {
@@ -52,7 +53,7 @@
         --popover: 196 31% 12%;
         --popover-foreground: 0 0% 100%;
 
-        --primary: 69 62% 74%;
+        --primary: 69 62% 71%;
         --primary-foreground: 196 31% 12%;
 
         --secondary: 0 0% 100% / 0.1;
@@ -64,12 +65,12 @@
         --accent: 196 31% 25%;
         --accent-foreground: 0 0% 100%;
 
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 210 40% 98%;
+        --destructive: 0 63% 31%;
+        --destructive-foreground: 0 0% 100%;
 
         --border: 0 0% 100% / 0.1;
         --input: 0 0% 100% / 0.1;
-        --ring: 69 62% 74%;
+        --ring: 69 62% 71%;
     }
 }
 
@@ -82,6 +83,118 @@
         @apply bg-background text-foreground font-sans;
     }
 }
+
+/* ─── Button system ───────────────────────────────────────────────────── */
+
+@layer components {
+    /* Shared base */
+    .btn-base {
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: 10px;
+        min-height: 40px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+    }
+
+    /* Primary — dark bg, lime text */
+    .btn-primary {
+        background: #152328;
+        color: #D9EA85;
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: 10px;
+        border: 2px solid transparent;
+        min-height: 40px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s, color 0.15s, transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover {
+        background: #2a4f62;
+        color: #ffffff;
+        transform: translateY(-2px);
+    }
+    .btn-primary:active {
+        transform: translateY(0) scale(0.97);
+    }
+    .btn-primary:focus-visible {
+        box-shadow: 0 0 0 3px #D9EA85;
+        outline: none;
+    }
+    .btn-primary:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    /* Secondary — pale lime bg, dark text */
+    .btn-secondary {
+        background: #EAF2D7;
+        color: #152328;
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: 10px;
+        border: 2px solid transparent;
+        min-height: 40px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s, color 0.15s, transform 0.1s;
+    }
+    .btn-secondary:hover {
+        background: #D9EA85;
+    }
+    .btn-secondary:active {
+        transform: scale(0.97);
+    }
+    .btn-secondary:focus-visible {
+        box-shadow: 0 0 0 3px #152328;
+        outline: none;
+    }
+    .btn-secondary:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    /* Outline — transparent bg, dark border */
+    .btn-outline {
+        background: transparent;
+        color: #152328;
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: 10px;
+        border: 1px solid #152328;
+        min-height: 40px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s, color 0.15s, transform 0.1s;
+    }
+    .btn-outline:hover {
+        background: #152328;
+        color: #D9EA85;
+    }
+    .btn-outline:active {
+        transform: scale(0.97);
+    }
+    .btn-outline:focus-visible {
+        box-shadow: 0 0 0 3px #152328;
+        outline: none;
+    }
+    .btn-outline:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+}
+
+/* ─── Icon font ───────────────────────────────────────────────────────── */
 
 .material-symbols-outlined {
     font-variation-settings:
@@ -98,15 +211,18 @@
     direction: ltr;
 }
 
+/* ─── Utility animations ──────────────────────────────────────────────── */
+
 @keyframes blink {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+    50%       { opacity: 0; }
 }
+
 .animate-blink {
     animation: blink 1s step-start infinite;
 }
 
-/* Premium Motion Curves */
+/* Premium motion curves */
 .transition-luxury {
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }

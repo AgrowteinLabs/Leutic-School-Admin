@@ -132,9 +132,9 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
           title="Attendance Tracking"
           subtitle="Mark daily student attendance and track teacher-substitute coverage."
           actions={
-            <button 
-                onClick={handleSubmit}
-                className="bg-primary text-secondary px-6 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2 hover:bg-secondary hover:text-white transition-all shadow-sm active:scale-95"
+            <button
+              onClick={handleSubmit}
+              className="btn-primary px-6 h-10 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm"
             >
               <span className="material-symbols-outlined text-sm">save</span>
               Submit Attendance
@@ -148,13 +148,13 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
           {/* Header Controls */}
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-wrap gap-6 items-end">
             <div className="space-y-1.5 flex-1 min-w-[200px]">
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-1">
+              <label className="text-[11px] font-bold text-[#444441] uppercase tracking-wider pl-1">
                 Select Class
               </label>
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full bg-slate-50/50 border-none rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                className="w-full bg-[#F7F8F4]/50 border border-slate-100 rounded-[10px] px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary cursor-pointer"
               >
                 <option>Grade 10-A</option>
                 <option>Grade 10-B</option>
@@ -162,24 +162,24 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
               </select>
             </div>
             <div className="space-y-1.5 flex-1 min-w-[200px]">
-              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-1">
+              <label className="text-[11px] font-bold text-[#444441] uppercase tracking-wider pl-1">
                 Attendance Date
               </label>
               <div className="relative">
                 <input
-                    type="date"
-                    value={attendanceDate}
-                    onChange={(e) => setAttendanceDate(e.target.value)}
-                    className="w-full bg-slate-50/50 border-none rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
+                  type="date"
+                  value={attendanceDate}
+                  onChange={(e) => setAttendanceDate(e.target.value)}
+                  className="w-full bg-[#F7F8F4]/50 border border-slate-100 rounded-[10px] px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
-            <div className="flex items-center gap-3 bg-primary/10 px-4 py-2.5 rounded-xl border border-primary/20 flex-1 min-w-[200px] focus-within:ring-2 focus-within:ring-primary transition-all">
+            <div className="flex items-center gap-3 bg-primary/10 px-4 py-2.5 rounded-[10px] border border-primary/20 flex-1 min-w-[200px] focus-within:ring-2 focus-within:ring-primary transition-all">
               <span className="material-symbols-outlined text-primary">
                 person_search
               </span>
               <div className="flex flex-col flex-1">
-                <p className="text-xs font-medium text-slate-400 capitalize leading-none mb-1">
+                <p className="text-xs font-medium text-[#B0AFA8] capitalize leading-none mb-1">
                   Search Student
                 </p>
                 <input
@@ -187,7 +187,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                   placeholder="Filter by name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-transparent border-none p-0 text-xs font-medium text-secondary outline-none placeholder-slate-300 w-full"
+                  className="bg-transparent border-none p-0 text-xs font-medium text-foreground outline-none placeholder-[#B0AFA8] w-full"
                 />
               </div>
             </div>
@@ -212,7 +212,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                   </p>
                 </div>
               </div>
-              <button className="text-xs font-medium capitalize border border-white/20 px-4 py-2 rounded-xl hover:bg-white/10 transition-all">
+              <button className="text-xs font-medium capitalize border border-white/20 px-4 py-2 rounded-[10px] hover:bg-white/10 transition-all">
                 View Coverage Log
               </button>
             </div>
@@ -220,20 +220,20 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
           {/* Student List */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
-              <h3 className="text-secondary text-[16px] font-bold tracking-tight">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-[#F7F8F4]/30">
+              <h3 className="text-foreground text-[16px] font-bold tracking-tight">
                 Student Roster <span className="text-primary mx-2">•</span> {selectedClass}
               </h3>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => markAll("Absent")}
-                  className="px-4 py-1.5 rounded-xl bg-rose-50 text-rose-600 text-[11px] font-bold uppercase tracking-wider border border-rose-100 hover:bg-rose-100 transition-all active:scale-95"
+                  className="px-4 py-1.5 rounded-[10px] bg-[#FEE2E2] text-[#B91C1C] text-[11px] font-bold uppercase tracking-wider border border-[#FECACA] hover:bg-rose-100 transition-all"
                 >
                   Mark all Absent
                 </button>
-                <button 
+                <button
                   onClick={() => markAll("Present")}
-                  className="px-4 py-1.5 rounded-xl bg-emerald-50 text-emerald-600 text-[11px] font-bold uppercase tracking-wider border border-emerald-100 hover:bg-emerald-100 transition-all active:scale-95"
+                  className="px-4 py-1.5 rounded-[10px] bg-[#EAF2D7] text-[#2E7D32] text-[11px] font-bold uppercase tracking-wider border border-[#D9EA85] hover:bg-emerald-100 transition-all"
                 >
                   Mark all Present
                 </button>
@@ -242,14 +242,14 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-100">
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <tr className="bg-[#F7F8F4]/50 border-b border-slate-100">
+                    <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider">
                       Student Name
                     </th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">
+                    <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider text-center">
                       Attendance Status
                     </th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">
+                    <th className="px-6 py-4 text-[11px] font-bold text-[#444441] uppercase tracking-wider text-right">
                       Observation
                     </th>
                   </tr>
@@ -258,7 +258,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                   {filteredStudents.map((student) => (
                     <tr
                       key={student.id}
-                      className="hover:bg-slate-50/30 transition-colors group"
+                      className="hover:bg-[#F7F8F4]/30 transition-colors group"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -267,10 +267,10 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                             style={{ backgroundImage: `url("${student.img}")` }}
                           ></div>
                           <div className="flex flex-col">
-                            <span className="text-[13px] font-bold text-secondary group-hover:text-primary transition-colors">
+                            <span className="text-[13px] font-bold text-foreground group-hover:text-primary transition-colors">
                               {student.name}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-medium">ID: {student.id}</span>
+                            <span className="text-[10px] text-[#B0AFA8] font-medium">ID: {student.id}</span>
                           </div>
                         </div>
                       </td>
@@ -282,25 +282,25 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                             { label: "Late", code: "L", color: "amber" },
                             { label: "Half-Day", code: "HD", color: "slate" }
                           ].map((status) => (
-                              <button
-                                key={status.label}
-                                onClick={() => updateStatus(student.id, status.label)}
-                                className={cn(
-                                  "size-9 rounded-full text-[11px] font-black transition-all border flex items-center justify-center relative group/btn",
-                                  student.status === status.label
-                                    ? `bg-${status.color}-500 text-white border-${status.color}-600 shadow-lg shadow-${status.color}-500/20 scale-110`
-                                    : "bg-white text-slate-400 border-slate-100 hover:border-slate-300"
-                                )}
-                                title={status.label}
-                              >
-                                {status.code}
-                                {student.status === status.label && (
-                                    <span className="absolute -top-1 -right-1 size-3 bg-white rounded-full flex items-center justify-center">
-                                        <div className={cn("size-1.5 rounded-full", `bg-${status.color}-500`)} />
-                                    </span>
-                                )}
-                              </button>
-                            ),
+                            <button
+                              key={status.label}
+                              onClick={() => updateStatus(student.id, status.label)}
+                              className={cn(
+                                "size-9 rounded-full text-[11px] font-black transition-all border flex items-center justify-center relative group/btn",
+                                student.status === status.label
+                                  ? `bg-${status.color}-500 text-white border-${status.color}-600 shadow-lg shadow-${status.color}-500/20 scale-110`
+                                  : "bg-white text-[#B0AFA8] border-slate-100 hover:border-slate-300"
+                              )}
+                              title={status.label}
+                            >
+                              {status.code}
+                              {student.status === status.label && (
+                                <span className="absolute -top-1 -right-1 size-3 bg-white rounded-full flex items-center justify-center">
+                                  <div className={cn("size-1.5 rounded-full", `bg-${status.color}-500`)} />
+                                </span>
+                              )}
+                            </button>
+                          ),
                           )}
                         </div>
                       </td>
@@ -308,7 +308,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                         <input
                           type="text"
                           placeholder="Quick note..."
-                          className="bg-transparent border-none text-right text-[11px] font-medium text-slate-400 outline-none focus:text-secondary placeholder:text-slate-200 transition-colors w-full"
+                          className="bg-transparent border-none text-right text-[11px] font-medium text-[#B0AFA8] outline-none focus:text-foreground placeholder:text-[#B0AFA8] transition-colors w-full"
                         />
                       </td>
                     </tr>
@@ -320,8 +320,8 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                         className="px-6 py-12 text-center"
                       >
                         <div className="flex flex-col items-center gap-2">
-                            <span className="material-symbols-outlined text-slate-200 text-4xl">search_off</span>
-                            <p className="text-slate-400 text-[13px] font-medium">No students found matching your filters.</p>
+                          <span className="material-symbols-outlined text-[#B0AFA8] text-4xl">search_off</span>
+                          <p className="text-[#B0AFA8] text-[13px] font-medium">No students found matching your filters.</p>
                         </div>
                       </td>
                     </tr>
@@ -335,48 +335,48 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
       {/* Success Modal */}
       {showSuccess && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm animate-in fade-in duration-500">
-              <div className="bg-white rounded-[32px] w-full max-w-md p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
-                  {/* Decorative Background */}
-                  <div className="absolute -top-20 -right-20 size-48 bg-primary/10 rounded-full blur-3xl" />
-                  <div className="absolute -bottom-20 -left-20 size-48 bg-emerald-500/5 rounded-full blur-3xl" />
-                  
-                  <div className="relative z-10 flex flex-col items-center text-center">
-                    <div className="size-20 bg-emerald-500 text-white rounded-full flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/30 animate-bounce">
-                        <span className="material-symbols-outlined text-4xl">task_alt</span>
-                    </div>
-                    
-                    <h2 className="text-2xl font-black text-secondary tracking-tight mb-2">Attendance Recorded</h2>
-                    <p className="text-slate-500 text-[14px] leading-relaxed mb-8">
-                        The roster for <span className="font-bold text-secondary">{selectedClass}</span> has been successfully logged into the institutional records.
-                    </p>
-                    
-                    <div className="w-full bg-slate-50 rounded-2xl p-5 mb-8 border border-slate-100 text-left">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="size-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                <span className="material-symbols-outlined text-sm">notifications_active</span>
-                            </div>
-                            <p className="text-[12px] font-bold text-secondary">Communication Scheduled</p>
-                        </div>
-                        <p className="text-[11px] text-slate-400 font-medium mb-4">
-                            Parent notifications for absent students are queued and will drip in a countdown of <span className="text-emerald-600 font-bold">30 mins</span> to allow for manual corrections.
-                        </p>
-                        {/* Fake Progress Bar */}
-                        <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 w-1/3 animate-pulse" />
-                        </div>
-                    </div>
-                    
-                    <button 
-                        onClick={() => setShowSuccess(false)}
-                        className="w-full py-4 bg-secondary text-white rounded-2xl text-[14px] font-bold hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2"
-                    >
-                        Back to Dashboard
-                        <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                    </button>
-                  </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-secondary/80 backdrop-blur-sm animate-in fade-in duration-500">
+          <div className="bg-white rounded-[32px] w-full max-w-md p-8 shadow-2xl relative overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
+            {/* Decorative Background */}
+            <div className="absolute -top-20 -right-20 size-48 bg-primary/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 size-48 bg-[#EAF2D7]0/5 rounded-full blur-3xl" />
+
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <div className="size-20 bg-[#EAF2D7]0 text-white rounded-full flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/30 animate-bounce">
+                <span className="material-symbols-outlined text-4xl">task_alt</span>
               </div>
+
+              <h2 className="text-2xl font-black text-foreground tracking-tight mb-2">Attendance Recorded</h2>
+              <p className="text-[#444441] text-[14px] leading-relaxed mb-8">
+                The roster for <span className="font-bold text-foreground">{selectedClass}</span> has been successfully logged into the institutional records.
+              </p>
+
+              <div className="w-full bg-[#F7F8F4] rounded-2xl p-5 mb-8 border border-slate-100 text-left">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="size-8 rounded-lg bg-[#EAF2D7] flex items-center justify-center text-[#2E7D32]">
+                    <span className="material-symbols-outlined text-sm">notifications_active</span>
+                  </div>
+                  <p className="text-[12px] font-bold text-foreground">Communication Scheduled</p>
+                </div>
+                <p className="text-[11px] text-[#B0AFA8] font-medium mb-4">
+                  Parent notifications for absent students are queued and will drip in a countdown of <span className="text-[#2E7D32] font-bold">30 mins</span> to allow for manual corrections.
+                </p>
+                {/* Fake Progress Bar */}
+                <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#EAF2D7]0 w-1/3 animate-pulse" />
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowSuccess(false)}
+                className="w-full py-4 bg-secondary text-white rounded-2xl text-[14px] font-bold hover:bg-slate-800 transition-all  flex items-center justify-center gap-2"
+              >
+                Back to Dashboard
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
+            </div>
           </div>
+        </div>
       )}
     </div>
   );

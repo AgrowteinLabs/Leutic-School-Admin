@@ -11,14 +11,14 @@ import { TransportTab } from "../components/TransportTab";
 import { AuraTab } from "../components/AuraTab";
 
 const tabs = [
-  { id: "academic", label: "Academic", icon: "school", color: "text-indigo-500" },
-  { id: "attendance", label: "Attendance", icon: "event_available", color: "text-emerald-500" },
+  { id: "academic", label: "Academic", icon: "school", color: "text-[#1565C0]" },
+  { id: "attendance", label: "Attendance", icon: "event_available", color: "text-[#2E7D32]" },
   { id: "finance", label: "Finance", icon: "payments", color: "text-green-600" },
-  { id: "assessment", label: "Assessments", icon: "quiz", color: "text-amber-500" },
-  { id: "engagement", label: "Community", icon: "hub", color: "text-blue-500" },
-  { id: "notification", label: "Notifications", icon: "notifications", color: "text-purple-500" },
-  { id: "transport", label: "Transport", icon: "directions_bus", color: "text-cyan-600" },
-  { id: "aura", label: "Aura Points", icon: "auto_awesome", color: "text-amber-400" },
+  { id: "assessment", label: "Assessments", icon: "quiz", color: "text-[#B45309]" },
+  { id: "engagement", label: "Community", icon: "hub", color: "text-[#1565C0]" },
+  { id: "notification", label: "Notifications", icon: "notifications", color: "text-[#3D6B2C]" },
+  { id: "transport", label: "Transport", icon: "directions_bus", color: "text-[#1565C0]" },
+  { id: "aura", label: "Aura Points", icon: "auto_awesome", color: "text-[#B45309]" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -44,13 +44,13 @@ export const ReportsPage = () => {
         subtitle="Comprehensive analytics across all school operations."
         actions={
           <>
-            <button className="flex items-center justify-center rounded-xl h-10 px-5 bg-white border border-slate-100 text-secondary text-[13px] font-semibold shadow-sm shadow-slate-100/30 hover:bg-slate-50 transition-all">
+            <button className="flex items-center justify-center rounded-xl h-10 px-5 bg-white border border-slate-100 text-foreground text-[13px] font-semibold shadow-sm shadow-slate-100/30 hover:bg-[#F7F8F4] transition-all">
               <span className="material-symbols-outlined text-lg mr-2">
                 download
               </span>
               <span>Export Data</span>
             </button>
-            <button className="flex items-center justify-center rounded-xl h-10 px-5 bg-primary text-secondary text-[13px] font-semibold shadow-sm shadow-slate-100/30 hover:opacity-90 transition-all">
+            <button className="flex items-center justify-center rounded-xl h-10 px-5 btn-primary text-[13px] font-semibold shadow-sm shadow-slate-100/30  transition-all">
               <span className="material-symbols-outlined text-lg mr-2">
                 picture_as_pdf
               </span>
@@ -71,8 +71,8 @@ export const ReportsPage = () => {
                 className={cn(
                   "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap shrink-0",
                   activeTab === tab.id
-                    ? "bg-secondary text-white shadow-lg shadow-secondary/20"
-                    : "text-slate-400 hover:text-secondary hover:bg-slate-50"
+                    ? "bg-secondary text-white shadow-secondary/20"
+                    : "text-[#B0AFA8] hover:text-foreground hover:bg-[#F7F8F4]"
                 )}
               >
                 <span
@@ -96,7 +96,7 @@ export const ReportsPage = () => {
           {/* Filter Bar */}
           <div className="bg-white border border-slate-100 rounded-2xl p-3 flex justify-between items-center shadow-sm shadow-slate-100/30 mb-6">
             <div className="flex gap-3 overflow-x-auto no-scrollbar">
-              <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/50 rounded-xl border border-slate-100 text-slate-600 text-[12px] font-medium hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">
+              <button className="flex items-center gap-2 px-3 py-1.5 bg-[#F7F8F4]/50 rounded-xl border border-slate-100 text-[#444441] text-[12px] font-medium hover:bg-[#F7F8F4] transition-colors whitespace-nowrap shrink-0">
                 <span className="material-symbols-outlined text-[16px]">
                   calendar_month
                 </span>
@@ -105,7 +105,7 @@ export const ReportsPage = () => {
                   expand_more
                 </span>
               </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/50 rounded-xl border border-slate-100 text-slate-600 text-[12px] font-medium hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">
+              <button className="flex items-center gap-2 px-3 py-1.5 bg-[#F7F8F4]/50 rounded-xl border border-slate-100 text-[#444441] text-[12px] font-medium hover:bg-[#F7F8F4] transition-colors whitespace-nowrap shrink-0">
                 <span className="material-symbols-outlined text-[16px]">
                   school
                 </span>
@@ -114,14 +114,14 @@ export const ReportsPage = () => {
                   expand_more
                 </span>
               </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/50 rounded-xl border border-slate-100 text-slate-600 text-[12px] font-medium hover:bg-slate-50 transition-colors whitespace-nowrap shrink-0">
+              <button className="flex items-center gap-2 px-3 py-1.5 bg-[#F7F8F4]/50 rounded-xl border border-slate-100 text-[#444441] text-[12px] font-medium hover:bg-[#F7F8F4] transition-colors whitespace-nowrap shrink-0">
                 <span className="material-symbols-outlined text-[16px]">
                   filter_list
                 </span>
                 <span>More Filters</span>
               </button>
             </div>
-            <div className="text-slate-400 text-[10px] font-bold capitalize italic pr-2 whitespace-nowrap shrink-0">
+            <div className="text-[#B0AFA8] text-[10px] font-bold capitalize italic pr-2 whitespace-nowrap shrink-0">
               Sample data • Not connected to API
             </div>
           </div>

@@ -34,13 +34,13 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   ];
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50/50">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white">
       {!isHubChild && (
         <TopBar 
           title="Community Hub" 
           subtitle="Engage with the school ecosystem through updates and discussions."
           actions={
-              <button className="bg-secondary text-white px-5 py-2.5 rounded-2xl text-[13px] font-bold flex items-center gap-2 hover:shadow-xl hover:shadow-secondary/20 transition-all active:scale-95">
+              <button className="btn-primary h-10 px-6 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 transition-all">
                   <span className="material-symbols-outlined text-[18px]">add_circle</span>
                   New Post
               </button>
@@ -54,7 +54,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             {/* Left Sidebar - Navigation/Filters */}
             <div className="lg:col-span-3 space-y-6">
                 <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">Channels</h3>
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[#B0AFA8] mb-4">Channels</h3>
                     <div className="space-y-1">
                         {[
                             { id: "feed", label: "Timeline", icon: "dashboard" },
@@ -66,12 +66,12 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 onClick={() => setActiveTab(t.id as any)}
                                 className={cn(
                                     "w-full flex items-center gap-3 p-3 rounded-2xl transition-all font-bold text-[13px]",
-                                    activeTab === t.id ? "bg-primary/10 text-primary" : "text-slate-400 hover:bg-slate-50"
+                                    activeTab === t.id ? "bg-[#152328] text-[#D9EA85]" : "text-[#B0AFA8] hover:bg-[#F7F8F4] hover:text-foreground"
                                 )}
                             >
                                 <span className="material-symbols-outlined text-[20px]">{t.icon}</span>
                                 <span className="flex-1 text-left">{t.label}</span>
-                                {t.badge && <span className="size-5 bg-rose-500 text-white rounded-full text-[10px] flex items-center justify-center font-black">{t.badge}</span>}
+                                {t.badge && <span className="size-5 bg-[#EF4444] text-white rounded-full text-[10px] flex items-center justify-center font-black">{t.badge}</span>}
                             </button>
                         ))}
                     </div>
@@ -89,7 +89,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 <div key={u.name} className="flex items-center gap-3">
                                     <div className="relative">
                                         <img src={u.img} className="size-8 rounded-full border-2 border-white/20" />
-                                        <div className="absolute -bottom-1 -right-1 size-4 bg-primary rounded-full text-[8px] flex items-center justify-center text-secondary font-black">{i+1}</div>
+                                        <div className="absolute -bottom-1 -right-1 size-4 bg-primary rounded-full text-[8px] flex items-center justify-center text-foreground font-black">{i+1}</div>
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-[12px] font-black">{u.name}</p>
@@ -120,7 +120,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 "whitespace-nowrap px-5 py-2.5 rounded-2xl text-[13px] font-bold transition-all",
                                 activeCategory === cat.id 
                                     ? "bg-secondary text-white shadow-lg shadow-secondary/10 px-6" 
-                                    : "text-slate-400 hover:text-secondary hover:bg-slate-50"
+                                    : "text-[#B0AFA8] hover:text-foreground hover:bg-[#F7F8F4]"
                             )}
                         >
                             {cat.label}
@@ -134,15 +134,15 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                             <div className="flex items-center gap-4 mb-6">
                                 <img src={post.avatar} className="size-12 rounded-2xl object-cover" />
                                 <div className="flex-1">
-                                    <h4 className="text-[15px] font-black text-secondary leading-tight">{post.author}</h4>
-                                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">{post.role} • {post.time}</p>
+                                    <h4 className="text-[15px] font-black text-foreground leading-tight">{post.author}</h4>
+                                    <p className="text-[11px] text-[#B0AFA8] font-bold uppercase tracking-widest">{post.role} • {post.time}</p>
                                 </div>
-                                <button className="size-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-300">
+                                <button className="size-10 rounded-full hover:bg-[#F7F8F4] flex items-center justify-center text-[#B0AFA8]">
                                     <span className="material-symbols-outlined">more_horiz</span>
                                 </button>
                             </div>
                             
-                            <p className="text-[14px] text-slate-600 font-medium leading-relaxed mb-6 whitespace-pre-wrap">
+                            <p className="text-[14px] text-[#444441] font-medium leading-relaxed mb-6 whitespace-pre-wrap">
                                 {post.content}
                             </p>
 
@@ -156,19 +156,19 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 <div className="flex gap-6">
                                     <button className={cn(
                                         "flex items-center gap-2 text-[13px] font-bold transition-all",
-                                        post.isAcknowledged ? "text-primary" : "text-slate-400 hover:text-secondary"
+                                        post.isAcknowledged ? "text-primary" : "text-[#B0AFA8] hover:text-foreground"
                                     )}>
                                         <span className={cn("material-symbols-outlined text-[20px]", post.isAcknowledged ? "fill-1" : "")}>
                                             {post.isAcknowledged ? "verified" : "thumb_up"}
                                         </span>
                                         {post.reactions}
                                     </button>
-                                    <button className="flex items-center gap-2 text-[13px] font-bold text-slate-400 hover:text-secondary transition-all">
+                                    <button className="flex items-center gap-2 text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-all">
                                         <span className="material-symbols-outlined text-[20px]">chat_bubble_outline</span>
                                         {post.comments}
                                     </button>
                                 </div>
-                                <button className="flex items-center gap-2 text-[13px] font-bold text-slate-400 hover:text-secondary transition-all">
+                                <button className="flex items-center gap-2 text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-all">
                                     <span className="material-symbols-outlined text-[20px]">share</span>
                                 </button>
                             </div>
@@ -180,10 +180,10 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             {/* Right Sidebar - Trending/Activities */}
             <div className="lg:col-span-3 space-y-6">
                 <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">Trending Tags</h3>
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[#B0AFA8] mb-4">Trending Tags</h3>
                     <div className="flex flex-wrap gap-2">
                         {["#SportsDay", "#OlympiadResults", "#ProjectMosaic", "#PTAMeeting", "#CodingChallenge"].map(tag => (
-                            <span key={tag} className="px-3 py-1.5 bg-slate-50 text-secondary text-[11px] font-bold rounded-xl border border-slate-100 hover:bg-primary/20 hover:border-primary/20 cursor-pointer transition-all">
+                            <span key={tag} className="px-3 py-1.5 bg-[#F7F8F4] text-foreground text-[11px] font-bold rounded-xl border border-slate-100 hover:bg-primary/20 hover:border-primary/20 cursor-pointer transition-all">
                                 {tag}
                             </span>
                         ))}
@@ -191,7 +191,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 </div>
 
                 <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-                    <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">Recent Q&A</h3>
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-[#B0AFA8] mb-4">Recent Q&A</h3>
                     <div className="space-y-4">
                         {[
                             { q: "How to register for the Science Fair?", answers: 4 },
@@ -199,8 +199,8 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                             { q: "When are the term results coming?", answers: 0 },
                         ].map(q => (
                             <div key={q.q} className="group cursor-pointer">
-                                <p className="text-[13px] font-bold text-secondary group-hover:text-primary transition-all line-clamp-2 mb-1">{q.q}</p>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{q.answers} Answers</p>
+                                <p className="text-[13px] font-bold text-foreground group-hover:text-primary transition-all line-clamp-2 mb-1">{q.q}</p>
+                                <p className="text-[10px] text-[#B0AFA8] font-bold uppercase tracking-widest">{q.answers} Answers</p>
                             </div>
                         ))}
                     </div>

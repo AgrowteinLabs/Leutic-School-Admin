@@ -68,11 +68,11 @@ export const StaffProfilePage = () => {
         onBack={() => navigate(-1)}
         actions={
           <div className="flex items-center gap-3">
-            <button className="bg-primary text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-sm shadow-slate-100/30">
+            <button className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30">
               <span className="material-symbols-outlined text-sm">mail</span>
               Message
             </button>
-            <button className="bg-secondary text-white px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-sm shadow-slate-100/30">
+            <button className="bg-secondary text-white px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30">
               <span className="material-symbols-outlined text-sm">
                 settings
               </span>
@@ -91,27 +91,27 @@ export const StaffProfilePage = () => {
           ></div>
           <div className="flex-1 flex flex-col">
             <div className="flex items-center gap-3 mb-2">
-              <span className="px-2 py-0.5 bg-secondary/10 text-secondary border border-secondary text-xs font-medium rounded capitalize border border-white/10">
+              <span className="px-2 py-0.5 bg-secondary/10 text-foreground border border-secondary text-xs font-medium rounded capitalize border border-white/10">
                 {staff.status}
               </span>
-              <p className="text-slate-500 text-[13px] font-medium">
+              <p className="text-[#444441] text-[13px] font-medium">
                 Joined: {staff.joinDate}
               </p>
             </div>
             <div className="flex gap-6 mt-4">
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <p className="text-[11px] font-bold text-[#444441] uppercase tracking-wider mb-1">
                   Email Address
                 </p>
-                <p className="text-[13px] font-semibold text-secondary">
+                <p className="text-[13px] font-semibold text-foreground">
                   {staff.email}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <p className="text-[11px] font-bold text-[#444441] uppercase tracking-wider mb-1">
                   Phone
                 </p>
-                <p className="text-[13px] font-semibold text-secondary">
+                <p className="text-[13px] font-semibold text-foreground">
                   +91 98765 43210
                 </p>
               </div>
@@ -123,50 +123,50 @@ export const StaffProfilePage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-primary/10 border border-primary/30 rounded-2xl p-6 shadow-sm shadow-slate-100/30">
             <div className="flex justify-between items-start mb-4">
-              <p className="text-slate-500 text-xs font-medium capitalize">
+              <p className="text-[#444441] text-xs font-medium capitalize">
                 Performance
               </p>
-              <span className="material-symbols-outlined text-slate-300">
+              <span className="material-symbols-outlined text-[#B0AFA8]">
                 trending_up
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <p className="text-4xl font-black text-secondary tracking-tighter">
+              <p className="text-4xl font-black text-foreground tracking-tighter">
                 {staff.performance}%
               </p>
-              <p className="text-xs font-medium bg-primary text-secondary px-3 py-1 rounded-full border border-slate-50 capitalize">
+              <p className="text-xs font-medium btn-primary px-3 py-1 rounded-full border border-slate-50 capitalize">
                 Top 5%
               </p>
             </div>
           </div>
 
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 shadow-sm shadow-slate-100/30">
+          <div className="bg-[#F7F8F4] border border-slate-100 rounded-2xl p-6 shadow-sm shadow-slate-100/30">
             <div className="flex justify-between items-start mb-4">
-              <p className="text-slate-500 text-xs font-medium capitalize">
+              <p className="text-[#444441] text-xs font-medium capitalize">
                 Aura Score
               </p>
-              <span className="material-symbols-outlined text-slate-300">
+              <span className="material-symbols-outlined text-[#B0AFA8]">
                 auto_awesome
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <p className="text-4xl font-black text-secondary tracking-tighter">
+              <p className="text-4xl font-black text-foreground tracking-tighter">
                 {staff.auraScore}
               </p>
             </div>
           </div>
 
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 shadow-sm shadow-slate-100/30">
+          <div className="bg-[#F7F8F4] border border-slate-100 rounded-2xl p-6 shadow-sm shadow-slate-100/30">
             <div className="flex justify-between items-start mb-4">
-              <p className="text-slate-500 text-xs font-medium capitalize">
+              <p className="text-[#444441] text-xs font-medium capitalize">
                 Classes Handled
               </p>
-              <span className="material-symbols-outlined text-slate-300">
+              <span className="material-symbols-outlined text-[#B0AFA8]">
                 groups
               </span>
             </div>
             <div className="flex items-baseline gap-2">
-              <p className="text-4xl font-black text-secondary tracking-tighter">
+              <p className="text-4xl font-black text-foreground tracking-tighter">
                 12
               </p>
             </div>
@@ -175,18 +175,18 @@ export const StaffProfilePage = () => {
 
         {/* Schedule Placeholder */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 overflow-hidden p-6">
-          <h3 className="text-secondary text-[16px] font-semibold tracking-tight mb-6">
+          <h3 className="text-foreground text-[16px] font-semibold tracking-tight mb-6">
             Weekly Schedule
           </h3>
           <div className="grid grid-cols-5 gap-4">
             {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => (
               <div key={day} className="space-y-3">
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">
+                <p className="text-[11px] font-bold text-[#444441] uppercase tracking-wider text-center">
                   {day}
                 </p>
-                <div className="p-3 rounded-xl bg-slate-50/50 space-y-2">
+                <div className="p-3 rounded-xl bg-[#F7F8F4] space-y-2">
                   <div className="h-8 bg-primary/20 rounded border border-primary/30"></div>
-                  <div className="h-8 bg-slate-50 rounded"></div>
+                  <div className="h-8 bg-[#F7F8F4] rounded"></div>
                   <div className="h-8 bg-primary/20 rounded border border-primary/30"></div>
                 </div>
               </div>

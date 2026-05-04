@@ -65,7 +65,7 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
   return (
     <div
       className={cn(
-        "flex-1 flex flex-col overflow-hidden bg-[#F9FAFB]",
+        "flex-1 flex flex-col overflow-hidden bg-white",
         !isHubChild && "h-screen",
       )}
     >
@@ -77,9 +77,9 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
             !isComposing && (
               <button 
                 onClick={() => setIsComposing(true)}
-                className="bg-primary text-secondary px-6 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2 hover:bg-secondary hover:text-white transition-all shadow-lg shadow-primary/10 active:scale-95"
+                className="btn-primary h-10 px-6 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 transition-all shadow-lg shadow-primary/10"
               >
-                <PlusIcon className="size-4" />
+                <Plus className="size-4" />
                 Post Announcement
               </button>
             )
@@ -103,7 +103,7 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
                 label="Delivery Success"
                 value="99.9%"
                 icon="check_circle"
-                iconBg="bg-emerald-50 text-emerald-500"
+                iconBg="bg-[#EAF2D7] text-[#2E7D32]"
                 tooltip="Percentage of notifications successfully pushed via App Notification and SMS bridge."
               />
               <StatCard 
@@ -117,7 +117,7 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
             {/* Announcements List Container */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 overflow-hidden">
               <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50 backdrop-blur-sm">
-                <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
+                <div className="flex bg-[#F7F8F4] p-1 rounded-xl border border-slate-100">
                   {["all", "published", "drafts", "scheduled"].map((filter) => (
                     <button
                       key={filter}
@@ -125,8 +125,8 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
                       className={cn(
                         "px-6 py-2 text-[12px] font-bold transition-all rounded-lg capitalize",
                         activeFilter === filter
-                          ? "bg-white text-secondary shadow-sm border border-slate-100"
-                          : "text-slate-400 hover:text-secondary",
+                          ? "bg-white text-foreground shadow-sm border border-slate-100"
+                          : "text-[#B0AFA8] hover:text-foreground",
                       )}
                     >
                       {filter}
@@ -138,20 +138,20 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
                 <table className="w-full text-left">
                   <thead>
                     <tr className="bg-white border-b border-slate-50">
-                      <th className="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Notice Subject</th>
-                      <th className="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Audience</th>
-                      <th className="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Scope</th>
-                      <th className="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Engagement</th>
-                      <th className="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                      <th className="px-6 py-5 text-[11px] font-black text-[#B0AFA8] uppercase tracking-widest">Notice Subject</th>
+                      <th className="px-6 py-5 text-[11px] font-black text-[#B0AFA8] uppercase tracking-widest">Audience</th>
+                      <th className="px-6 py-5 text-[11px] font-black text-[#B0AFA8] uppercase tracking-widest">Scope</th>
+                      <th className="px-6 py-5 text-[11px] font-black text-[#B0AFA8] uppercase tracking-widest">Engagement</th>
+                      <th className="px-6 py-5 text-[11px] font-black text-[#B0AFA8] uppercase tracking-widest text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {announcements.map((ann) => (
-                      <tr key={ann.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <tr key={ann.id} className="hover:bg-[#F7F8F4] transition-colors group">
                         <td className="px-6 py-6 max-w-sm">
-                          <p className="text-[14px] font-bold text-secondary mb-1.5">{ann.title}</p>
-                          <p className="text-xs text-slate-500 line-clamp-1 leading-relaxed">{ann.content}</p>
-                          <div className="flex items-center gap-2 mt-3 text-[10px] font-bold text-slate-300 italic tracking-tight">
+                          <p className="text-[14px] font-bold text-foreground mb-1.5">{ann.title}</p>
+                          <p className="text-xs text-[#444441] line-clamp-1 leading-relaxed">{ann.content}</p>
+                          <div className="flex items-center gap-2 mt-3 text-[10px] font-bold text-[#B0AFA8] italic tracking-tight">
                             <span className="material-symbols-outlined text-[12px]">schedule</span>
                             {ann.date} • {ann.id}
                           </div>
@@ -159,25 +159,25 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
                         <td className="px-6 py-6">
                           <div className="flex flex-wrap gap-2">
                             {ann.visibility.split(", ").map((v, i) => (
-                              <span key={i} className="text-[10px] font-bold px-3 py-1 rounded-lg bg-secondary/5 text-secondary/60 border border-secondary/10 uppercase tracking-tighter">
+                              <span key={i} className="text-[10px] font-bold px-3 py-1 rounded-lg bg-secondary/5 text-foreground/60 border border-secondary/10 uppercase tracking-tighter">
                                 {v}
                               </span>
                             ))}
                           </div>
                         </td>
-                        <td className="px-6 py-6 text-xs font-bold text-slate-500 italic uppercase tracking-tighter">
+                        <td className="px-6 py-6 text-xs font-bold text-[#444441] italic uppercase tracking-tighter">
                           {ann.target}
                         </td>
                         <td className="px-6 py-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="w-16 h-1.5 bg-[#F0F0EC] rounded-full overflow-hidden">
                               <div className="h-full bg-primary shadow-sm" style={{ width: ann.engagement === "-" ? "0%" : ann.engagement }} />
                             </div>
-                            <span className="text-[11px] font-black text-secondary">{ann.engagement}</span>
+                            <span className="text-[11px] font-black text-foreground">{ann.engagement}</span>
                           </div>
                         </td>
                         <td className="px-6 py-6 text-right">
-                          <button className="size-9 rounded-xl border border-slate-100 bg-white flex items-center justify-center text-slate-300 hover:text-primary hover:border-primary/20 transition-all shadow-sm">
+                          <button className="size-9 rounded-xl border border-slate-100 bg-white flex items-center justify-center text-[#B0AFA8] hover:text-primary hover:border-primary/20 transition-all shadow-sm">
                             <ArrowRightIcon className="size-4" />
                           </button>
                         </td>
@@ -192,19 +192,19 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
           /* Compose Mode: New Notice Form */
           <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-5 fade-in duration-500">
             <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-[#F9FAFB]/50">
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-[#F7F8F4]/50">
                  <div className="flex items-center gap-3">
                     <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
                         <Globe size={20} />
                     </div>
                     <div>
-                        <h3 className="text-secondary font-bold text-base">New Announcement</h3>
-                        <p className="text-[11px] font-medium text-slate-400">Drafting institutional broadcast</p>
+                        <h3 className="text-foreground font-bold text-base">New Announcement</h3>
+                        <p className="text-[11px] font-medium text-[#B0AFA8]">Drafting institutional broadcast</p>
                     </div>
                  </div>
                  <button 
                   onClick={() => setIsComposing(false)}
-                  className="size-10 rounded-2xl bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors"
+                  className="size-10 rounded-2xl bg-[#F7F8F4] hover:bg-[#F7F8F4] flex items-center justify-center text-[#B0AFA8] transition-colors"
                  >
                     <X size={18} />
                  </button>
@@ -212,11 +212,11 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
 
               <div className="p-8 space-y-8">
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Notice Title / Subject</label>
+                    <label className="text-[10px] font-black text-[#B0AFA8] uppercase tracking-widest ml-1">Notice Title / Subject</label>
                     <input 
                         type="text"
                         placeholder="e.g. Science Lab Maintenance Updates..."
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-semibold text-secondary placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                        className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl px-6 py-4 text-sm font-semibold text-foreground placeholder:text-[#B0AFA8] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                         value={newNotice.title}
                         onChange={(e) => setNewNotice({...newNotice, title: e.target.value})}
                     />
@@ -224,9 +224,9 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
 
                 <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Primary Audience</label>
+                        <label className="text-[10px] font-black text-[#B0AFA8] uppercase tracking-widest ml-1">Primary Audience</label>
                         <select 
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-semibold text-secondary appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20"
+                            className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl px-6 py-4 text-sm font-semibold text-foreground appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20"
                             value={newNotice.visibility}
                             onChange={(e) => setNewNotice({...newNotice, visibility: e.target.value})}
                         >
@@ -237,9 +237,9 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
                         </select>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Scope / Grade</label>
+                        <label className="text-[10px] font-black text-[#B0AFA8] uppercase tracking-widest ml-1">Scope / Grade</label>
                         <select 
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-semibold text-secondary appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20"
+                            className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl px-6 py-4 text-sm font-semibold text-foreground appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20"
                             value={newNotice.target}
                             onChange={(e) => setNewNotice({...newNotice, target: e.target.value})}
                         >
@@ -252,28 +252,28 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Content / Message Body</label>
+                    <label className="text-[10px] font-black text-[#B0AFA8] uppercase tracking-widest ml-1">Content / Message Body</label>
                     <textarea 
                         rows={6}
                         placeholder="Detail the announcement here. Parents will receive this via the mobile app portal..."
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-medium text-slate-600 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none leading-relaxed"
+                        className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl px-6 py-4 text-sm font-medium text-[#444441] placeholder:text-[#B0AFA8] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none leading-relaxed"
                         value={newNotice.content}
                         onChange={(e) => setNewNotice({...newNotice, content: e.target.value})}
                     ></textarea>
                 </div>
 
-                <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100 flex items-start gap-4">
-                    <ShieldCheck size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                <div className="bg-[#FEF3C7]/50 p-5 rounded-2xl border border-[#FDE68A] flex items-start gap-4">
+                    <ShieldCheck size={20} className="text-[#B45309] shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-amber-600 uppercase tracking-widest">Post Verification Notice</p>
-                        <p className="text-[12px] text-amber-600/70 font-medium leading-relaxed italic">This notice will be logged under your digital signature (Principal) and distributed instantly to {newNotice.visibility}.</p>
+                        <p className="text-[11px] font-bold text-[#B45309] uppercase tracking-widest">Post Verification Notice</p>
+                        <p className="text-[12px] text-[#B45309]/70 font-medium leading-relaxed italic">This notice will be logged under your digital signature (Principal) and distributed instantly to {newNotice.visibility}.</p>
                     </div>
                 </div>
               </div>
 
-              <div className="p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+              <div className="p-8 bg-[#F7F8F4] border-t border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-slate-400">
+                    <div className="flex items-center gap-2 text-[#B0AFA8]">
                         <Mail size={16} />
                         <span className="text-[11px] font-bold">Email Copy</span>
                     </div>
@@ -284,7 +284,7 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
                 </div>
                 <button 
                   onClick={handlePost}
-                  className="bg-secondary text-white px-8 py-4 rounded-2xl text-[14px] font-bold flex items-center gap-3 hover:bg-primary hover:text-secondary transition-all shadow-xl shadow-secondary/10 active:scale-[0.98]"
+                  className="bg-secondary text-white px-8 py-4 rounded-2xl text-[14px] font-bold flex items-center gap-3 hover:bg-primary hover:text-foreground transition-all shadow-xl shadow-secondary/10 active:scale-[0.98]"
                 >
                     <Send size={18} fill="currentColor" strokeWidth={0} />
                     Finalize & Post

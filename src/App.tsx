@@ -10,6 +10,7 @@ import { CalendarPage } from "./features/calendar/pages/CalendarPage";
 import { ExamDetailsPage } from "./features/examinations/pages/ExamDetailsPage";
 import { KnowYourStudentPage } from "./features/students/pages/KnowYourStudentPage";
 import { AttendancePage } from "./features/classes/pages/AttendancePage";
+import { CreateClassPage } from "./features/classes/pages/CreateClassPage";
 
 import { AcademicHubPage } from "./features/academics/pages/AcademicHubPage";
 import { DirectoryPage } from "./features/directory/pages/DirectoryPage";
@@ -25,12 +26,13 @@ import { FeesPage } from "./features/finance/pages/FeesPage";
 
 function App() {
   return (
-    <div className="bg-slate-50 text-slate-800 font-sans h-screen flex overflow-hidden">
+    <div className="bg-white text-foreground font-sans h-screen flex overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex overflow-hidden">
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/classes" element={<ClassesPage />} />
+          <Route path="/classes/create" element={<CreateClassPage />} />
           <Route path="/classes/:id" element={<ClassDetailsPage />} />
           <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/students/:id" element={<StudentProfilePage />} />

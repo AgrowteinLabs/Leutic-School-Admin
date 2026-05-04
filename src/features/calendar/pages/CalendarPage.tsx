@@ -73,11 +73,11 @@ export const CalendarPage = () => {
         subtitle="Manage academic schedules, institutional events, and class timings."
         actions={
           <div className="flex items-center gap-3">
-            <button className="bg-white border border-slate-100 text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-slate-50 transition-all">
+            <button className="bg-white border border-slate-100 text-foreground px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-[#F7F8F4] transition-all">
               <span className="material-symbols-outlined text-lg">print</span>
               Export PDF
             </button>
-            <button className="bg-primary text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-sm shadow-slate-100/30 active:scale-95">
+            <button className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30 ">
               <span className="material-symbols-outlined text-sm">
                 add_circle
               </span>
@@ -107,8 +107,8 @@ export const CalendarPage = () => {
                   className={cn(
                     "flex items-center gap-2 pb-4 text-[13px] font-semibold tracking-tight transition-all relative",
                     activeView === view.id
-                      ? "text-secondary"
-                      : "text-slate-400 hover:text-secondary",
+                      ? "text-foreground"
+                      : "text-[#B0AFA8] hover:text-foreground",
                   )}
                 >
                   <span className="material-symbols-outlined text-lg">
@@ -125,7 +125,7 @@ export const CalendarPage = () => {
             {/* Contextual Selector */}
             {activeView !== "parent" && (
               <div className="flex items-center gap-3 pb-4">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest">
                   View for:
                 </span>
                 <div className="relative">
@@ -136,7 +136,7 @@ export const CalendarPage = () => {
                         ? setSelectedClass(e.target.value)
                         : setSelectedTeacher(e.target.value)
                     }
-                    className="appearance-none bg-slate-50 border border-slate-100/50 rounded-xl px-4 py-2 pr-10 text-[13px] font-bold text-secondary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer min-w-[140px]"
+                    className="appearance-none bg-[#F7F8F4] border border-slate-100/50 rounded-xl px-4 py-2 pr-10 text-[13px] font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer min-w-[140px]"
                   >
                     {activeView === "class" ? (
                       ["10A", "10B", "11A", "11B", "12A", "12B"].map((c) => (
@@ -159,7 +159,7 @@ export const CalendarPage = () => {
                       ))
                     )}
                   </select>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-lg">
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#B0AFA8] text-lg">
                     expand_more
                   </span>
                 </div>
@@ -174,30 +174,30 @@ export const CalendarPage = () => {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 overflow-hidden">
               <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-xl font-black text-secondary">
+                  <h3 className="text-xl font-black text-foreground">
                     October 2023
                   </h3>
                   <div className="flex items-center gap-1">
-                    <button className="p-1 hover:bg-slate-50 rounded transition-colors text-slate-400">
+                    <button className="p-1 hover:bg-[#F7F8F4] rounded transition-colors text-[#B0AFA8]">
                       <span className="material-symbols-outlined">
                         chevron_left
                       </span>
                     </button>
-                    <button className="p-1 hover:bg-slate-50 rounded transition-colors text-slate-400">
+                    <button className="p-1 hover:bg-[#F7F8F4] rounded transition-colors text-[#B0AFA8]">
                       <span className="material-symbols-outlined">
                         chevron_right
                       </span>
                     </button>
                   </div>
                 </div>
-                <div className="flex bg-slate-50 p-1 rounded-xl">
-                  <button className="px-3 py-1 text-xs font-medium bg-white text-secondary rounded-md shadow-sm shadow-slate-100/30">
+                <div className="flex bg-[#F7F8F4] p-1 rounded-xl">
+                  <button className="px-3 py-1 text-xs font-medium bg-white text-foreground rounded-md shadow-sm shadow-slate-100/30">
                     Month
                   </button>
-                  <button className="px-3 py-1 text-xs font-medium text-slate-400">
+                  <button className="px-3 py-1 text-xs font-medium text-[#B0AFA8]">
                     Week
                   </button>
-                  <button className="px-3 py-1 text-xs font-medium text-slate-400">
+                  <button className="px-3 py-1 text-xs font-medium text-[#B0AFA8]">
                     Day
                   </button>
                 </div>
@@ -207,7 +207,7 @@ export const CalendarPage = () => {
                 {days.map((day) => (
                   <div
                     key={day}
-                    className="py-3 text-center text-xs font-medium capitalize text-slate-300"
+                    className="py-3 text-center text-xs font-medium capitalize text-[#B0AFA8]"
                   >
                     {day}
                   </div>
@@ -218,14 +218,14 @@ export const CalendarPage = () => {
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div
                     key={`empty-${i}`}
-                    className="h-20 border-r border-b border-slate-50 bg-slate-50/50"
+                    className="h-20 border-r border-b border-slate-50 bg-[#F7F8F4]"
                   />
                 ))}
                 {calendarDays.map((day) => (
                   <div
                     key={day}
                     className={cn(
-                      "h-20 border-r border-b border-slate-50 p-1.5 transition-colors hover:bg-slate-50/50 overflow-hidden",
+                      "h-20 border-r border-b border-slate-50 p-1.5 transition-colors hover:bg-[#F7F8F4] overflow-hidden",
                       day === 24 && "bg-primary/5",
                     )}
                   >
@@ -234,8 +234,8 @@ export const CalendarPage = () => {
                         className={cn(
                           "size-6 flex items-center justify-center text-xs font-medium rounded-full",
                           day === 24
-                            ? "bg-primary text-secondary"
-                            : "text-slate-500",
+                            ? "btn-primary"
+                            : "text-[#444441]",
                         )}
                       >
                         {day}
@@ -252,7 +252,7 @@ export const CalendarPage = () => {
                         <div className="bg-secondary text-white text-[8px] font-bold px-1.5 py-1 rounded truncate leading-none">
                           Math Exam P1
                         </div>
-                        <div className="bg-primary text-secondary text-[8px] font-bold px-1.5 py-1 rounded truncate leading-none">
+                        <div className="btn-primary text-[8px] font-bold px-1.5 py-1 rounded truncate leading-none">
                           Staff Review
                         </div>
                       </div>
@@ -304,8 +304,8 @@ export const CalendarPage = () => {
 
             {activeView === "parent" && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm shadow-slate-100/30">
-                <h3 className="text-secondary text-lg font-black capitalize mb-6 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-red-500">
+                <h3 className="text-foreground text-lg font-black capitalize mb-6 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#B91C1C]">
                     campaign
                   </span>
                   Key Notices
@@ -314,7 +314,7 @@ export const CalendarPage = () => {
                   {administrativeEvents.map((event, i) => (
                     <div
                       key={i}
-                      className="p-4 rounded-2xl bg-slate-50/50 border border-slate-50 hover:border-slate-100 transition-all"
+                      className="p-4 rounded-2xl bg-[#F7F8F4] border border-slate-50 hover:border-slate-100 transition-all"
                     >
                       <div className="flex justify-between items-start mb-2">
                         <span
@@ -325,11 +325,11 @@ export const CalendarPage = () => {
                         >
                           {event.type}
                         </span>
-                        <span className="text-[10px] font-bold text-slate-300">
+                        <span className="text-[10px] font-bold text-[#B0AFA8]">
                           {event.date}
                         </span>
                       </div>
-                      <p className="text-[13px] font-semibold text-secondary">
+                      <p className="text-[13px] font-semibold text-foreground">
                         {event.title}
                       </p>
                     </div>
@@ -338,7 +338,7 @@ export const CalendarPage = () => {
               </div>
             )}
 
-            <div className="bg-primary rounded-2xl p-6 text-secondary shadow-lg">
+            <div className="bg-primary rounded-2xl p-6 text-foreground shadow-lg">
               <h3 className="text-lg font-black italic tracking-tighter mb-2 underline decoration-white/50 underline-offset-4">
                 Quick CRUD
               </h3>
@@ -352,7 +352,7 @@ export const CalendarPage = () => {
                   </span>
                   Assign Substitute
                 </button>
-                <button className="w-full bg-white text-secondary py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm shadow-slate-100/30 border border-slate-100">
+                <button className="w-full bg-white text-foreground py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm shadow-slate-100/30 border border-slate-100">
                   <span className="material-symbols-outlined text-sm">
                     event_busy
                   </span>

@@ -35,8 +35,8 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white">
       {!isHubChild && (
-        <TopBar 
-          title="Bus Map" 
+        <TopBar
+          title="Bus Map"
           subtitle="Real-time bus locations and tracking"
         />
       )}
@@ -46,19 +46,19 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
         <div className="w-96 border-r border-slate-100 flex flex-col overflow-hidden">
             <div className="p-6 border-b border-slate-50">
                 <div className="relative">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-                    <input 
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3 pl-12 pr-4 text-[13px] font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8]">search</span>
+                    <input
+                        className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl py-3 pl-12 pr-4 text-[13px] font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                         placeholder="Search Bus or Route..."
                     />
                 </div>
             </div>
 
             <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-4">
-                <h3 className="text-[11px] font-bold text-slate-400">Active Fleet</h3>
+                <h3 className="text-[11px] font-bold text-[#B0AFA8]">Active Fleet</h3>
                 {buses.map(bus => (
-                    <div 
-                        key={bus.id} 
+                    <div
+                        key={bus.id}
                         onClick={() => setActiveRoute(bus.route)}
                         className={cn(
                             "p-5 rounded-3xl border transition-all cursor-pointer group",
@@ -69,22 +69,22 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
                             <div className="flex items-center gap-3">
                                 <div className={cn(
                                     "size-10 rounded-xl flex items-center justify-center transition-colors",
-                                    activeRoute === bus.route ? "bg-white/10 text-white" : "bg-slate-50 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary"
+                                    activeRoute === bus.route ? "bg-white/10 text-white" : "bg-[#F7F8F4] text-[#B0AFA8] group-hover:bg-primary/10 group-hover:text-primary"
                                 )}>
                                     <span className="material-symbols-outlined text-[20px]">directions_bus</span>
                                 </div>
                                 <div>
-                                    <h4 className={cn("text-[14px] font-bold transition-colors", activeRoute === bus.route ? "text-white" : "text-secondary")}>
+                                    <h4 className={cn("text-[14px] font-bold transition-colors", activeRoute === bus.route ? "text-white" : "text-foreground")}>
                                         {bus.id}
                                     </h4>
-                                    <p className={cn("text-[10px] font-bold", activeRoute === bus.route ? "text-white/40" : "text-slate-400")}>
+                                    <p className={cn("text-[10px] font-bold", activeRoute === bus.route ? "text-white/40" : "text-[#B0AFA8]")}>
                                         {bus.route} • {bus.driver}
                                     </p>
                                 </div>
                             </div>
                             <div className={cn(
                                 "px-2 py-0.5 rounded-full text-[9px] font-bold",
-                                bus.status === "On Route" ? "bg-green-500 text-white" : "bg-slate-100 text-slate-400"
+                                bus.status === "On Route" ? "bg-green-500 text-white" : "bg-[#F0F0EC] text-[#B0AFA8]"
                             )}>
                                 {bus.status}
                             </div>
@@ -92,12 +92,12 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className={cn("text-[9px] font-bold mb-1", activeRoute === bus.route ? "text-white/40" : "text-slate-400")}>Speed</p>
-                                <p className={cn("text-[13px] font-bold", activeRoute === bus.route ? "text-white" : "text-secondary")}>{bus.speed}</p>
+                                <p className={cn("text-[9px] font-bold mb-1", activeRoute === bus.route ? "text-white/40" : "text-[#B0AFA8]")}>Speed</p>
+                                <p className={cn("text-[13px] font-bold", activeRoute === bus.route ? "text-white" : "text-foreground")}>{bus.speed}</p>
                             </div>
                             <div>
-                                <p className={cn("text-[9px] font-bold mb-1", activeRoute === bus.route ? "text-white/40" : "text-slate-400")}>Students</p>
-                                <p className={cn("text-[13px] font-bold", activeRoute === bus.route ? "text-white" : "text-secondary")}>{bus.students}</p>
+                                <p className={cn("text-[9px] font-bold mb-1", activeRoute === bus.route ? "text-white/40" : "text-[#B0AFA8]")}>Students</p>
+                                <p className={cn("text-[13px] font-bold", activeRoute === bus.route ? "text-white" : "text-foreground")}>{bus.students}</p>
                             </div>
                         </div>
 
@@ -116,10 +116,10 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
         </div>
 
         {/* Live Map Area */}
-        <div className="flex-1 relative bg-slate-100 overflow-hidden">
+        <div className="flex-1 relative bg-[#F0F0EC] overflow-hidden">
             {/* Mock Map Background */}
             <div className="absolute inset-0 opacity-40 mix-blend-multiply bg-[url('https://api.mapbox.com/styles/v1/mapbox/light-v10/static/lonlat,zoom/1440x900?access_token=pk.placeholder')] bg-cover bg-center" />
-            
+
             <div className="absolute inset-0 flex items-center justify-center">
                  <div className="relative">
                     <div className="absolute -top-12 -left-12 size-48 bg-primary/20 rounded-full animate-ping" />
@@ -134,18 +134,18 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
                                 <span className="material-symbols-outlined text-[18px]">bus_alert</span>
                              </div>
                              <div>
-                                 <p className="text-[12px] font-bold text-secondary">BT-201 Tracking</p>
-                                 <p className="text-[10px] text-slate-400 font-bold">On Time</p>
+                                 <p className="text-[12px] font-bold text-foreground">BT-201 Tracking</p>
+                                 <p className="text-[10px] text-[#B0AFA8] font-bold">On Time</p>
                              </div>
                          </div>
                          <div className="space-y-1">
                              <div className="flex justify-between text-[11px]">
-                                 <span className="text-slate-400 font-medium">Location</span>
-                                 <span className="text-secondary font-bold">Outer Ring Rd.</span>
+                                 <span className="text-[#B0AFA8] font-medium">Location</span>
+                                 <span className="text-foreground font-bold">Outer Ring Rd.</span>
                              </div>
                              <div className="flex justify-between text-[11px]">
-                                 <span className="text-slate-400 font-medium">Speed</span>
-                                 <span className="text-secondary font-bold">42 km/h</span>
+                                 <span className="text-[#B0AFA8] font-medium">Speed</span>
+                                 <span className="text-foreground font-bold">42 km/h</span>
                              </div>
                          </div>
                     </div>
@@ -154,13 +154,13 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
 
             {/* Map Controls */}
             <div className="absolute top-6 right-6 flex flex-col gap-2">
-                <button className="size-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-secondary hover:bg-slate-50 transition-all border border-slate-100">
+                <button className="size-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-foreground hover:bg-[#F7F8F4] transition-all border border-slate-100">
                     <span className="material-symbols-outlined">add</span>
                 </button>
-                <button className="size-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-secondary hover:bg-slate-50 transition-all border border-slate-100">
+                <button className="size-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-foreground hover:bg-[#F7F8F4] transition-all border border-slate-100">
                     <span className="material-symbols-outlined">remove</span>
                 </button>
-                <button className="size-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary hover:bg-slate-50 transition-all border border-slate-100 mt-4">
+                <button className="size-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary hover:bg-[#F7F8F4] transition-all border border-slate-100 mt-4">
                     <span className="material-symbols-outlined">my_location</span>
                 </button>
             </div>
@@ -168,19 +168,19 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
             {/* Safety Stats Overlay */}
             <div className="absolute bottom-6 left-6 right-6 flex gap-4 overflow-x-auto no-scrollbar">
                 {[
-                    { label: "Active Routes", valueHeader: "12", sub: "All Nominal", icon: "route", color: "text-blue-500" },
+                    { label: "Active Routes", valueHeader: "12", sub: "All Nominal", icon: "route", color: "text-[#1565C0]" },
                     { label: "Alerts", valueHeader: "0", sub: "No incidents", icon: "warning", color: "text-green-500" },
                     { label: "Avg Speed", valueHeader: "28", sub: "km/h", icon: "speed", color: "text-orange-500" },
-                    { label: "Total Students", valueHeader: "482", sub: "Boarded", icon: "groups", color: "text-purple-500" },
+                    { label: "Total Students", valueHeader: "482", sub: "Boarded", icon: "groups", color: "text-[#3D6B2C]" },
                 ].map(stat => (
                     <div key={stat.label} className="bg-white/80 backdrop-blur-md border border-white/50 rounded-3xl p-5 shadow-xl min-w-[200px] flex-1">
                          <div className="flex items-center gap-3 mb-2">
                              <span className={cn("material-symbols-outlined text-[20px]", stat.color)}>{stat.icon}</span>
-                             <span className="text-[10px] font-bold text-slate-400"> {stat.label}</span>
+                             <span className="text-[10px] font-bold text-[#B0AFA8]"> {stat.label}</span>
                          </div>
                          <div className="flex items-baseline gap-1">
-                             <span className="text-2xl font-bold text-secondary">{stat.valueHeader}</span>
-                             <span className="text-[12px] font-bold text-slate-400">{stat.sub}</span>
+                             <span className="text-2xl font-bold text-foreground">{stat.valueHeader}</span>
+                             <span className="text-[12px] font-bold text-[#B0AFA8]">{stat.sub}</span>
                          </div>
                     </div>
                 ))}

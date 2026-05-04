@@ -36,13 +36,13 @@ export const AcademicTab = () => (
       ].map((s, i) => (
         <div key={i} className="flex items-center gap-4 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm shadow-slate-100/30 group hover:shadow-md transition-all">
           <div className="size-11 rounded-2xl flex items-center justify-center bg-accent shrink-0">
-            <span className="material-symbols-outlined text-[22px] text-secondary/70">{s.icon}</span>
+            <span className="material-symbols-outlined text-[22px] text-foreground/70">{s.icon}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-slate-400 text-[12px] font-medium truncate">{s.label}</p>
+            <p className="text-[#B0AFA8] text-[12px] font-medium truncate">{s.label}</p>
             <div className="flex items-baseline gap-2 mt-0.5">
-              <p className="text-secondary text-[22px] font-semibold leading-none tracking-tight">{s.value}</p>
-              <span className={cn("text-[11px] font-medium", s.up ? "text-emerald-600" : "text-rose-500")}>{s.trend}</span>
+              <p className="text-foreground text-[22px] font-semibold leading-none tracking-tight">{s.value}</p>
+              <span className={cn("text-[11px] font-medium", s.up ? "text-[#2E7D32]" : "text-[#B91C1C]")}>{s.trend}</span>
             </div>
           </div>
         </div>
@@ -54,10 +54,10 @@ export const AcademicTab = () => (
       <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-secondary text-[15px] font-semibold">Class-wise Average Marks</h3>
-            <p className="text-slate-400 text-[11px] font-medium mt-0.5">Across all subjects • Current term</p>
+            <h3 className="text-foreground text-[15px] font-semibold">Class-wise Average Marks</h3>
+            <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Across all subjects • Current term</p>
           </div>
-          <button className="text-[11px] font-medium text-slate-400 hover:text-secondary transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-50">View Details</button>
+          <button className="text-[11px] font-medium text-[#B0AFA8] hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-[#F7F8F4]">View Details</button>
         </div>
         <ResponsiveContainer width="100%" height={320}>
           <BarChart data={classPerformanceData} barGap={2} barCategoryGap="20%">
@@ -79,8 +79,8 @@ export const AcademicTab = () => (
       <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-secondary text-[15px] font-semibold">Subject Performance Radar</h3>
-            <p className="text-slate-400 text-[11px] font-medium mt-0.5">Average vs Pass Rate comparison</p>
+            <h3 className="text-foreground text-[15px] font-semibold">Subject Performance Radar</h3>
+            <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Average vs Pass Rate comparison</p>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={320}>
@@ -101,8 +101,8 @@ export const AcademicTab = () => (
     <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-secondary text-[15px] font-semibold">Exam Performance Trend</h3>
-          <p className="text-slate-400 text-[11px] font-medium mt-0.5">Unit Tests → Mid Term → Annual progression</p>
+          <h3 className="text-foreground text-[15px] font-semibold">Exam Performance Trend</h3>
+          <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Unit Tests → Mid Term → Annual progression</p>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={280}>
@@ -123,10 +123,10 @@ export const AcademicTab = () => (
     <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-secondary text-[15px] font-semibold">Teacher-wise Performance</h3>
-          <p className="text-slate-400 text-[11px] font-medium mt-0.5">Student outcomes grouped by teacher</p>
+          <h3 className="text-foreground text-[15px] font-semibold">Teacher-wise Performance</h3>
+          <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Student outcomes grouped by teacher</p>
         </div>
-        <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 text-slate-500 text-[12px] font-medium hover:bg-slate-100 transition-colors">
+        <button className="btn-outline px-4 py-2 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 transition-all">
           <span className="material-symbols-outlined text-[16px]">download</span>
           Export
         </button>
@@ -136,26 +136,26 @@ export const AcademicTab = () => (
           <thead>
             <tr className="border-b border-slate-100">
               {["Teacher", "Subject", "Avg Marks", "Pass Rate", "Students", "Performance"].map((h) => (
-                <th key={h} className="pb-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{h}</th>
+                <th key={h} className="pb-3 text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {teacherPerformanceData.map((t, i) => (
-              <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                <td className="py-3.5 text-[13px] font-semibold text-secondary">{t.teacher}</td>
-                <td className="py-3.5 text-[13px] text-slate-500">{t.subject}</td>
-                <td className="py-3.5 text-[13px] font-semibold text-secondary">{t.avgMarks}%</td>
+              <tr key={i} className="border-b border-slate-50 hover:bg-[#F7F8F4]/50 transition-colors">
+                <td className="py-3.5 text-[13px] font-semibold text-foreground">{t.teacher}</td>
+                <td className="py-3.5 text-[13px] text-[#444441]">{t.subject}</td>
+                <td className="py-3.5 text-[13px] font-semibold text-foreground">{t.avgMarks}%</td>
                 <td className="py-3.5">
                   <span className={cn(
                     "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                    t.passRate >= 90 ? "bg-emerald-50 text-emerald-600" : t.passRate >= 80 ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
+                    t.passRate >= 90 ? "bg-[#EAF2D7] text-[#2E7D32]" : t.passRate >= 80 ? "bg-[#FEF3C7] text-[#B45309]" : "bg-[#FEE2E2] text-[#B91C1C]"
                   )}>{t.passRate}%</span>
                 </td>
-                <td className="py-3.5 text-[13px] text-slate-500">{t.students}</td>
+                <td className="py-3.5 text-[13px] text-[#444441]">{t.students}</td>
                 <td className="py-3.5">
-                  <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={cn("h-full rounded-full transition-all", t.avgMarks >= 80 ? "bg-emerald-500" : t.avgMarks >= 70 ? "bg-amber-500" : "bg-rose-500")} style={{ width: `${t.avgMarks}%` }} />
+                  <div className="w-24 h-2 bg-[#F0F0EC] rounded-full overflow-hidden">
+                    <div className={cn("h-full rounded-full transition-all", t.avgMarks >= 80 ? "bg-[#2E7D32]" : t.avgMarks >= 70 ? "bg-[#B45309]" : "bg-[#B91C1C]")} style={{ width: `${t.avgMarks}%` }} />
                   </div>
                 </td>
               </tr>

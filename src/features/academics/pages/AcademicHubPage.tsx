@@ -18,7 +18,7 @@ export const AcademicHubPage = () => {
           subtitle="Management of curriculum, programs and school examinations"
           actions={
             <div className="flex gap-3">
-              <button className="bg-primary text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-sm shadow-slate-100/30">
+              <button className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30">
                 <span className="material-symbols-outlined text-sm">
                   add_circle
                 </span>
@@ -49,8 +49,8 @@ export const AcademicHubPage = () => {
                 className={cn(
                   "flex items-center gap-2 pb-4 text-[13px] font-semibold tracking-tight transition-all relative mt-4",
                   activeTab === tab.id
-                    ? "text-secondary"
-                    : "text-slate-400 hover:text-secondary",
+                    ? "text-foreground"
+                    : "text-[#B0AFA8] hover:text-foreground",
                 )}
               >
                 <span className="material-symbols-outlined text-lg">
