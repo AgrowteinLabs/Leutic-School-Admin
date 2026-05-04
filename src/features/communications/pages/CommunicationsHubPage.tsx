@@ -31,7 +31,7 @@ export const CommunicationsHubPage = () => {
             <div className="flex gap-3">
               <button 
                 onClick={handleComposeClick}
-                className="btn-primary px-6 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2   transition-all shadow-sm "
+                className="btn-primary h-10 px-6 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30"
               >
                 <span className="material-symbols-outlined text-sm">
                   {activeTab === "messages" ? "edit_square" : "campaign"}

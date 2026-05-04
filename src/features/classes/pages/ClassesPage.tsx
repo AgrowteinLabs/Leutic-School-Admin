@@ -1,10 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { ClassCard } from "../../dashboard/components/ClassCard";
+import { AppFormInput } from "../../../components/FormFields";
+import { AppDropdown } from "../../../components/AppDropdown";
 import { useState } from "react";
+import { cn } from "../../../lib/utils";
+
 
 export const ClassesPage = () => {
   const navigate = useNavigate();
+  const [selectedGrade, setSelectedGrade] = useState("");
+  const [selectedSection, setSelectedSection] = useState("");
   const [classes] = useState([
     {
       grade: "Grade 10",
@@ -81,7 +87,7 @@ export const ClassesPage = () => {
         subtitle="Overview of all active grade levels and sections."
         actions={
           <>
-            <button className="btn-outline h-10 px-6 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 transition-all">
+            <button className="btn-outline h-10 px-6 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all">
               <span className="material-symbols-outlined text-lg">
                 file_download
               </span>
@@ -89,7 +95,7 @@ export const ClassesPage = () => {
             </button>
             <button
               onClick={() => navigate("/classes/create")}
-              className="btn-primary h-10 px-6 rounded-xl text-[13px] font-semibold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30"
+              className="btn-primary h-10 px-6 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30"
             >
               <span className="material-symbols-outlined text-sm">
                 add_circle
@@ -101,46 +107,49 @@ export const ClassesPage = () => {
       />
 
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-6 space-y-6">
-          {/* Search and Filters */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-wrap gap-4 items-center">
-            <div className="flex-1 min-w-[300px]">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8 space-y-8">
+          {/* Flat Architectural Search and Filters */}
+          <div className="bg-white p-3 rounded-[18px] border border-slate-100 flex flex-wrap gap-3 items-center shadow-none focus-within:shadow-none">
+            <div className="flex-1 min-w-[350px]">
               <div className="relative group">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-foreground transition-colors">
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-primary transition-colors text-lg">
                   search
                 </span>
                 <input
-                  className="w-full bg-[#F7F8F4]/50 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary text-foreground placeholder-[#B0AFA8]"
-                  placeholder="Search by class name or teacher..."
+                  className="w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] pl-11 pr-4 h-12 text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white focus:shadow-none outline-none transition-all"
+                  placeholder="Search classes, teachers, or schedules..."
                   type="text"
                 />
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <select className="bg-white border border-slate-100 rounded-xl text-sm px-3 py-2 text-foreground focus:ring-primary outline-none">
-                <option>Grade</option>
-                <option>9th Grade</option>
-                <option>10th Grade</option>
-                <option>11th Grade</option>
-                <option>12th Grade</option>
-              </select>
-              <select className="bg-white border border-slate-100 rounded-xl text-sm px-3 py-2 text-foreground focus:ring-primary outline-none">
-                <option>Section</option>
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
-                <option>D</option>
-              </select>
-              <button className="p-2 border border-slate-100 rounded-xl hover:bg-[#F7F8F4] transition-colors">
-                <span className="material-symbols-outlined text-[#B0AFA8] text-lg">
-                  filter_list
+
+            <div className="flex items-center gap-2">
+              <AppDropdown
+                options={["Grade 9", "Grade 10", "Grade 11", "Grade 12"]}
+                value={selectedGrade}
+                onChange={setSelectedGrade}
+                width="w-44"
+                placeholder="Grade Level"
+              />
+
+              <AppDropdown
+                options={["A", "B", "C", "D"]}
+                value={selectedSection}
+                onChange={setSelectedSection}
+                width="w-32"
+                placeholder="Section"
+              />
+
+              <button className="h-10 w-10 bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center justify-center text-[#B0AFA8] hover:text-primary hover:bg-white hover:border-primary/30 transition-all outline-none shadow-none focus:shadow-none">
+                <span className="material-symbols-outlined text-[20px]">
+                  tune
                 </span>
               </button>
             </div>
           </div>
 
           {/* Classes Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {classes.map((cls) => (
               <ClassCard
                 key={cls.id}
@@ -150,31 +159,35 @@ export const ClassesPage = () => {
             ))}
           </div>
 
-          {/* Pagination Placeholder */}
-          <div className="flex items-center justify-between pt-8 border-t border-slate-50">
-            <p className="text-xs text-[#B0AFA8] font-medium">
-              Showing {classes.length} of 42 classes
+          {/* Pagination */}
+          <div className="flex items-center justify-between py-10 border-t border-slate-100">
+            <p className="text-xs text-[#B0AFA8] font-semi-bold">
+              Showing {classes.length} of 42 entries
             </p>
             <div className="flex items-center gap-2">
               <button
-                className="size-8 flex items-center justify-center rounded border border-slate-100 bg-white text-[#B0AFA8] disabled:opacity-50"
+                className="size-10 flex items-center justify-center rounded-[10px] border border-slate-100 bg-white text-[#B0AFA8] hover:border-primary/20 hover:text-primary transition-all disabled:opacity-30"
                 disabled
               >
-                <span className="material-symbols-outlined text-sm">
+                <span className="material-symbols-outlined text-lg">
                   chevron_left
                 </span>
               </button>
-              <button className="size-8 !min-h-0 flex items-center justify-center rounded border border-primary btn-primary text-xs font-medium shadow-sm shadow-slate-100/30">
-                1
-              </button>
-              <button className="size-8 flex items-center justify-center rounded border border-slate-100 bg-white text-xs font-medium hover:bg-[#F7F8F4] transition-colors">
-                2
-              </button>
-              <button className="size-8 flex items-center justify-center rounded border border-slate-100 bg-white text-xs font-medium hover:bg-[#F7F8F4] transition-colors">
-                3
-              </button>
-              <button className="size-8 flex items-center justify-center rounded border border-slate-100 bg-white text-[#B0AFA8] hover:bg-[#F7F8F4] transition-colors">
-                <span className="material-symbols-outlined text-sm">
+              {[1, 2, 3].map((page) => (
+                <button
+                  key={page}
+                  className={cn(
+                    "size-10 flex items-center justify-center rounded-[10px] text-xs font-black transition-all border",
+                    page === 1
+                      ? "bg-primary border-primary text-foreground shadow-lg shadow-primary/20"
+                      : "bg-white border-slate-100 text-[#B0AFA8] hover:border-primary/20 hover:text-primary"
+                  )}
+                >
+                  {page}
+                </button>
+              ))}
+              <button className="size-10 flex items-center justify-center rounded-[10px] border border-slate-100 bg-white text-[#B0AFA8] hover:border-primary/20 hover:text-primary transition-all">
+                <span className="material-symbols-outlined text-lg">
                   chevron_right
                 </span>
               </button>

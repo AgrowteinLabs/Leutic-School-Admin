@@ -192,6 +192,37 @@
         opacity: 0.45;
         cursor: not-allowed;
     }
+
+    /* Text — no bg, no border, for cancel / dismiss actions */
+    .btn-text {
+        background: transparent;
+        color: #444441;
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: 10px;
+        border: none;
+        min-height: 40px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s, color 0.15s, transform 0.1s;
+    }
+    .btn-text:hover {
+        background: #F7F8F4;
+        color: #152328;
+    }
+    .btn-text:active {
+        transform: scale(0.97);
+    }
+    .btn-text:focus-visible {
+        box-shadow: 0 0 0 3px #D9EA85;
+        outline: none;
+    }
+    .btn-text:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
 }
 
 /* ─── Icon font ───────────────────────────────────────────────────────── */

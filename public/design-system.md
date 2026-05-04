@@ -162,6 +162,37 @@
 .btn-outline:disabled    { opacity: 0.45; cursor: not-allowed; }
 ```
 
+### 3.4 Text button
+
+**Use for:** Cancel, Dismiss, Go back — lowest visual weight. Use when a full button would compete with the primary CTA.
+
+| State | Background | Text | Border |
+|-------|-----------|------|--------|
+| Default | `transparent` | `#444441` | none |
+| Hover | `#F7F8F4` | `#152328` | none |
+| Active | `transparent` | `#152328` | — + `scale(0.97)` |
+| Focus | `transparent` | `#444441` | focus ring `0 0 0 3px #D9EA85` |
+| Disabled | `transparent` at 45% | `#444441` | `opacity: 0.45` |
+
+```css
+.btn-text {
+  background:    transparent;
+  color:         #444441;
+  font-size:     15px;
+  font-weight:   500;
+  padding:       12px 28px;
+  border-radius: 10px;
+  border:        none;
+  min-height:    40px;
+  cursor:        pointer;
+  transition:    background 0.15s, color 0.15s, transform 0.1s;
+}
+.btn-text:hover        { background: #F7F8F4; color: #152328; }
+.btn-text:active       { transform: scale(0.97); }
+.btn-text:focus-visible { box-shadow: 0 0 0 3px #D9EA85; outline: none; }
+.btn-text:disabled     { opacity: 0.45; cursor: not-allowed; }
+```
+
 ---
 
 ## 4. Usage Rules
@@ -170,6 +201,7 @@
 - Maximum **1 primary button** per section / card
 - Secondary buttons can appear multiple times alongside one primary
 - Outlined buttons for cancel, back, or sign-in — never two outlined buttons side-by-side
+- Text buttons for in-form cancel / dismiss where a bordered button would add unnecessary weight
 - Never show two primary buttons next to each other — one loses meaning
 
 ### 4.2 Instead of lime on white — use this
@@ -201,6 +233,7 @@
 | Primary | `#152328` | `#D9EA85` | bg `#1E353D` · text `#fff` · border lime |
 | Secondary | `#EAF2D7` | `#152328` | bg `#D9EA85` |
 | Outlined | `transparent` | `#152328` | bg `#152328` · text `#D9EA85` |
+| Text | `transparent` | `#444441` | bg `#F7F8F4` · text `#152328` |
 
 ### Shared tokens
 

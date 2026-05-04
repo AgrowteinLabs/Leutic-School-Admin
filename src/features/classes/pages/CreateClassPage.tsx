@@ -2,10 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import Lottie from "lottie-react";
+import successAnimation from "../../../assets/animations/success.json";
 
 export const CreateClassPage = () => {
     const navigate = useNavigate();
     const [selectedStudents, setSelectedStudents] = useState<any[]>([]);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     const mockStudents = [
         { id: 1, name: "Aavya S.",  grade: "Grade 10", img: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=100" },
@@ -22,6 +26,10 @@ export const CreateClassPage = () => {
         }
     };
 
+    const handleFinalize = () => {
+        setShowSuccess(true);
+    };
+
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white font-sans">
             <TopBar
@@ -31,12 +39,12 @@ export const CreateClassPage = () => {
                     <div className="flex gap-3">
                         <button
                             onClick={() => navigate(-1)}
-                            className="btn-outline px-4 py-2 rounded-[10px] text-[13px] transition-all"
+                            className="btn-text px-4 py-2 rounded-[10px] text-[13px] transition-all"
                         >
                             Cancel
                         </button>
                         <button
-                            onClick={() => navigate("/classes")}
+                            onClick={handleFinalize}
                             className="btn-primary px-6 py-2 rounded-[10px] text-[13px] font-semibold transition-all"
                         >
                             Finalize & Create Class
@@ -96,7 +104,7 @@ export const CreateClassPage = () => {
                                 <input
                                     type="text"
                                     placeholder="Search students by name, ID or current grade..."
-                                    className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] pl-12 pr-6 text-[14px] font-semibold text-foreground focus:ring-2 focus:ring-primary/40 transition-all outline-none"
+                                    className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] pl-12 pr-6 text-[14px] font-semibold text-foreground focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all outline-none"
                                 />
                             </div>
 
@@ -137,12 +145,12 @@ export const CreateClassPage = () => {
                     <div className="flex justify-end items-center gap-4 py-8">
                         <button
                             onClick={() => navigate(-1)}
-                            className="btn-outline px-8 py-2.5 rounded-2xl text-[14px] font-bold transition-all"
+                            className="btn-text px-8 py-2.5 rounded-2xl text-[14px] font-bold transition-all"
                         >
                             Cancel
                         </button>
                         <button
-                            onClick={() => navigate("/classes")}
+                            onClick={handleFinalize}
                             className="btn-primary px-12 py-2.5 rounded-2xl text-[14px] font-bold transition-all shadow-lg"
                         >
                             Finalize & Create Class
@@ -150,6 +158,63 @@ export const CreateClassPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Success Modal */}
+            <AnimatePresence>
+                {showSuccess && (
+                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => navigate("/classes")}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative w-full max-w-[440px] bg-white rounded-[40px] p-10 text-center shadow-2xl border border-slate-100"
+                        >
+                            <div className="mb-8 relative">
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
+                                    className="size-32 mx-auto relative z-10"
+                                >
+                                    <Lottie animationData={successAnimation} loop={false} className="w-full h-full" />
+                                </motion.div>
+                                <motion.div
+                                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0, 0.3] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className="absolute inset-0 size-32 bg-[#EAF2D7] rounded-full mx-auto"
+                                />
+                            </div>
+                            
+                            <h3 className="text-[24px] font-bold text-[#3D6B2C] tracking-tight mb-2">Class Created Successfully!</h3>
+                            <p className="text-[#B0AFA8] text-[15px] font-medium leading-relaxed mb-10 px-4">
+                                Grade 10 - Section A has been established and students have been mapped successfully.
+                            </p>
+
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    onClick={() => navigate("/classes/1")}
+                                    className="btn-primary w-full h-14 rounded-2xl text-[15px] font-bold shadow-xl shadow-primary/20"
+                                >
+                                    View Class Details
+                                </button>
+                                <button
+                                    onClick={() => navigate("/")}
+                                    className="btn-text w-full h-12 rounded-xl text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
+                                >
+                                    Back to Dashboard
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
@@ -269,7 +334,7 @@ const FormGroup = ({ label, placeholder, icon, type = "input", options = [], sea
                         value={inputValue}
                         onChange={(e) => setInputValue(uppercase ? e.target.value.toUpperCase() : e.target.value)}
                         className={cn(
-                            "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/20",
+                            "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white",
                             icon ? "pl-12 pr-6" : "px-6",
                             disabled && "opacity-50 cursor-not-allowed",
                             uppercase && "uppercase placeholder:normal-case"

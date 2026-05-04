@@ -19,7 +19,7 @@ export const CommunicationsPage = ({
           title="Messages"
           subtitle="Internal school chat and coordination"
           actions={
-            <button className="btn-primary px-4 py-2.5 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 transition-all">
+            <button className="btn-primary h-10 px-6 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30">
               <span className="material-symbols-outlined text-sm">
                 edit_square
               </span>
