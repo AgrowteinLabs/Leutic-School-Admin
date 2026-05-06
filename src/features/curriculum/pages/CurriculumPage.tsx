@@ -59,6 +59,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [pendingTab, setPendingTab] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [extendingSlot, setExtendingSlot] = useState<{ day: string, period: number, entry: any, direction: 'vertical' | 'horizontal' } | null>(null);
+  const [extensionTarget, setExtensionTarget] = useState<{ day: string, period: number } | null>(null);
 
   const handleTabChange = (newTab: string) => {
     if (hasUnsavedChanges) {
@@ -807,182 +809,345 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                       ) : (
                         <div className="flex-1 p-8 lg:p-12 overflow-auto bg-transparent relative">
                           <div className="max-w-[1200px] mx-auto">
-                            <div className="grid grid-cols-[100px_repeat(5,1fr)]">
-                              {/* Headers */}
-                              <div className="border-b border-r border-[#EBE8E0]" /> {/* Time Corner Spacer */}
-                              {days.map(day => (
-                                <div key={day} className="pb-8 px-6 border-b border-r last:border-r-0 border-[#EBE8E0] bg-[#FDFCFB]/80">
+                            <div
+                              className="grid grid-cols-[100px_repeat(5,1fr)] select-none"
+                              style={{ gridTemplateRows: `auto repeat(${periods.length}, minmax(140px, auto))` }}
+                              onMouseLeave={() => extendingSlot && setExtensionTarget(null)}
+                              onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
+                            >
+                              {/* Corner Spacer */}
+                              <div className="border-b border-r border-[#EBE8E0]" style={{ gridRow: 1, gridColumn: 1 }} />
+
+                              {/* Day Headers */}
+                              {days.map((day, dIdx) => (
+                                <div
+                                  key={day}
+                                  style={{ gridRow: 1, gridColumn: dIdx + 2 }}
+                                  className={cn("pb-8 px-6 border-b border-[#EBE8E0] bg-[#FDFCFB]/80", dIdx < days.length - 1 && "border-r")}
+                                >
                                   <span className="text-[14px] font-semibold text-secondary tracking-tight block">{day}</span>
                                   <span className="text-[10px] font-medium text-slate-400 tracking-tight">Class day</span>
                                 </div>
                               ))}
 
-                              {/* Body */}
-                              {periods.map(period => (
-                                <div key={period} className="contents group/row">
-                                  {/* Time Sidebar (Editable - Larger Typography) */}
-                                  <div className="flex flex-col items-center justify-start pt-6 gap-2 border-r border-[#EBE8E0] pr-8 relative min-w-[100px]">
-                                    <span className="text-[24px] font-bold text-secondary/80 leading-none group-hover/row:text-primary transition-colors">{period}</span>
-                                    {editingPeriod === period ? (
-                                      <div className="flex flex-col gap-1 mt-1">
-                                        <input
-                                          autoFocus
-                                          type="text"
-                                          value={periodConfig[period].start}
-                                          onChange={(e) => setPeriodConfig(prev => ({ ...prev, [period]: { ...prev[period], start: e.target.value } }))}
-                                          onBlur={() => setEditingPeriod(null)}
-                                          className="w-14 text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-2 py-1 outline-none focus:border-primary shadow-sm"
-                                        />
-                                        <input
-                                          type="text"
-                                          value={periodConfig[period].end}
-                                          onChange={(e) => setPeriodConfig(prev => ({ ...prev, [period]: { ...prev[period], end: e.target.value } }))}
-                                          onBlur={() => setEditingPeriod(null)}
-                                          className="w-14 text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-2 py-1 outline-none focus:border-primary shadow-sm"
-                                        />
-                                      </div>
-                                    ) : (
-                                      <button
-                                        onClick={() => setEditingPeriod(period)}
-                                        className="text-[11px] font-semibold text-slate-400 tracking-tight hover:text-primary transition-colors"
-                                      >
-                                        {periodConfig[period].start} — {periodConfig[period].end}
-                                      </button>
-                                    )}
-                                  </div>
+                              {/* Period Labels */}
+                              {periods.map((period, pIdx) => (
+                                <div
+                                  key={`label-${period}`}
+                                  style={{ gridRow: pIdx + 2, gridColumn: 1 }}
+                                  className="flex flex-col items-center justify-start pt-6 gap-2 border-b border-r border-[#EBE8E0] pr-8 relative min-w-[100px]"
+                                >
+                                  <span className="text-[24px] font-bold text-secondary/80 leading-none">{period}</span>
+                                  {editingPeriod === period ? (
+                                    <div className="flex flex-col gap-1 mt-1">
+                                      <input
+                                        autoFocus
+                                        type="text"
+                                        value={periodConfig[period].start}
+                                        onChange={(e) => setPeriodConfig(prev => ({ ...prev, [period]: { ...prev[period], start: e.target.value } }))}
+                                        onBlur={() => setEditingPeriod(null)}
+                                        className="w-14 text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-2 py-1 outline-none focus:border-primary shadow-sm"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={periodConfig[period].end}
+                                        onChange={(e) => setPeriodConfig(prev => ({ ...prev, [period]: { ...prev[period], end: e.target.value } }))}
+                                        onBlur={() => setEditingPeriod(null)}
+                                        className="w-14 text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-2 py-1 outline-none focus:border-primary shadow-sm"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => setEditingPeriod(period)}
+                                      className="text-[11px] font-semibold text-slate-400 tracking-tight hover:text-primary transition-colors"
+                                    >
+                                      {periodConfig[period].start} — {periodConfig[period].end}
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
 
-                                  {/* Day Slots (Cream & Pattern Cinematic) */}
-                                  {days.map((day, dIdx) => {
-                                    const entry = timetableEntries.find(e => e.section === selectedTimetableSection && e.day === day && e.period === period);
-                                    return (
-                                      <motion.div
-                                        key={`${day}-${period}`}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: (period * 5 + dIdx) * 0.015 }}
-                                        className={cn(
-                                          "group relative min-h-[140px] transition-all duration-500 py-8 px-6 border-b border-r last:border-r-0 border-[#EBE8E0]",
-                                          !entry && "cursor-pointer hover:bg-white/80 hover:shadow-[0_20px_50px_rgba(230,220,200,0.3)] hover:z-10"
-                                        )}
-                                        onClick={() => !entry && setAssigningSlot({ day, period })}
-                                      >
-                                        {/* Subtle Grain Pattern on hover */}
-                                        <div className="absolute inset-0 opacity-0 group-hover:opacity-[0.02] pointer-events-none transition-opacity"
-                                          style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/felt.png")' }} />
+                              {/* Day Cells — vertical drag merges periods (CSS span), horizontal drag fills days */}
+                              {(() => {
+                                const coveredCells = new Set<string>();
+                                timetableEntries
+                                  .filter(e => e.section === selectedTimetableSection && (e.spanPeriods || 1) > 1)
+                                  .forEach(e => {
+                                    const sp = e.spanPeriods || 1;
+                                    const dBase = days.indexOf(e.day);
+                                    for (let dp = 1; dp < sp; dp++) {
+                                      const p = e.period + dp;
+                                      if (p <= periods[periods.length - 1]) coveredCells.add(`${days[dBase]}-${p}`);
+                                    }
+                                  });
 
-                                        {entry ? (
-                                          <>
-                                            <div className="flex flex-col items-start text-left gap-0.5 animate-in fade-in slide-in-from-left-2 duration-500 h-full justify-center">
-                                              <h4 className="text-[14px] font-semibold text-secondary leading-tight group-hover:text-primary transition-colors">{entry.subjectName}</h4>
-                                              <p className="text-[11px] font-medium text-slate-400 tracking-tight">{entry.teacherName}</p>
+                                return periods.flatMap((period, pIdx) =>
+                                  days.map((day, dIdx) => {
+                                    const cellKey = `${day}-${period}`;
+                                    if (coveredCells.has(cellKey)) return null;
+
+                                    const entry = timetableEntries.find(e =>
+                                      e.section === selectedTimetableSection && e.day === day && e.period === period
+                                    );
+                                    const spanP = entry?.spanPeriods || 1;
+
+                                    // Horizontal fill preview range
+                                    const srcIdx = extendingSlot?.direction === 'horizontal' ? days.indexOf(extendingSlot.day) : -1;
+                                    const tgtIdx = extensionTarget && extendingSlot?.direction === 'horizontal' ? days.indexOf(extensionTarget.day) : -1;
+                                    const isInHRange =
+                                      extendingSlot?.direction === 'horizontal' &&
+                                      !!extensionTarget &&
+                                      period === extendingSlot.period &&
+                                      dIdx > srcIdx &&
+                                      dIdx <= tgtIdx;
+
+                                    // Vertical extend preview
+                                    const isVerticalTarget =
+                                      extendingSlot?.direction === 'vertical' &&
+                                      extensionTarget?.day === day &&
+                                      extensionTarget?.period === period;
+
+                                  return (
+                                    <motion.div
+                                      key={cellKey}
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ delay: (period * 5 + dIdx) * 0.015 }}
+                                      style={{
+                                        gridRow: `${pIdx + 2} / span ${spanP}`,
+                                        gridColumn: dIdx + 2
+                                      }}
+                                      className={cn(
+                                        "group relative min-h-[140px] transition-all duration-300 py-8 px-6 border-b border-[#EBE8E0]",
+                                        dIdx < days.length - 1 && "border-r",
+                                        !entry && !isInHRange && "cursor-pointer hover:bg-white/80 hover:shadow-[0_20px_50px_rgba(230,220,200,0.3)] hover:z-10",
+                                        isInHRange && !entry && "bg-primary/[0.04]",
+                                        isInHRange && entry && "bg-amber-50/40",
+                                        isVerticalTarget && "bg-primary/[0.02]",
+                                        entry && spanP > 1 && "border-l-[3px] border-l-primary/25"
+                                      )}
+                                      onClick={() => !entry && !extendingSlot && setAssigningSlot({ day, period })}
+                                      onMouseEnter={() => {
+                                        if (!extendingSlot) return;
+                                        if (extendingSlot.direction === 'horizontal') {
+                                          const src = days.indexOf(extendingSlot.day);
+                                          if (period === extendingSlot.period && dIdx > src) setExtensionTarget({ day, period });
+                                          else setExtensionTarget(null);
+                                        } else {
+                                          const currentSpanP = extendingSlot.entry.spanPeriods || 1;
+                                          if (extendingSlot.day === day && period === extendingSlot.period + currentSpanP) setExtensionTarget({ day, period });
+                                          else setExtensionTarget(null);
+                                        }
+                                      }}
+                                      onMouseUp={() => {
+                                        if (extendingSlot && extensionTarget && day === extensionTarget.day && period === extensionTarget.period) {
+                                          if (extendingSlot.direction === 'horizontal') {
+                                            const src = days.indexOf(extendingSlot.day);
+                                            const tgt = days.indexOf(extensionTarget.day);
+                                            const newEntries: any[] = [];
+                                            for (let d = src + 1; d <= tgt; d++) {
+                                              const occupied = timetableEntries.some(e =>
+                                                e.section === selectedTimetableSection && e.day === days[d] && e.period === extendingSlot.period
+                                              );
+                                              if (!occupied) newEntries.push({ ...extendingSlot.entry, day: days[d], period: extendingSlot.period });
+                                            }
+                                            if (newEntries.length > 0) setTimetableEntries(prev => [...prev, ...newEntries]);
+                                          } else {
+                                            setTimetableEntries(prev => prev.map(e =>
+                                              e === extendingSlot.entry ? { ...e, spanPeriods: (e.spanPeriods || 1) + 1 } : e
+                                            ));
+                                          }
+                                        }
+                                        setExtendingSlot(null);
+                                        setExtensionTarget(null);
+                                      }}
+                                    >
+                                      {/* Grain on hover */}
+                                      <div className="absolute inset-0 opacity-0 group-hover:opacity-[0.02] pointer-events-none transition-opacity"
+                                        style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/felt.png")' }} />
+
+                                      {/* Vertical extend preview overlay */}
+                                      {isVerticalTarget && (
+                                        <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/30 z-10 flex items-center justify-center animate-pulse">
+                                          <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-primary/20 shadow-sm">
+                                            <span className="material-symbols-outlined text-[13px] text-primary">expand_more</span>
+                                            <span className="text-[10px] font-bold text-primary tracking-wide">Extend period</span>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Horizontal fill ghost preview */}
+                                      {isInHRange && !entry && extendingSlot && (
+                                        <div className="absolute inset-0 pointer-events-none flex flex-col justify-center px-6 gap-0.5">
+                                          <div className="absolute inset-[3px] border border-dashed border-primary/25 rounded-sm" />
+                                          <p className="text-[13px] font-semibold text-secondary/25 leading-tight">{extendingSlot.entry.subjectName}</p>
+                                          <p className="text-[11px] text-slate-300">{extendingSlot.entry.teacherName}</p>
+                                        </div>
+                                      )}
+
+                                      {/* Horizontal fill: already-filled warning */}
+                                      {isInHRange && entry && (
+                                        <div className="absolute inset-[3px] border border-dashed border-amber-400/50 rounded-sm pointer-events-none z-10" />
+                                      )}
+
+                                      {entry ? (
+                                        <>
+                                          {/* Span badge */}
+                                          {spanP > 1 && (
+                                            <div className="absolute top-3 left-3 flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded-full z-10">
+                                              <span className="material-symbols-outlined text-[11px]">unfold_more</span>
+                                              <span className="text-[9px] font-bold tracking-wide">×{spanP} periods</span>
                                             </div>
+                                          )}
 
+                                          <div className="flex flex-col items-start text-left gap-0.5 animate-in fade-in slide-in-from-left-2 duration-500 h-full justify-center">
+                                            <h4 className="text-[14px] font-semibold text-secondary leading-tight group-hover:text-primary transition-colors">{entry.subjectName}</h4>
+                                            <p className="text-[11px] font-medium text-slate-400 tracking-tight">{entry.teacherName}</p>
+                                            {spanP > 1 && (
+                                              <p className="text-[10px] font-semibold text-primary/50 mt-1.5">
+                                                {periodConfig[entry.period]?.start} — {periodConfig[Math.min(entry.period + spanP - 1, periods[periods.length - 1])]?.end}
+                                              </p>
+                                            )}
+                                          </div>
+
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setTimetableEntries(prev => prev.filter(ent => ent !== entry));
+                                            }}
+                                            className="absolute top-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10"
+                                          >
+                                            <span className="material-symbols-outlined text-[15px]">close</span>
+                                          </button>
+
+                                          {/* Shrink vertical span */}
+                                          {spanP > 1 && (
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation();
-                                                setTimetableEntries(prev => prev.filter(ent => ent !== entry));
+                                                setTimetableEntries(prev => prev.map(ent =>
+                                                  ent === entry ? { ...ent, spanPeriods: (ent.spanPeriods || 1) - 1 } : ent
+                                                ));
                                               }}
-                                              className="absolute top-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10"
+                                              className="absolute bottom-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10"
+                                              title="Remove one period"
                                             >
-                                              <span className="material-symbols-outlined text-[15px]">close</span>
+                                              <span className="material-symbols-outlined text-[15px]">unfold_less</span>
                                             </button>
-                                          </>
-                                        ) : (
-                                          <div className="h-full flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 duration-300">
-                                            <div className="size-6 rounded-full text-secondary/30 flex items-center justify-center">
-                                              <span className="material-symbols-outlined text-[18px]">add</span>
-                                            </div>
-                                            <span className="text-[11px] font-semibold text-secondary/30">Assign</span>
+                                          )}
+
+                                          {/* Bottom handle — merges periods vertically */}
+                                          <div
+                                            onMouseDown={(e) => {
+                                              e.stopPropagation();
+                                              setExtendingSlot({ day, period, entry, direction: 'vertical' });
+                                            }}
+                                            className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize group/handle flex items-center justify-center z-20"
+                                          >
+                                            <div className="w-8 h-1 rounded-full bg-slate-200 group-hover/handle:bg-primary/40 opacity-0 group-hover:opacity-100 transition-all" />
                                           </div>
-                                        )}
 
-                                        {/* Assignment Popover Refined (Compact Search Card) */}
-                                        {assigningSlot?.day === day && assigningSlot?.period === period && (
-                                          <div className="absolute inset-2 z-20 bg-[#FDFCFB] shadow-[0_20px_60px_rgba(200,180,150,0.3)] rounded-xl border border-[#EBE8E0] p-4 animate-in fade-in zoom-in-95 duration-200">
-                                            {/* Pattern in Popover */}
-                                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                                              style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '12px 12px' }} />
+                                          {/* Right handle — fills across days */}
+                                          <div
+                                            onMouseDown={(e) => {
+                                              e.stopPropagation();
+                                              setExtendingSlot({ day, period, entry, direction: 'horizontal' });
+                                            }}
+                                            className="absolute top-0 right-0 bottom-0 w-5 cursor-ew-resize group/rhandle flex items-center justify-center z-20"
+                                          >
+                                            <div className="h-10 w-[3px] rounded-full bg-slate-200 group-hover/rhandle:bg-primary/50 opacity-0 group-hover:opacity-100 transition-all duration-200" />
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <div className="h-full flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 duration-300">
+                                          <div className="size-6 rounded-full text-secondary/30 flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-[18px]">add</span>
+                                          </div>
+                                          <span className="text-[11px] font-semibold text-secondary/30">Assign</span>
+                                        </div>
+                                      )}
 
-                                            <div className="relative z-10 flex flex-col h-full">
-                                              <div className="flex justify-between items-center mb-4">
-                                                <span className="text-[11px] font-semibold text-slate-400 tracking-tight">Assign subject</span>
-                                                <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); setSubjectSearch(""); }} className="text-slate-300 hover:text-secondary transition-colors">
-                                                  <span className="material-symbols-outlined text-[14px]">close</span>
-                                                </button>
-                                              </div>
-
-                                              {/* Surgical Search Bar */}
-                                              <div className="relative group/search z-50">
-                                                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-primary/40 group-focus-within/search:text-primary transition-colors">search</span>
-                                                <input
-                                                  autoFocus
-                                                  type="text"
-                                                  placeholder="Subject name..."
-                                                  value={subjectSearch}
-                                                  onChange={(e) => setSubjectSearch(e.target.value)}
-                                                  onClick={(e) => e.stopPropagation()}
-                                                  className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all "
-                                                />
-
-                                                {/* Floating Suggestions List (Shifted for Compactness) */}
-                                                {subjectSearch.length > 0 && (
-                                                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#EBE8E0] rounded-lg shadow-[0_20px_50px_rgba(200,180,150,0.35)] z-[100] max-h-[220px] overflow-y-auto no-scrollbar py-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                    {mappings
-                                                      .filter(m => `${m.grade}-${m.section}` === selectedTimetableSection)
-                                                      .filter(m => {
-                                                        const sub = subjects.find(s => s.id === m.subjectId);
-                                                        return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase());
-                                                      })
-                                                      .map(m => {
-                                                        const sub = subjects.find(s => s.id === m.subjectId);
-                                                        const teacher = teachers.find(t => t.id === m.teacherId);
-                                                        return (
-                                                          <button
-                                                            key={m.id}
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              const newEntry = {
-                                                                section: selectedTimetableSection,
-                                                                day,
-                                                                period,
-                                                                subjectId: m.subjectId,
-                                                                subjectName: sub?.name || "",
-                                                                teacherId: m.teacherId,
-                                                                teacherName: teacher?.name || m.teacherId
-                                                              };
-                                                              setTimetableEntries(prev => [...prev, newEntry]);
-                                                              setAssigningSlot(null);
-                                                              setSubjectSearch("");
-                                                            }}
-                                                            className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt"
-                                                          >
-                                                            <div className="space-y-0.5">
-                                                              <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">{sub?.name}</p>
-                                                              <p className="text-[10px] font-medium text-slate-400">{teacher?.name || m.teacherId}</p>
-                                                            </div>
-                                                            <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">add_circle</span>
-                                                          </button>
-                                                        );
-                                                      })}
-                                                    {mappings.filter(m => {
+                                      {/* Assignment Popover */}
+                                      {assigningSlot?.day === day && assigningSlot?.period === period && (
+                                        <div className="absolute inset-2 z-20 bg-[#FDFCFB] shadow-[0_20px_60px_rgba(200,180,150,0.3)] rounded-xl border border-[#EBE8E0] p-4 animate-in fade-in zoom-in-95 duration-200">
+                                          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                                            style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '12px 12px' }} />
+                                          <div className="relative z-10 flex flex-col h-full">
+                                            <div className="flex justify-between items-center mb-4">
+                                              <span className="text-[11px] font-semibold text-slate-400 tracking-tight">Assign subject</span>
+                                              <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); setSubjectSearch(""); }} className="text-slate-300 hover:text-secondary transition-colors">
+                                                <span className="material-symbols-outlined text-[14px]">close</span>
+                                              </button>
+                                            </div>
+                                            <div className="relative group/search z-50">
+                                              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-primary/40 group-focus-within/search:text-primary transition-colors">search</span>
+                                              <input
+                                                autoFocus
+                                                type="text"
+                                                placeholder="Subject name..."
+                                                value={subjectSearch}
+                                                onChange={(e) => setSubjectSearch(e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all "
+                                              />
+                                              {subjectSearch.length > 0 && (
+                                                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#EBE8E0] rounded-lg shadow-[0_20px_50px_rgba(200,180,150,0.35)] z-[100] max-h-[220px] overflow-y-auto no-scrollbar py-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                  {mappings
+                                                    .filter(m => `${m.grade}-${m.section}` === selectedTimetableSection)
+                                                    .filter(m => {
                                                       const sub = subjects.find(s => s.id === m.subjectId);
-                                                      return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()) && `${m.grade}-${m.section}` === selectedTimetableSection;
-                                                    }).length === 0 && (
-                                                        <div className="px-3 py-6 text-center space-y-1">
-                                                          <p className="text-[11px] text-slate-400 font-medium">No results found</p>
-                                                        </div>
-                                                      )}
-                                                  </div>
-                                                )}
-                                              </div>
+                                                      return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase());
+                                                    })
+                                                    .map(m => {
+                                                      const sub = subjects.find(s => s.id === m.subjectId);
+                                                      const teacher = teachers.find(t => t.id === m.teacherId);
+                                                      return (
+                                                        <button
+                                                          key={m.id}
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const newEntry = {
+                                                              section: selectedTimetableSection,
+                                                              day,
+                                                              period,
+                                                              subjectId: m.subjectId,
+                                                              subjectName: sub?.name || "",
+                                                              teacherId: m.teacherId,
+                                                              teacherName: teacher?.name || m.teacherId
+                                                            };
+                                                            setTimetableEntries(prev => [...prev, newEntry]);
+                                                            setAssigningSlot(null);
+                                                            setSubjectSearch("");
+                                                          }}
+                                                          className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt"
+                                                        >
+                                                          <div className="space-y-0.5">
+                                                            <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">{sub?.name}</p>
+                                                            <p className="text-[10px] font-medium text-slate-400">{teacher?.name || m.teacherId}</p>
+                                                          </div>
+                                                          <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">add_circle</span>
+                                                        </button>
+                                                      );
+                                                    })}
+                                                  {mappings.filter(m => {
+                                                    const sub = subjects.find(s => s.id === m.subjectId);
+                                                    return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()) && `${m.grade}-${m.section}` === selectedTimetableSection;
+                                                  }).length === 0 && (
+                                                    <div className="px-3 py-6 text-center space-y-1">
+                                                      <p className="text-[11px] text-slate-400 font-medium">No results found</p>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
-                                        )}
-                                      </motion.div>
-                                    );
-                                  })}
-                                </div>
-                              ))}
+                                        </div>
+                                      )}
+                                    </motion.div>
+                                  );
+                                })
+                              );
+                            })()}
                             </div>
                           </div>
                         </div>
