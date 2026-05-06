@@ -923,7 +923,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         !entry && !isInHRange && "cursor-pointer hover:bg-white/80 hover:shadow-[0_20px_50px_rgba(230,220,200,0.3)] hover:z-10",
                                         isInHRange && "bg-primary/[0.04]",
                                         isVerticalTarget && "bg-primary/[0.02]",
-                                        entry && spanP > 1 && "border-l-[3px] border-l-primary/25"
+                                        entry && spanP > 1 && "border-l-[3px] border-l-slate-300"
                                       )}
                                       onClick={() => !entry && !extendingSlot && setAssigningSlot({ day, period })}
                                       onMouseEnter={() => {
@@ -934,13 +934,28 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                           else setExtensionTarget(null);
                                         } else {
                                           const currentSpanP = extendingSlot.entry.spanPeriods || 1;
-                                          if (extendingSlot.day === day && period === extendingSlot.period + currentSpanP) setExtensionTarget({ day, period });
-                                          else setExtensionTarget(null);
+                                          if (extendingSlot.day === day && period === extendingSlot.period + currentSpanP) {
+                                            setExtensionTarget({ day, period }); // extend: next cell below span
+                                          } else if (!(extendingSlot.day === day && period === extendingSlot.period)) {
+                                            setExtensionTarget(null); // not on card or extend cell
+                                          }
+                                          // if on the card itself: onMouseMove handles it, don't clear
+                                        }
+                                      }}
+                                      onMouseMove={(e) => {
+                                        if (extendingSlot?.direction === 'vertical' && extendingSlot.entry === entry) {
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          const relY = Math.max(0, e.clientY - rect.top);
+                                          const periodIdx = Math.min(Math.floor((relY / rect.height) * spanP), spanP - 1);
+                                          const targetPeriod = period + periodIdx;
+                                          if (extensionTarget?.period !== targetPeriod || extensionTarget?.day !== day) {
+                                            setExtensionTarget({ day, period: targetPeriod });
+                                          }
                                         }
                                       }}
                                       onMouseUp={() => {
-                                        if (extendingSlot && extensionTarget && day === extensionTarget.day && period === extensionTarget.period) {
-                                          if (extendingSlot.direction === 'horizontal') {
+                                        if (extendingSlot && extensionTarget) {
+                                          if (extendingSlot.direction === 'horizontal' && day === extensionTarget.day && period === extensionTarget.period) {
                                             const src = days.indexOf(extendingSlot.day);
                                             const tgt = days.indexOf(extensionTarget.day);
                                             const newEntries = Array.from({ length: tgt - src }, (_, i) => ({
@@ -957,10 +972,15 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                               )),
                                               ...newEntries
                                             ]);
-                                          } else {
-                                            setTimetableEntries(prev => prev.map(e =>
-                                              e === extendingSlot.entry ? { ...e, spanPeriods: (e.spanPeriods || 1) + 1 } : e
-                                            ));
+                                          } else if (extendingSlot.direction === 'vertical') {
+                                            const isOnCard = entry === extendingSlot.entry;
+                                            const isExtendCell = day === extensionTarget.day && period === extensionTarget.period;
+                                            if (isOnCard || isExtendCell) {
+                                              const newSpan = Math.max(1, extensionTarget.period - extendingSlot.period + 1);
+                                              setTimetableEntries(prev => prev.map(e =>
+                                                e === extendingSlot.entry ? { ...e, spanPeriods: newSpan } : e
+                                              ));
+                                            }
                                           }
                                         }
                                         setExtendingSlot(null);
@@ -992,11 +1012,19 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                                       {entry ? (
                                         <>
+                                          {/* Drag-to-reduce boundary line */}
+                                          {extendingSlot?.direction === 'vertical' && extendingSlot.entry === entry && extensionTarget && spanP > 1 && (
+                                            <div
+                                              className="absolute left-3 right-3 border-t-2 border-dashed border-slate-400/60 z-20 pointer-events-none"
+                                              style={{ top: `${((extensionTarget.period - period + 1) / spanP) * 100}%` }}
+                                            />
+                                          )}
+
                                           {/* Span badge */}
                                           {spanP > 1 && (
-                                            <div className="absolute top-3 left-3 flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded-full z-10">
+                                            <div className="absolute top-3 left-3 flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full z-10">
                                               <span className="material-symbols-outlined text-[11px]">unfold_more</span>
-                                              <span className="text-[9px] font-bold tracking-wide">×{spanP} periods</span>
+                                              <span className="text-[9px] font-semibold tracking-wide">×{spanP} periods</span>
                                             </div>
                                           )}
 
@@ -1004,7 +1032,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                             <h4 className="text-[14px] font-semibold text-secondary leading-tight group-hover:text-primary transition-colors">{entry.subjectName}</h4>
                                             <p className="text-[11px] font-medium text-slate-400 tracking-tight">{entry.teacherName}</p>
                                             {spanP > 1 && (
-                                              <p className="text-[10px] font-semibold text-primary/50 mt-1.5">
+                                              <p className="text-[10px] font-medium text-slate-400 mt-1.5">
                                                 {periodConfig[entry.period]?.start} — {periodConfig[Math.min(entry.period + spanP - 1, periods[periods.length - 1])]?.end}
                                               </p>
                                             )}
