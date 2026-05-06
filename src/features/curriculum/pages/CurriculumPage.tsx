@@ -40,6 +40,7 @@ interface Teacher {
   id: string;
   name: string;
   dept: string;
+  qualification: string;
   teachingScope: string[]; // Grade names this teacher can teach
   specializations: string[]; // Subject IDs this teacher specializes in
 }
@@ -94,11 +95,11 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   ]);
 
   const [teachers] = useState<Teacher[]>([
-    { id: "TCH-001", name: "Mr. Marcus Roberts", dept: "Science", teachingScope: ["Grade 8", "Grade 9", "Grade 10"], specializations: ["SUB-001", "SUB-003"] },
-    { id: "TCH-042", name: "Ms. Elena Rodriguez", dept: "Humanities", teachingScope: ["Grade 8", "Grade 9", "Grade 10"], specializations: ["SUB-002", "SUB-005"] },
-    { id: "TCH-088", name: "Dr. Sarah Jenkins", dept: "Arts", teachingScope: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7"], specializations: ["SUB-007"] },
-    { id: "TCH-099", name: "Prof. Alan Turing", dept: "Technology", teachingScope: ["Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"], specializations: ["SUB-006"] },
-    { id: "TCH-101", name: "Mr. Richard Feynman", dept: "Science", teachingScope: ["Grade 10", "Grade 11", "Grade 12"], specializations: ["SUB-001", "SUB-003", "SUB-004"] },
+    { id: "TCH-001", name: "Mr. Marcus Roberts", dept: "Science", qualification: "M.Sc Mathematics", teachingScope: ["Grade 8", "Grade 9", "Grade 10"], specializations: ["SUB-001", "SUB-003"] },
+    { id: "TCH-042", name: "Ms. Elena Rodriguez", dept: "Humanities", qualification: "M.A English Literature", teachingScope: ["Grade 8", "Grade 9", "Grade 10"], specializations: ["SUB-002", "SUB-005"] },
+    { id: "TCH-088", name: "Dr. Sarah Jenkins", dept: "Arts", qualification: "Ph.D Performing Arts", teachingScope: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7"], specializations: ["SUB-007"] },
+    { id: "TCH-099", name: "Prof. Alan Turing", dept: "Technology", qualification: "M.Tech Computer Science", teachingScope: ["Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"], specializations: ["SUB-006"] },
+    { id: "TCH-101", name: "Mr. Richard Feynman", dept: "Science", qualification: "M.Sc Physics", teachingScope: ["Grade 10", "Grade 11", "Grade 12"], specializations: ["SUB-001", "SUB-003", "SUB-004"] },
   ]);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -283,6 +284,17 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                   </button>
                 )}
 
+                {activeTab === "grades" && (
+                  <button
+                    onClick={() => setShowTierDrawer(true)}
+                    className="size-10 rounded-xl bg-slate-50 border border-slate-100 text-[#B0AFA8] hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center group relative"
+                    title="Manage Academic Tiers"
+                  >
+                    <span className="material-symbols-outlined text-[20px] group-hover:rotate-90 group-hover:text-primary transition-all">settings</span>
+                    <span className="material-symbols-outlined text-[12px] absolute translate-x-[9px] translate-y-[-9px] text-[#B0AFA8] group-hover:text-primary transition-all">account_tree</span>
+                  </button>
+                )}
+
                 <button
                   onClick={handleAddAction}
                   className="btn-primary h-10 px-6 flex items-center gap-2"
@@ -355,15 +367,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                   {activeTab === "grades" && (
                     <div className="flex flex-col">
-                      <div className="px-8 pt-6 pb-2 flex items-center justify-between">
+                      <div className="px-8 pt-6 pb-2">
                         <span className="text-[11px] font-bold text-[#B0AFA8]">{gradeConfigs.length} grade templates configured</span>
-                        <button
-                          onClick={() => setShowTierDrawer(true)}
-                          className="btn-secondary h-9 px-4 flex items-center gap-2"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">tune</span>
-                          Manage Academic Tiers
-                        </button>
                       </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
                       {[...gradeConfigs]
@@ -694,7 +699,11 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       </SideDrawer>
 
       <SideDrawer isOpen={showMappingDrawer} onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }} title={editingMapping ? "Update Assignment" : isAddingAdditional ? "Assign Custom Subject" : "New Teacher Assignment"}>
-        <MappingForm subjects={subjects} teachers={teachers} initialData={editingMapping} isAdditional={isAddingAdditional} onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }} onSubmit={onAddMapping} />
+        <MappingForm subjects={subjects} teachers={teachers} mappings={mappings} initialData={editingMapping} isAdditional={isAddingAdditional} onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }} onSubmit={onAddMapping} />
+      </SideDrawer>
+
+      <SideDrawer isOpen={showTierDrawer} onClose={() => setShowTierDrawer(false)} title="Manage Academic Tiers">
+        <TierManagementForm groups={gradeGroups} setGroups={setGradeGroups} gradeConfigs={gradeConfigs} onClose={() => setShowTierDrawer(false)} />
       </SideDrawer>
     </div>
   );
@@ -836,16 +845,26 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit }: any) => {
   );
 };
 
-const MappingForm = ({ subjects, teachers, initialData, isAdditional, onClose, onSubmit }: any) => {
+const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, onClose, onSubmit }: any) => {
   const [grade, setGrade] = useState(initialData?.grade || "Grade 8");
   const [section, setSection] = useState(initialData?.section || "A");
   const [subjectId, setSubjectId] = useState(initialData?.subjectId || subjects[0]?.id || "");
   const [teacherId, setTeacherId] = useState(initialData?.teacherId || teachers[0]?.id || "");
   const [hoursPerWeek, setHoursPerWeek] = useState(initialData?.hoursPerWeek?.toString() || "4");
 
+  // Derived warning intelligence
+  const selectedTeacher = teachers.find((t: any) => t.id === teacherId);
+  const selectedSubject = subjects.find((s: any) => s.id === subjectId);
+  const scopeMismatch = selectedTeacher && !selectedTeacher.teachingScope.includes(grade);
+  const specMismatch = selectedTeacher && !selectedTeacher.specializations.includes(subjectId);
+
+  // Teacher workload calculation
+  const teacherMappings = (mappings || []).filter((m: any) => m.teacherId === teacherId);
+  const totalHours = teacherMappings.reduce((sum: number, m: any) => sum + (m.hoursPerWeek || 0), 0);
+
   return (
     <div className="flex flex-col h-full">
-      <div className="p-8 space-y-6 flex-1">
+      <div className="p-8 space-y-6 flex-1 overflow-y-auto no-scrollbar">
         {isAdditional ? (
           <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3">
             <span className="material-symbols-outlined text-amber-600 text-[20px]">stars</span>
@@ -886,6 +905,80 @@ const MappingForm = ({ subjects, teachers, initialData, isAdditional, onClose, o
           value={teacherId} onChange={setTeacherId}
         />
 
+        {/* ── Soft Warning Engine ── */}
+        {selectedTeacher && (
+          <div className="space-y-3">
+            {/* Scope Warning — Amber */}
+            {scopeMismatch && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 items-start">
+                <span className="material-symbols-outlined text-amber-500 text-[20px] mt-0.5">warning</span>
+                <div>
+                  <p className="text-[12px] font-bold text-amber-800 mb-1">Grade Scope Mismatch</p>
+                  <p className="text-[11px] text-amber-700 leading-relaxed">
+                    <span className="font-bold">{selectedTeacher.name}</span> is not currently assigned to teach <span className="font-bold">{grade}</span>.
+                    Their approved scope is: {selectedTeacher.teachingScope.join(", ")}.
+                    <span className="block mt-1 text-[10px] text-amber-600 italic">You may still proceed — this warning is advisory only.</span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Specialization Warning — Blue */}
+            {specMismatch && selectedSubject && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3 items-start">
+                <span className="material-symbols-outlined text-blue-500 text-[20px] mt-0.5">info</span>
+                <div>
+                  <p className="text-[12px] font-bold text-blue-800 mb-1">Subject Specialization Advisory</p>
+                  <p className="text-[11px] text-blue-700 leading-relaxed">
+                    <span className="font-bold">{selectedSubject.name}</span> is not listed in <span className="font-bold">{selectedTeacher.name}</span>&apos;s specializations.
+                    Their trained subjects: {selectedTeacher.specializations.map((sid: string) => subjects.find((s: any) => s.id === sid)?.name || sid).join(", ")}.
+                    <span className="block mt-1 text-[10px] text-blue-600 italic">Cross-discipline assignments are allowed at admin discretion.</span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Workload Panel */}
+            <div className="bg-[#F7F8F4] border border-slate-100 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">badge</span>
+                  <span className="text-[12px] font-bold text-foreground">{selectedTeacher.name}</span>
+                </div>
+                <span className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider">{selectedTeacher.qualification}</span>
+              </div>
+              <div className="flex gap-4">
+                <div className="flex-1 bg-white rounded-lg border border-slate-50 p-3 text-center">
+                  <p className="text-[18px] font-black text-foreground">{teacherMappings.length}</p>
+                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wider mt-0.5">Active Classes</p>
+                </div>
+                <div className="flex-1 bg-white rounded-lg border border-slate-50 p-3 text-center">
+                  <p className="text-[18px] font-black text-foreground">{totalHours}</p>
+                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wider mt-0.5">Hours / Week</p>
+                </div>
+                <div className="flex-1 bg-white rounded-lg border border-slate-50 p-3 text-center">
+                  <p className="text-[18px] font-black text-foreground">{selectedTeacher.teachingScope.length}</p>
+                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wider mt-0.5">Grade Scope</p>
+                </div>
+              </div>
+              {teacherMappings.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider">Current Assignments</p>
+                  {teacherMappings.map((m: any) => {
+                    const sub = subjects.find((s: any) => s.id === m.subjectId);
+                    return (
+                      <div key={m.id} className="flex items-center justify-between text-[11px] py-1.5 px-2 rounded-lg hover:bg-white transition-colors">
+                        <span className="font-semibold text-[#444441]">{sub?.name || m.subjectId}</span>
+                        <span className="text-[#B0AFA8] font-medium">{m.grade} {m.section} · {m.hoursPerWeek}h/wk</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="w-1/2">
           <FormGroup label="Weekly Hours" type="number" placeholder="e.g. 4" value={hoursPerWeek} onChange={setHoursPerWeek} />
           <p className="text-[10px] text-[#B0AFA8] font-medium pl-1 mt-1">Number of periods per week.</p>
@@ -899,6 +992,162 @@ const MappingForm = ({ subjects, teachers, initialData, isAdditional, onClose, o
         >
           {initialData ? "Update Mapping" : "Confirm Assignment"}
         </button>
+      </div>
+    </div>
+  );
+};
+
+const TierManagementForm = ({ groups, setGroups, gradeConfigs, onClose }: any) => {
+  // Derive all possible grades from configs
+  const allPossibleGrades = gradeConfigs.map((gc: any) => gc.grade);
+  const assignedGrades = groups.flatMap((g: any) => g.grades);
+  const unassignedGrades = allPossibleGrades.filter((g: string) => !assignedGrades.includes(g));
+
+  const removeGrade = (groupId: string, grade: string) => {
+    const newGroups = groups.map((g: any) => {
+      if (g.id === groupId) {
+        return { ...g, grades: g.grades.filter((gr: string) => gr !== grade) };
+      }
+      return g;
+    });
+    setGroups(newGroups);
+  };
+
+  const addGrade = (groupId: string, grade: string) => {
+    const newGroups = groups.map((g: any) => {
+      if (g.id === groupId) {
+        return { ...g, grades: [...g.grades, grade].sort((a: string, b: string) => {
+          const numA = parseInt(a.replace(/\D/g, ""));
+          const numB = parseInt(b.replace(/\D/g, ""));
+          return numA - numB;
+        }) };
+      }
+      return g;
+    });
+    setGroups(newGroups);
+  };
+
+  const addNewTier = () => {
+    const newId = `tier-${Date.now()}`;
+    setGroups([...groups, { id: newId, label: "New Academic Tier", grades: [] }]);
+  };
+
+  const removeTier = (groupId: string) => {
+    setGroups(groups.filter((g: any) => g.id !== groupId));
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="p-8 space-y-8 flex-1 overflow-y-auto no-scrollbar">
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex gap-3">
+          <span className="material-symbols-outlined text-primary text-[20px]">account_tree</span>
+          <p className="text-[12px] text-[#444441] leading-relaxed">
+            Organize your institution&apos;s academic structure. You can add new tiers, rename them, and assign grades to each.
+          </p>
+        </div>
+
+        {/* Tier List */}
+        <div className="space-y-6">
+          {groups.map((group: any) => (
+            <div key={group.id} className="p-5 rounded-[20px] border border-slate-100 bg-white shadow-sm space-y-4 hover:shadow-md transition-shadow group/tier relative">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-lg bg-[#F7F8F4] flex items-center justify-center text-primary">
+                    <span className="material-symbols-outlined text-[18px]">layers</span>
+                  </div>
+                  <input
+                    className="bg-transparent border-none text-[14px] font-black text-foreground outline-none focus:ring-0 p-0 w-full"
+                    value={group.label}
+                    onChange={(e) => {
+                      const newGroups = groups.map((g: any) => g.id === group.id ? { ...g, label: e.target.value } : g);
+                      setGroups(newGroups);
+                    }}
+                  />
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  {unassignedGrades.length > 0 && (
+                    <MenuDropdown
+                      trigger={
+                        <button className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all" title="Add Unassigned Grade">
+                          <span className="material-symbols-outlined text-[18px]">add</span>
+                        </button>
+                      }
+                      items={unassignedGrades.map((g: string) => ({
+                        label: g,
+                        onClick: () => addGrade(group.id, g)
+                      }))}
+                      width="w-40"
+                    />
+                  )}
+                  <button
+                    onClick={() => removeTier(group.id)}
+                    className="size-8 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center opacity-0 group-hover/tier:opacity-100"
+                    title="Delete Tier"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Grade Chips */}
+              <div className="flex flex-wrap gap-2">
+                {group.grades.length === 0 ? (
+                  <p className="text-[11px] text-[#B0AFA8] italic py-2">No grades assigned.</p>
+                ) : (
+                  group.grades.map((grade: string) => (
+                    <button
+                      key={grade}
+                      onClick={() => removeGrade(group.id, grade)}
+                      className="px-3 py-1.5 bg-[#F7F8F4] border border-slate-100 rounded-lg text-[11px] font-bold text-[#444441] hover:bg-red-50 hover:border-red-100 hover:text-red-600 transition-all flex items-center gap-2 group/chip"
+                    >
+                      {grade}
+                      <span className="material-symbols-outlined text-[14px] text-[#B0AFA8] group-hover/chip:text-red-500">close</span>
+                    </button>
+                  ))
+                )}
+              </div>
+
+              {/* Inline Suggestion Chips (Impossible to Break UI) */}
+              <div className="pt-2 space-y-3">
+                <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest pl-1">Assign Available Grades</p>
+                <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-slate-50/50 border border-slate-100/50 min-h-[44px]">
+                  { [1,2,3,4,5,6,7,8,9,10,11,12]
+                    .map(n => `Grade ${n}`)
+                    .filter(g => !groups.some((tg: any) => tg.grades.includes(g))) // ONLY unassigned
+                    .length === 0 ? (
+                      <p className="text-[10px] text-slate-400 font-medium italic py-1">All grades are currently assigned.</p>
+                    ) : (
+                      [1,2,3,4,5,6,7,8,9,10,11,12]
+                      .map(n => `Grade ${n}`)
+                      .filter(g => !groups.some((tg: any) => tg.grades.includes(g)))
+                      .map(g => (
+                        <button
+                          key={g}
+                          onClick={() => addGrade(group.id, g)}
+                          className="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-primary hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm active:scale-95"
+                        >
+                          + {g}
+                        </button>
+                      ))
+                    )
+                  }
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <button
+            onClick={addNewTier}
+            className="w-full py-4 rounded-[20px] border-2 border-dashed border-slate-100 text-[#B0AFA8] hover:border-primary hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2 group"
+          >
+            <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">add_circle</span>
+            <span className="text-[13px] font-bold">Add New Academic Tier</span>
+          </button>
+        </div>
+      </div>
+      <div className="p-8 border-t border-slate-50 bg-[#FBFBFA]">
+        <button onClick={onClose} className="w-full btn-primary h-12 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20">Done</button>
       </div>
     </div>
   );
@@ -933,3 +1182,5 @@ const FormGroup = ({ label, type = "text", placeholder, options, value, onChange
     </div>
   </div>
 );
+
+
