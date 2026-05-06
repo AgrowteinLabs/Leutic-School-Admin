@@ -52,7 +52,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
   const { tab } = useParams();
   const activeTab = (tab as "master" | "grades" | "mapping" | "timetable") || "master";
-  const [selectedTimetableSection, setSelectedTimetableSection] = useState<string | null>(null);
+  const [selectedTimetableSection, setSelectedTimetableSection] = useState("");
   const [timetableEntries, setTimetableEntries] = useState<any[]>([]);
   const [assigningSlot, setAssigningSlot] = useState<{ day: string, period: number } | null>(null);
 
@@ -91,7 +91,19 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
-  const periods = [1, 2, 3, 4, 5, 6, 7, 8];
+  const [periods] = useState([1, 2, 3, 4, 5, 6, 7, 8]);
+  const [periodConfig, setPeriodConfig] = useState<{ [key: number]: { start: string, end: string } }>({
+    1: { start: "08:30", end: "09:30" },
+    2: { start: "09:30", end: "10:30" },
+    3: { start: "10:30", end: "11:30" },
+    4: { start: "11:30", end: "12:30" },
+    5: { start: "13:30", end: "14:30" },
+    6: { start: "14:30", end: "15:30" },
+    7: { start: "15:30", end: "16:30" },
+    8: { start: "16:30", end: "17:30" },
+  });
+  const [editingPeriod, setEditingPeriod] = useState<number | null>(null);
+  const [subjectSearch, setSubjectSearch] = useState("");
   const ACADEMIC_AREAS = ["Mathematics", "Science", "Humanities", "Languages", "Arts", "Technology", "Administration", "Sports"];
 
   // State Data
@@ -109,21 +121,30 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   ]);
 
   const [gradeConfigs, setGradeConfigs] = useState<GradeConfig[]>([
-    { grade: "Grade 10", subjects: ["SUB-001", "SUB-002", "SUB-003", "SUB-004", "SUB-005", "SUB-006"] },
+    { grade: "Grade 5", subjects: ["SUB-001", "SUB-002", "SUB-005"] },
+    { grade: "Grade 6", subjects: ["SUB-001", "SUB-002", "SUB-005"] },
+    { grade: "Grade 7", subjects: ["SUB-001", "SUB-002", "SUB-005"] },
     { grade: "Grade 8", subjects: ["SUB-001", "SUB-002", "SUB-005", "SUB-008", "SUB-009"] },
+    { grade: "Grade 9", subjects: ["SUB-001", "SUB-002", "SUB-003", "SUB-004", "SUB-005", "SUB-006"] },
+    { grade: "Grade 10", subjects: ["SUB-001", "SUB-002", "SUB-003", "SUB-004", "SUB-005", "SUB-006"] },
+    { grade: "Grade 11", subjects: ["SUB-001", "SUB-002", "SUB-003", "SUB-006"] },
+    { grade: "Grade 12", subjects: ["SUB-001", "SUB-002", "SUB-003", "SUB-006"] },
   ]);
 
+  const [selectedTimetableGrade, setSelectedTimetableGrade] = useState(gradeConfigs[0]?.grade || "");
+
   const [gradeGroups, setGradeGroups] = useState<GradeGroup[]>([
-    { id: "tier-1", label: "Academic Tier 1", grades: ["Grade 1", "Grade 2", "Grade 3", "Grade 4"] },
-    { id: "tier-2", label: "Academic Tier 2", grades: ["Grade 5", "Grade 6", "Grade 7"] },
-    { id: "tier-3", label: "Academic Tier 3", grades: ["Grade 8", "Grade 9", "Grade 10"] },
-    { id: "tier-4", label: "Academic Tier 4", grades: ["Grade 11", "Grade 12"] },
+    { id: "middle", label: "Middle School", grades: ["Grade 5", "Grade 6", "Grade 7", "Grade 8"] },
+    { id: "high", label: "High School", grades: ["Grade 9", "Grade 10", "Grade 11", "Grade 12"] },
   ]);
 
   const [sections] = useState([
-    { grade: "Grade 10", id: "A", groupId: "tier-3" },
-    { grade: "Grade 10", id: "B", groupId: "tier-3" },
-    { grade: "Grade 8", id: "A", groupId: "tier-3" },
+    ...["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R"].map(id => ({
+      grade: "Grade 10", id, groupId: "high"
+    })),
+    { grade: "Grade 8", id: "A", groupId: "middle" },
+    { grade: "Grade 8", id: "B", groupId: "middle" },
+    { grade: "Grade 12", id: "A", groupId: "high" },
   ]);
 
   const [mappings, setMappings] = useState<Mapping[]>([
@@ -272,7 +293,10 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB]">
+      {/* Subtle Pattern Overlay */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }} />
       {!isHubChild && (
         <>
           <TopBar
@@ -332,94 +356,96 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         </>
       )}
 
-      <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pt-8 pb-10">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pt-4 pb-10">
         <div className="max-w-[1400px] mx-auto space-y-6">
 
           <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px] overflow-hidden">
 
-            {/* Header / Search Area */}
-            <div className="p-3 border-b border-slate-100/50 flex flex-wrap gap-4 items-center justify-between bg-white rounded-t-[24px]">
-              <div className="flex-1">
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[20px]">search</span>
-                  <input
-                    type="text"
-                    placeholder={`Search in ${activeTab === 'master' ? 'Subjects' : activeTab === 'grades' ? 'Grade Templates' : 'Teacher Assignments'}...`}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="input-base pl-11 pr-4 w-full"
+            {/* Header / Search Area (Hidden for Timetable to maximize space) */}
+            {activeTab !== "timetable" && (
+              <div className="p-3 border-b border-slate-100/50 flex flex-wrap gap-4 items-center justify-between bg-white rounded-t-[24px]">
+                <div className="flex-1">
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[20px]">search</span>
+                    <input
+                      type="text"
+                      placeholder={`Search in ${activeTab === 'master' ? 'Subjects' : activeTab === 'grades' ? 'Grade Templates' : 'Teacher Assignments'}...`}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="input-base pl-11 pr-4 w-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <MenuDropdown
+                    value={sortOrder === "asc" ? "Ascending" : "Descending"}
+                    trigger={
+                      <button className="btn-outline px-4 gap-2">
+                        <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">
+                          {sortOrder === "asc" ? "sort_by_alpha" : "filter_list_off"}
+                        </span>
+                        {sortOrder === "asc" ? "Ascending" : "Descending"}
+                      </button>
+                    }
+                    items={[
+                      { label: "Ascending", onClick: () => setSortOrder("asc") },
+                      { label: "Descending", onClick: () => setSortOrder("desc") }
+                    ]}
                   />
+
+                  <MenuDropdown
+                    value={deptFilter}
+                    trigger={
+                      <button className="btn-outline px-4 gap-2">
+                        <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">filter_list</span>
+                        {deptFilter}
+                      </button>
+                    }
+                    items={[
+                      { label: "All Departments", onClick: () => setDeptFilter("All Departments") },
+                      ...activeSubjectAreas.map((area: string) => ({
+                        label: area,
+                        onClick: () => setDeptFilter(area)
+                      }))
+                    ]}
+                  />
+
+                  <div className="h-8 w-px bg-slate-100 mx-1" />
+
+                  {activeTab === "mapping" && (
+                    <button
+                      onClick={handleAddAdditionalSubject}
+                      className="btn-secondary h-10 px-4 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">add_task</span>
+                      Custom Mapping
+                    </button>
+                  )}
+
+                  {activeTab === "grades" && (
+                    <button
+                      onClick={() => setShowTierDrawer(true)}
+                      className="size-10 rounded-xl bg-slate-50 border border-slate-100 text-[#B0AFA8] hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center group relative"
+                      title="Manage Academic Tiers"
+                    >
+                      <span className="material-symbols-outlined text-[20px] group-hover:rotate-90 group-hover:text-primary transition-all">settings</span>
+                      <span className="material-symbols-outlined text-[12px] absolute translate-x-[9px] translate-y-[-9px] text-[#B0AFA8] group-hover:text-primary transition-all">account_tree</span>
+                    </button>
+                  )}
+
+                  {activeTab !== "mapping" && (
+                    <button
+                      onClick={handleAddAction}
+                      className="btn-primary h-10 px-6 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">add</span>
+                      {activeTab === "master" ? "New Subject" : "Configure Grade"}
+                    </button>
+                  )}
                 </div>
               </div>
-
-              <div className="flex items-center gap-3">
-                <MenuDropdown
-                  value={sortOrder === "asc" ? "Ascending" : "Descending"}
-                  trigger={
-                    <button className="btn-outline px-4 gap-2">
-                      <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">
-                        {sortOrder === "asc" ? "sort_by_alpha" : "filter_list_off"}
-                      </span>
-                      {sortOrder === "asc" ? "Ascending" : "Descending"}
-                    </button>
-                  }
-                  items={[
-                    { label: "Ascending", onClick: () => setSortOrder("asc") },
-                    { label: "Descending", onClick: () => setSortOrder("desc") }
-                  ]}
-                />
-
-                <MenuDropdown
-                  value={deptFilter}
-                  trigger={
-                    <button className="btn-outline px-4 gap-2">
-                      <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">filter_list</span>
-                      {deptFilter}
-                    </button>
-                  }
-                  items={[
-                    { label: "All Departments", onClick: () => setDeptFilter("All Departments") },
-                    ...activeSubjectAreas.map((area: string) => ({
-                      label: area,
-                      onClick: () => setDeptFilter(area)
-                    }))
-                  ]}
-                />
-
-                <div className="h-8 w-px bg-slate-100 mx-1" />
-
-                {activeTab === "mapping" && (
-                  <button
-                    onClick={handleAddAdditionalSubject}
-                    className="btn-secondary h-10 px-4 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">add_task</span>
-                    Custom Mapping
-                  </button>
-                )}
-
-                {activeTab === "grades" && (
-                  <button
-                    onClick={() => setShowTierDrawer(true)}
-                    className="size-10 rounded-xl bg-slate-50 border border-slate-100 text-[#B0AFA8] hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center group relative"
-                    title="Manage Academic Tiers"
-                  >
-                    <span className="material-symbols-outlined text-[20px] group-hover:rotate-90 group-hover:text-primary transition-all">settings</span>
-                    <span className="material-symbols-outlined text-[12px] absolute translate-x-[9px] translate-y-[-9px] text-[#B0AFA8] group-hover:text-primary transition-all">account_tree</span>
-                  </button>
-                )}
-
-                {activeTab !== "mapping" && (
-                  <button
-                    onClick={handleAddAction}
-                    className="btn-primary h-10 px-6 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">add</span>
-                    {activeTab === "master" ? "New Subject" : "Configure Grade"}
-                  </button>
-                )}
-              </div>
-            </div>
+            )}
 
             {/* Content Table Area */}
             <div className="flex-1">
@@ -677,152 +703,287 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
 
                   {activeTab === "timetable" && (
-                    <div className="flex flex-col h-full bg-[#FBFBFA]">
-                      {/* Section Selector */}
-                      <div className="px-10 py-6 bg-white border-b border-slate-100 flex items-center justify-between sticky top-0 z-10">
-                        <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
-                          {Array.from(new Set(mappings.map(m => `${m.grade}-${m.section}`))).map(section => (
-                            <button
-                              key={section}
-                              onClick={() => setSelectedTimetableSection(section)}
-                              className={cn(
-                                "px-5 py-2 rounded-xl text-[12px] font-bold transition-all shrink-0 border",
-                                selectedTimetableSection === section
-                                  ? "bg-secondary text-white border-secondary shadow-lg shadow-secondary/10"
-                                  : "bg-white text-[#B0AFA8] border-slate-100 hover:border-primary/30"
-                              )}
-                            >
-                              {section}
-                            </button>
-                          ))}
-                        </div>
-                        {selectedTimetableSection && (
-                          <div className="flex items-center gap-4 pl-8 border-l border-slate-100">
-                            <div className="flex flex-col text-right">
-                              <span className="text-[10px] font-bold text-[#B0AFA8]">Selected Roster</span>
-                              <span className="text-[14px] font-bold text-secondary">{selectedTimetableSection}</span>
+                    <div className="flex flex-col h-full bg-[#FDFCFB]/50 backdrop-blur-sm">
+                      {/* Hierarchical Section Selector (Sleek Typographic Index) */}
+                      <div className="px-10 py-8 bg-white border-b border-slate-100 flex flex-col gap-10 sticky top-0 z-10">
+                        <div className="flex flex-col gap-12">
+                          {/* 1. Academic Index (Grades) */}
+                          <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[13px] font-semibold text-slate-400 tracking-tight">Academic index</span>
+                              <div className="h-px flex-1 bg-slate-50" />
                             </div>
-                            <button className="size-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
-                              <span className="material-symbols-outlined">save</span>
+                            <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                              {gradeConfigs.map(config => (
+                                <button
+                                  key={config.grade}
+                                  onClick={() => {
+                                    setSelectedTimetableGrade(config.grade);
+                                    setSelectedTimetableSection("");
+                                  }}
+                                  className={cn(
+                                    "text-[15px] transition-all relative py-1",
+                                    selectedTimetableGrade === config.grade
+                                      ? "font-semibold text-secondary"
+                                      : "font-normal text-slate-400 hover:text-secondary"
+                                  )}
+                                >
+                                  {config.grade}
+                                  {selectedTimetableGrade === config.grade && (
+                                    <motion.div layoutId="grade-underline" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-primary" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 2. Class Roster (Sections) */}
+                          <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[13px] font-semibold text-slate-400 tracking-tight">Section roster</span>
+                              <div className="h-px flex-1 bg-slate-50" />
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                              {sections
+                                .filter(s => s.grade === selectedTimetableGrade)
+                                .map(s => (
+                                  <button
+                                    key={`${s.grade}-${s.id}`}
+                                    onClick={() => setSelectedTimetableSection(`${s.grade}-${s.id}`)}
+                                    className={cn(
+                                      "size-8 rounded-full text-[13px] transition-all flex items-center justify-center",
+                                      selectedTimetableSection === `${s.grade}-${s.id}`
+                                        ? "font-semibold text-white bg-primary shadow-lg shadow-primary/20"
+                                        : "font-medium text-slate-400 hover:text-secondary hover:bg-slate-50"
+                                    )}
+                                  >
+                                    {s.id}
+                                  </button>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 3. Selection Summary Overlay */}
+                        {selectedTimetableSection && (
+                          <div className="flex items-center justify-between pt-6 border-t border-slate-50 animate-in fade-in slide-in-from-top-2 duration-500">
+                            <div className="flex items-center gap-4">
+                              <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[11px] font-bold text-[#B0AFA8] tracking-tight">Active View</span>
+                                <span className="text-[14px] font-bold text-secondary">
+                                  {selectedTimetableGrade} — Section {selectedTimetableSection.split("-")[1]}
+                                </span>
+                              </div>
+                            </div>
+                            <button className="h-10 px-6 rounded-xl bg-primary text-white text-[12px] font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                              <span className="material-symbols-outlined text-[18px]">save</span>
+                              <span>Save Schedule</span>
                             </button>
                           </div>
                         )}
                       </div>
 
                       {!selectedTimetableSection ? (
-                        <div className="flex-1 flex flex-col items-center justify-center p-20 text-center space-y-6">
-                          <div className="size-20 rounded-[32px] bg-[#F7F8F4] flex items-center justify-center text-secondary shadow-sm mb-4">
-                            <span className="material-symbols-outlined text-[40px]">calendar_view_day</span>
+                        <div className="flex-1 flex flex-col items-center justify-center p-20 text-center relative overflow-hidden">
+                          {/* Editorial Background Element */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[400px] font-black text-slate-50/50 select-none pointer-events-none">
+                            Schedule
                           </div>
-                          <div className="max-w-md space-y-2">
-                            <h3 className="text-[24px] font-bold text-secondary tracking-tight">Select a Section</h3>
-                            <p className="text-[14px] font-medium text-[#B0AFA8] leading-relaxed">
-                              Choose a class section from the list above to view or enter their weekly academic schedule.
-                            </p>
+                          <div className="relative z-10 space-y-8 max-w-md animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                            <div className="size-24 rounded-[40px] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center text-primary mx-auto">
+                              <span className="material-symbols-outlined text-[48px] animate-pulse">calendar_view_day</span>
+                            </div>
+                            <div className="space-y-3">
+                              <h3 className="text-[32px] font-semibold text-secondary tracking-tight">Academic rhythm</h3>
+                              <p className="text-[15px] font-medium text-slate-400 leading-relaxed">
+                                Select an institutional roster above to visualize and manage the weekly academic flow for your students.
+                              </p>
+                            </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex-1 p-8 lg:p-12 overflow-auto">
-                          <div className="grid grid-cols-6 gap-px bg-slate-100 rounded-[28px] overflow-hidden border border-slate-100 shadow-xl shadow-slate-200/20">
-                            {/* Corner */}
-                            <div className="bg-[#FBFBFA] p-4 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider flex items-end justify-center">
-                              Periods
-                            </div>
-                            {/* Days Header */}
-                            {days.map(day => (
-                              <div key={day} className="bg-[#FBFBFA] p-6 text-center">
-                                <span className="text-[14px] font-bold text-secondary tracking-tight">{day}</span>
-                              </div>
-                            ))}
-
-                            {/* Grid Body */}
-                            {periods.map(period => (
-                              <div key={period} className="contents">
-                                {/* Period Label */}
-                                <div className="bg-white p-6 flex flex-col items-center justify-center border-r border-slate-50">
-                                  <span className="text-[18px] font-bold text-secondary leading-none">{period}</span>
-                                  <span className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-tighter mt-1">Slot</span>
+                        <div className="flex-1 p-8 lg:p-12 overflow-auto bg-transparent relative">
+                          <div className="max-w-[1200px] mx-auto">
+                            <div className="grid grid-cols-[100px_repeat(5,1fr)]">
+                              {/* Headers */}
+                              <div className="border-b border-r border-[#EBE8E0]" /> {/* Time Corner Spacer */}
+                              {days.map(day => (
+                                <div key={day} className="pb-8 px-6 border-b border-r last:border-r-0 border-[#EBE8E0] bg-[#FDFCFB]/80">
+                                  <span className="text-[14px] font-semibold text-secondary tracking-tight block">{day}</span>
+                                  <span className="text-[10px] font-medium text-slate-400 tracking-tight">Class day</span>
                                 </div>
-                                {/* Day Slots */}
-                                {days.map(day => {
-                                  const entry = timetableEntries.find(e => e.section === selectedTimetableSection && e.day === day && e.period === period);
-                                  return (
-                                    <div
-                                      key={`${day}-${period}`}
-                                      className="bg-white p-4 min-h-[120px] hover:bg-[#F7F8F4]/50 transition-colors group cursor-pointer relative"
-                                    >
-                                      {entry ? (
-                                        <div className="h-full flex flex-col justify-between">
-                                          <div>
-                                            <p className="text-[13px] font-bold text-foreground leading-tight">{entry.subjectName}</p>
-                                            <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wide mt-1">{entry.teacherName}</p>
-                                          </div>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setTimetableEntries(prev => prev.filter(ent => ent !== entry));
-                                            }}
-                                            className="opacity-0 group-hover:opacity-100 absolute top-2 right-2 size-6 rounded-md hover:bg-red-50 hover:text-red-500 transition-all text-[#B0AFA8]"
-                                          >
-                                            <span className="material-symbols-outlined text-[16px]">close</span>
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <div className="h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <button
-                                            onClick={() => setAssigningSlot({ day, period })}
-                                            className="size-8 rounded-full bg-slate-50 flex items-center justify-center text-[#B0AFA8] hover:bg-primary hover:text-white transition-all"
-                                          >
-                                            <span className="material-symbols-outlined text-[18px]">add</span>
-                                          </button>
-                                        </div>
-                                      )}
+                              ))}
 
-                                      {/* Smart Assignment Popover */}
-                                      {assigningSlot?.day === day && assigningSlot?.period === period && (
-                                        <div className="absolute inset-0 z-20 bg-white shadow-2xl rounded-xl border border-slate-100 p-4 animate-in fade-in zoom-in duration-200">
-                                          <div className="flex justify-between items-center mb-3">
-                                            <span className="text-[10px] font-bold text-secondary uppercase tracking-wider">Assign Subject</span>
-                                            <button onClick={() => setAssigningSlot(null)} className="text-[#B0AFA8] hover:text-secondary">
-                                              <span className="material-symbols-outlined text-[16px]">close</span>
+                              {/* Body */}
+                              {periods.map(period => (
+                                <div key={period} className="contents group/row">
+                                  {/* Time Sidebar (Editable - Larger Typography) */}
+                                  <div className="flex flex-col items-center justify-start pt-6 gap-2 border-r border-[#EBE8E0] pr-8 relative min-w-[100px]">
+                                    <span className="text-[24px] font-bold text-secondary/80 leading-none group-hover/row:text-primary transition-colors">{period}</span>
+                                    {editingPeriod === period ? (
+                                      <div className="flex flex-col gap-1 mt-1">
+                                        <input
+                                          autoFocus
+                                          type="text"
+                                          value={periodConfig[period].start}
+                                          onChange={(e) => setPeriodConfig(prev => ({ ...prev, [period]: { ...prev[period], start: e.target.value } }))}
+                                          onBlur={() => setEditingPeriod(null)}
+                                          className="w-14 text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-2 py-1 outline-none focus:border-primary shadow-sm"
+                                        />
+                                        <input
+                                          type="text"
+                                          value={periodConfig[period].end}
+                                          onChange={(e) => setPeriodConfig(prev => ({ ...prev, [period]: { ...prev[period], end: e.target.value } }))}
+                                          onBlur={() => setEditingPeriod(null)}
+                                          className="w-14 text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-2 py-1 outline-none focus:border-primary shadow-sm"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => setEditingPeriod(period)}
+                                        className="text-[11px] font-semibold text-slate-400 tracking-tight hover:text-primary transition-colors"
+                                      >
+                                        {periodConfig[period].start} — {periodConfig[period].end}
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* Day Slots (Cream & Pattern Cinematic) */}
+                                  {days.map((day, dIdx) => {
+                                    const entry = timetableEntries.find(e => e.section === selectedTimetableSection && e.day === day && e.period === period);
+                                    return (
+                                      <motion.div
+                                        key={`${day}-${period}`}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: (period * 5 + dIdx) * 0.015 }}
+                                        className={cn(
+                                          "group relative min-h-[140px] transition-all duration-500 py-8 px-6 border-b border-r last:border-r-0 border-[#EBE8E0]",
+                                          !entry && "cursor-pointer hover:bg-white/80 hover:shadow-[0_20px_50px_rgba(230,220,200,0.3)] hover:z-10"
+                                        )}
+                                        onClick={() => !entry && setAssigningSlot({ day, period })}
+                                      >
+                                        {/* Subtle Grain Pattern on hover */}
+                                        <div className="absolute inset-0 opacity-0 group-hover:opacity-[0.02] pointer-events-none transition-opacity"
+                                          style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/felt.png")' }} />
+
+                                        {entry ? (
+                                          <>
+                                            <div className="flex flex-col items-start text-left gap-0.5 animate-in fade-in slide-in-from-left-2 duration-500 h-full justify-center">
+                                              <h4 className="text-[14px] font-semibold text-secondary leading-tight group-hover:text-primary transition-colors">{entry.subjectName}</h4>
+                                              <p className="text-[11px] font-medium text-slate-400 tracking-tight">{entry.teacherName}</p>
+                                            </div>
+
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setTimetableEntries(prev => prev.filter(ent => ent !== entry));
+                                              }}
+                                              className="absolute top-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10"
+                                            >
+                                              <span className="material-symbols-outlined text-[15px]">close</span>
                                             </button>
+                                          </>
+                                        ) : (
+                                          <div className="h-full flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 duration-300">
+                                            <div className="size-6 rounded-full text-secondary/30 flex items-center justify-center">
+                                              <span className="material-symbols-outlined text-[18px]">add</span>
+                                            </div>
+                                            <span className="text-[11px] font-semibold text-secondary/30">Assign</span>
                                           </div>
-                                          <div className="space-y-2 max-h-[150px] overflow-y-auto no-scrollbar">
-                                            {mappings
-                                              .filter(m => `${m.grade}-${m.section}` === selectedTimetableSection)
-                                              .map(m => {
-                                                const sub = subjects.find(s => s.id === m.subjectId);
-                                                return (
-                                                  <button
-                                                    key={m.id}
-                                                    onClick={() => {
-                                                      const newEntry = {
-                                                        section: selectedTimetableSection,
-                                                        day,
-                                                        period,
-                                                        subjectId: m.subjectId,
-                                                        subjectName: sub?.name,
-                                                        teacherId: m.teacherId,
-                                                        teacherName: m.teacherId // Simplification for now
-                                                      };
-                                                      setTimetableEntries(prev => [...prev, newEntry]);
-                                                      setAssigningSlot(null);
-                                                    }}
-                                                    className="w-full p-2 rounded-lg bg-slate-50 hover:bg-primary hover:text-white transition-all text-left group/btn"
-                                                  >
-                                                    <p className="text-[12px] font-bold truncate">{sub?.name}</p>
-                                                    <p className="text-[9px] font-medium opacity-60 group-hover/btn:opacity-100">{m.teacherId}</p>
-                                                  </button>
-                                                );
-                                              })}
+                                        )}
+
+                                        {/* Assignment Popover Refined (Compact Search Card) */}
+                                        {assigningSlot?.day === day && assigningSlot?.period === period && (
+                                          <div className="absolute inset-2 z-20 bg-[#FDFCFB] shadow-[0_20px_60px_rgba(200,180,150,0.3)] rounded-xl border border-[#EBE8E0] p-4 animate-in fade-in zoom-in-95 duration-200">
+                                            {/* Pattern in Popover */}
+                                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                                              style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '12px 12px' }} />
+
+                                            <div className="relative z-10 flex flex-col h-full">
+                                              <div className="flex justify-between items-center mb-4">
+                                                <span className="text-[11px] font-semibold text-slate-400 tracking-tight">Assign subject</span>
+                                                <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); setSubjectSearch(""); }} className="text-slate-300 hover:text-secondary transition-colors">
+                                                  <span className="material-symbols-outlined text-[14px]">close</span>
+                                                </button>
+                                              </div>
+
+                                              {/* Surgical Search Bar */}
+                                              <div className="relative group/search z-50">
+                                                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-primary/40 group-focus-within/search:text-primary transition-colors">search</span>
+                                                <input
+                                                  autoFocus
+                                                  type="text"
+                                                  placeholder="Subject name..."
+                                                  value={subjectSearch}
+                                                  onChange={(e) => setSubjectSearch(e.target.value)}
+                                                  onClick={(e) => e.stopPropagation()}
+                                                  className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all "
+                                                />
+
+                                                {/* Floating Suggestions List (Shifted for Compactness) */}
+                                                {subjectSearch.length > 0 && (
+                                                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#EBE8E0] rounded-lg shadow-[0_20px_50px_rgba(200,180,150,0.35)] z-[100] max-h-[220px] overflow-y-auto no-scrollbar py-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                    {mappings
+                                                      .filter(m => `${m.grade}-${m.section}` === selectedTimetableSection)
+                                                      .filter(m => {
+                                                        const sub = subjects.find(s => s.id === m.subjectId);
+                                                        return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase());
+                                                      })
+                                                      .map(m => {
+                                                        const sub = subjects.find(s => s.id === m.subjectId);
+                                                        const teacher = teachers.find(t => t.id === m.teacherId);
+                                                        return (
+                                                          <button
+                                                            key={m.id}
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              const newEntry = {
+                                                                section: selectedTimetableSection,
+                                                                day,
+                                                                period,
+                                                                subjectId: m.subjectId,
+                                                                subjectName: sub?.name || "",
+                                                                teacherId: m.teacherId,
+                                                                teacherName: teacher?.name || m.teacherId
+                                                              };
+                                                              setTimetableEntries(prev => [...prev, newEntry]);
+                                                              setAssigningSlot(null);
+                                                              setSubjectSearch("");
+                                                            }}
+                                                            className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt"
+                                                          >
+                                                            <div className="space-y-0.5">
+                                                              <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">{sub?.name}</p>
+                                                              <p className="text-[10px] font-medium text-slate-400">{teacher?.name || m.teacherId}</p>
+                                                            </div>
+                                                            <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">add_circle</span>
+                                                          </button>
+                                                        );
+                                                      })}
+                                                    {mappings.filter(m => {
+                                                      const sub = subjects.find(s => s.id === m.subjectId);
+                                                      return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()) && `${m.grade}-${m.section}` === selectedTimetableSection;
+                                                    }).length === 0 && (
+                                                        <div className="px-3 py-6 text-center space-y-1">
+                                                          <p className="text-[11px] text-slate-400 font-medium">No results found</p>
+                                                        </div>
+                                                      )}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
                                           </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ))}
+                                        )}
+                                      </motion.div>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -962,15 +1123,15 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         title={editingMapping ? "Update Assignment" : isAddingAdditional ? "Assign Custom Subject" : "Assign Teacher"}
         subtitle="Assign a teacher to a specific subject and class. We will show a warning if the teacher’s profile doesn’t match."
       >
-        <MappingForm 
-          subjects={subjects} 
-          teachers={teachers} 
-          mappings={mappings} 
+        <MappingForm
+          subjects={subjects}
+          teachers={teachers}
+          mappings={mappings}
           gradeConfigs={gradeConfigs}
-          initialData={editingMapping} 
-          isAdditional={isAddingAdditional} 
-          onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }} 
-          onSubmit={onAddMapping} 
+          initialData={editingMapping}
+          isAdditional={isAddingAdditional}
+          onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }}
+          onSubmit={onAddMapping}
         />
       </SideDrawer>
 
@@ -1283,10 +1444,10 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
     <div className="flex flex-col h-full">
       <div className="p-8 space-y-6 flex-1 overflow-y-auto no-scrollbar">
         <div className="grid grid-cols-2 gap-4">
-          <FormGroup 
-            label="Grade" type="select" 
-            options={gradeConfigs.map((g: any) => g.grade)} 
-            value={grade} onChange={setGrade} 
+          <FormGroup
+            label="Grade" type="select"
+            options={gradeConfigs.map((g: any) => g.grade)}
+            value={grade} onChange={setGrade}
           />
           <FormGroup label="Section" placeholder="e.g. A" value={section} onChange={setSection} />
         </div>
