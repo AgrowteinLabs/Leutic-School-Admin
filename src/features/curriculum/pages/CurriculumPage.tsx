@@ -30,6 +30,20 @@ interface Mapping {
   isAdditional?: boolean; // True if subject is not from the grade template
 }
 
+interface GradeGroup {
+  id: string;
+  label: string;
+  grades: string[];
+}
+
+interface Teacher {
+  id: string;
+  name: string;
+  dept: string;
+  teachingScope: string[]; // Grade names this teacher can teach
+  specializations: string[]; // Subject IDs this teacher specializes in
+}
+
 export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
   const { tab } = useParams();
@@ -59,10 +73,17 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     { grade: "Grade 8", subjects: ["SUB-001", "SUB-002", "SUB-005", "SUB-008", "SUB-009"] },
   ]);
 
+  const [gradeGroups, setGradeGroups] = useState<GradeGroup[]>([
+    { id: "tier-1", label: "Academic Tier 1", grades: ["Grade 1", "Grade 2", "Grade 3", "Grade 4"] },
+    { id: "tier-2", label: "Academic Tier 2", grades: ["Grade 5", "Grade 6", "Grade 7"] },
+    { id: "tier-3", label: "Academic Tier 3", grades: ["Grade 8", "Grade 9", "Grade 10"] },
+    { id: "tier-4", label: "Academic Tier 4", grades: ["Grade 11", "Grade 12"] },
+  ]);
+
   const [sections] = useState([
-    { grade: "Grade 10", id: "A" },
-    { grade: "Grade 10", id: "B" },
-    { grade: "Grade 8", id: "A" },
+    { grade: "Grade 10", id: "A", groupId: "tier-3" },
+    { grade: "Grade 10", id: "B", groupId: "tier-3" },
+    { grade: "Grade 8", id: "A", groupId: "tier-3" },
   ]);
 
   const [mappings, setMappings] = useState<Mapping[]>([
@@ -72,12 +93,12 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     { id: "MAP-004", grade: "Grade 8", section: "B", subjectId: "SUB-009", teacherId: "TCH-099", hoursPerWeek: 4, isAdditional: true },
   ]);
 
-  const [teachers] = useState([
-    { id: "TCH-001", name: "Mr. Marcus Roberts", dept: "Science" },
-    { id: "TCH-042", name: "Ms. Elena Rodriguez", dept: "Humanities" },
-    { id: "TCH-088", name: "Dr. Sarah Jenkins", dept: "Arts" },
-    { id: "TCH-099", name: "Prof. Alan Turing", dept: "Technology" },
-    { id: "TCH-101", name: "Mr. Richard Feynman", dept: "Science" },
+  const [teachers] = useState<Teacher[]>([
+    { id: "TCH-001", name: "Mr. Marcus Roberts", dept: "Science", teachingScope: ["Grade 8", "Grade 9", "Grade 10"], specializations: ["SUB-001", "SUB-003"] },
+    { id: "TCH-042", name: "Ms. Elena Rodriguez", dept: "Humanities", teachingScope: ["Grade 8", "Grade 9", "Grade 10"], specializations: ["SUB-002", "SUB-005"] },
+    { id: "TCH-088", name: "Dr. Sarah Jenkins", dept: "Arts", teachingScope: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7"], specializations: ["SUB-007"] },
+    { id: "TCH-099", name: "Prof. Alan Turing", dept: "Technology", teachingScope: ["Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"], specializations: ["SUB-006"] },
+    { id: "TCH-101", name: "Mr. Richard Feynman", dept: "Science", teachingScope: ["Grade 10", "Grade 11", "Grade 12"], specializations: ["SUB-001", "SUB-003", "SUB-004"] },
   ]);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -90,6 +111,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const [showSubjectDrawer, setShowSubjectDrawer] = useState(false);
   const [showGradeDrawer, setShowGradeDrawer] = useState(false);
   const [showMappingDrawer, setShowMappingDrawer] = useState(false);
+  const [showTierDrawer, setShowTierDrawer] = useState(false);
   const [isAddingAdditional, setIsAddingAdditional] = useState(false);
   const [editingMapping, setEditingMapping] = useState<Mapping | null>(null);
 
@@ -147,13 +169,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                   <span className="material-symbols-outlined text-lg">download</span>
                   Export Schema
                 </button>
-                <button
-                  onClick={handleAddAction}
-                  className="btn-primary h-10 px-6 rounded-xl text-[13px] font-bold flex items-center gap-2 shadow-lg shadow-primary/20 transition-all active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-lg">add</span>
-                  {activeTab === "master" ? "New Subject" : activeTab === "grades" ? "Configure Grade" : "New Mapping"}
-                </button>
               </div>
             }
           />
@@ -209,33 +224,24 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
             {/* Header / Search Area */}
             <div className="p-4 border-b border-slate-100/50 flex flex-wrap gap-4 items-center justify-between">
-              <div className="flex-1 max-w-md">
-                <div className="relative group">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-primary transition-colors text-[20px]">search</span>
+              <div className="flex-1">
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[20px]">search</span>
                   <input
                     type="text"
                     placeholder={`Search in ${activeTab === 'master' ? 'Subjects' : activeTab === 'grades' ? 'Grade Templates' : 'Teacher Assignments'}...`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl pl-11 pr-4 h-11 text-[13px] font-semibold focus:bg-white focus:ring-4 focus:ring-primary/5 outline-none transition-all"
+                    className="input-base pl-11 pr-4 w-full"
                   />
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                {activeTab === "mapping" && (
-                  <button
-                    onClick={handleAddAdditionalSubject}
-                    className="h-11 px-4 bg-primary/10 border border-primary/20 rounded-xl text-[12px] font-bold text-primary flex items-center gap-2 hover:bg-primary/20 transition-all active:scale-95"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">add_task</span>
-                    Add Custom Subject to Section
-                  </button>
-                )}
                 <MenuDropdown
-                  value={sortOrder === "asc" ? "Ascending Order" : "Descending Order"}
+                  value={sortOrder === "asc" ? "Ascending" : "Descending"}
                   trigger={
-                    <button className="h-11 px-4 bg-white border border-slate-100 rounded-xl text-[12px] font-bold text-[#444441] flex items-center gap-2 hover:bg-[#F7F8F4] transition-all">
+                    <button className="btn-outline px-4 gap-2">
                       <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">
                         {sortOrder === "asc" ? "sort_by_alpha" : "filter_list_off"}
                       </span>
@@ -250,7 +256,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 <MenuDropdown
                   value={deptFilter}
                   trigger={
-                    <button className="h-11 px-4 bg-white border border-slate-100 rounded-xl text-[12px] font-bold text-[#444441] flex items-center gap-2 hover:bg-[#F7F8F4] transition-all">
+                    <button className="btn-outline px-4 gap-2">
                       <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">filter_list</span>
                       {deptFilter}
                     </button>
@@ -264,6 +270,26 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                     { label: "Arts", onClick: () => setDeptFilter("Arts") }
                   ]}
                 />
+
+                <div className="h-8 w-px bg-slate-100 mx-1" />
+
+                {activeTab === "mapping" && (
+                  <button
+                    onClick={handleAddAdditionalSubject}
+                    className="btn-secondary h-10 px-4 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">add_task</span>
+                    Custom Mapping
+                  </button>
+                )}
+
+                <button
+                  onClick={handleAddAction}
+                  className="btn-primary h-10 px-6 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[20px]">add</span>
+                  {activeTab === "master" ? "New Subject" : activeTab === "grades" ? "Configure Grade" : "New Mapping"}
+                </button>
               </div>
             </div>
 
@@ -328,13 +354,36 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                   )}
 
                   {activeTab === "grades" && (
+                    <div className="flex flex-col">
+                      <div className="px-8 pt-6 pb-2 flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-[#B0AFA8]">{gradeConfigs.length} grade templates configured</span>
+                        <button
+                          onClick={() => setShowTierDrawer(true)}
+                          className="btn-secondary h-9 px-4 flex items-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">tune</span>
+                          Manage Academic Tiers
+                        </button>
+                      </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
-                      {gradeConfigs.filter(g => g.grade.toLowerCase().includes(searchTerm.toLowerCase())).map((config) => (
+                      {[...gradeConfigs]
+                        .filter(g => g.grade.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .sort((a, b) => sortOrder === "asc" ? a.grade.localeCompare(b.grade) : b.grade.localeCompare(a.grade))
+                        .map((config) => {
+                        const group = gradeGroups.find(gg => gg.grades.includes(config.grade));
+                        return (
                         <div key={config.grade} className="p-6 rounded-[24px] border border-slate-100 bg-white hover:border-primary/30 transition-all group shadow-sm flex flex-col h-full">
                           <div className="flex justify-between items-start mb-6">
                             <div>
-                              <h3 className="text-[18px] font-black text-foreground tracking-tight">{config.grade}</h3>
-                              <p className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider mt-0.5">Core Curriculum Template</p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-[18px] font-black text-foreground tracking-tight">{config.grade}</h3>
+                                {group && (
+                                  <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-100 text-[9px] font-black text-[#B0AFA8] tracking-wider">
+                                    {group.label}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider">Core Curriculum Template</p>
                             </div>
                             <button className="size-10 rounded-xl bg-[#F7F8F4] text-[#B0AFA8] hover:text-primary transition-all flex items-center justify-center">
                               <span className="material-symbols-outlined text-[20px]">settings</span>
@@ -359,7 +408,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                             <span className="text-primary hover:underline cursor-pointer">Edit Template</span>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                       <button
                         onClick={() => setShowGradeDrawer(true)}
                         className="rounded-[24px] border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center gap-3 text-[#B0AFA8] hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group min-h-[220px]"
@@ -368,6 +418,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                         <span className="text-[13px] font-bold">Add Grade Template</span>
                         <span className="text-[11px] font-medium text-center opacity-80 px-4">Create a new default subject package for a specific grade level.</span>
                       </button>
+                    </div>
                     </div>
                   )}
 
