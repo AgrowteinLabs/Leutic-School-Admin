@@ -122,7 +122,9 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const [isAddingAdditional, setIsAddingAdditional] = useState(false);
   const [editingMapping, setEditingMapping] = useState<Mapping | null>(null);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [editingGrade, setEditingGrade] = useState<GradeConfig | null>(null);
   const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
+  const [gradeToDelete, setGradeToDelete] = useState<GradeConfig | null>(null);
 
   // Handlers
   // Derived subject areas (replaces hardcoded departments)
@@ -150,14 +152,30 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     setShowSubjectDrawer(true);
   };
 
+  const handleEditGrade = (config: GradeConfig) => {
+    setEditingGrade(config);
+    setShowGradeDrawer(true);
+  };
+
   const handleDeleteSubject = (sub: Subject) => {
     setSubjectToDelete(sub);
   };
 
-  const onConfirmDelete = () => {
+  const onConfirmDeleteSubject = () => {
     if (subjectToDelete) {
       setSubjects(prev => prev.filter(s => s.id !== subjectToDelete.id));
       setSubjectToDelete(null);
+    }
+  };
+
+  const handleDeleteGrade = (config: GradeConfig) => {
+    setGradeToDelete(config);
+  };
+
+  const onConfirmDeleteGrade = () => {
+    if (gradeToDelete) {
+      setGradeConfigs(prev => prev.filter(g => g.grade !== gradeToDelete.grade));
+      setGradeToDelete(null);
     }
   };
 
@@ -179,6 +197,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const onAddGradeConfig = (newConfig: any) => {
     setGradeConfigs([newConfig, ...gradeConfigs.filter(g => g.grade !== newConfig.grade)]); // Update or add
     setShowGradeDrawer(false);
+    setEditingGrade(null);
   };
 
   const onAddMapping = (newMapping: any) => {
@@ -354,7 +373,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                         <tr className="bg-[#F7F8F4]/50 border-b border-slate-50">
                           {["Subject Name", "Code", "Category", "Department", "Actions"].map((h, i) => (
                             <th key={h} className={cn(
-                              "px-8 py-4 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest",
+                              "px-8 py-4 text-[11px] font-semibold text-[#B0AFA8]",
                               i === 4 ? "text-right" : ""
                             )}>{h}</th>
                           ))}
@@ -372,7 +391,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                   <span className="text-[14px] font-bold text-foreground group-hover:text-primary transition-colors">{sub.name}</span>
                                 </div>
                               </td>
-                              <td className="px-8 py-5 text-[12px] font-bold text-slate-500 uppercase tracking-wider">{sub.code}</td>
+                              <td className="px-8 py-5 text-[12px] font-medium text-slate-500">{sub.code}</td>
                               <td className="px-8 py-5">
                                 <span className={cn(
                                   "px-3 py-1 rounded-full text-[10px] font-bold border capitalize",
@@ -386,14 +405,14 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               <td className="px-8 py-5 text-[13px] font-medium text-[#444441]">{sub.department}</td>
                               <td className="px-8 py-5 text-right">
                                 <div className="flex items-center justify-end gap-1">
-                                  <button 
+                                  <button
                                     onClick={() => handleEditSubject(sub)}
                                     className="size-8 rounded-lg text-[#B0AFA8] hover:bg-white hover:text-primary hover:shadow-sm transition-all flex items-center justify-center"
                                     title="Edit Subject"
                                   >
                                     <span className="material-symbols-outlined text-[18px]">edit</span>
                                   </button>
-                                  <button 
+                                  <button
                                     onClick={() => handleDeleteSubject(sub)}
                                     className="size-8 rounded-lg text-[#B0AFA8] hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center"
                                     title="Delete Subject"
@@ -417,22 +436,20 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                           .map((config) => {
                             const group = gradeGroups.find(gg => gg.grades.includes(config.grade));
                             return (
-                              <div key={config.grade} className="p-6 rounded-[24px] border border-slate-100 bg-white hover:border-primary/30 transition-all group shadow-sm flex flex-col h-full">
+                              <div
+                                key={config.grade}
+                                className="p-6 rounded-[32px] border border-slate-100 bg-white hover:border-primary/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group flex flex-col h-full cursor-default"
+                              >
                                 <div className="flex justify-between items-start mb-6">
                                   <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <h3 className="text-[18px] font-black text-foreground tracking-tight">{config.grade}</h3>
-                                      {group && (
-                                        <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-100 text-[9px] font-black text-[#B0AFA8] tracking-wider">
-                                          {group.label}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider">Core Curriculum Template</p>
+                                    <h3 className="text-[18px] font-bold text-foreground mb-1">{config.grade}</h3>
+                                    <p className="text-[11px] font-medium text-[#B0AFA8]">Default Grade Subjects</p>
                                   </div>
-                                  <button className="size-10 rounded-xl bg-[#F7F8F4] text-[#B0AFA8] hover:text-primary transition-all flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-[20px]">settings</span>
-                                  </button>
+                                  {group && (
+                                    <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[9px] font-bold text-[#B0AFA8]">
+                                      {group.label}
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="flex flex-wrap gap-2 flex-1 items-start content-start">
                                   {config.subjects.map(sid => {
@@ -440,17 +457,35 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                     if (!s) return null;
                                     return (
                                       <span key={sid} className={cn(
-                                        "px-3 py-1.5 text-[11px] font-bold rounded-lg border",
-                                        s.category === "Core" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-[#F7F8F4] text-[#444441] border-slate-100"
+                                        "px-2.5 py-1 text-[10px] font-bold rounded-lg border",
+                                        s.category === "Core" ? "bg-emerald-50/50 text-emerald-700 border-emerald-100/50" :
+                                          s.category === "Elective" ? "bg-blue-50/50 text-blue-700 border-blue-100/50" :
+                                            s.category === "Language" ? "bg-amber-50/50 text-amber-700 border-amber-100/50" :
+                                              "bg-purple-50/50 text-purple-700 border-purple-100/50"
                                       )}>
                                         {s.name}
                                       </span>
                                     );
                                   })}
                                 </div>
-                                <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between text-[11px] font-bold text-[#B0AFA8]">
-                                  <span>{config.subjects.length} Default Subjects</span>
-                                  <span className="text-primary hover:underline cursor-pointer">Edit Template</span>
+                                <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] font-medium text-[#B0AFA8]">{config.subjects.length} Subjects</span>
+                                    <span
+                                      onClick={() => handleEditGrade(config)}
+                                      className="text-[12px] font-bold text-[#444441] hover:text-primary transition-colors cursor-pointer flex items-center gap-1.5 group/edit"
+                                    >
+                                      Edit Template
+                                      <span className="material-symbols-outlined text-[16px] group-hover/edit:translate-x-0.5 transition-transform">arrow_forward</span>
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => handleDeleteGrade(config)}
+                                    className="size-9 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center"
+                                    title="Delete Template"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                                  </button>
                                 </div>
                               </div>
                             );
@@ -490,9 +525,9 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                             <div key={`${s.grade}-${s.id}`} className="group px-8 py-10 border-b border-slate-50 hover:bg-[#F9F9F8]/40 transition-all flex flex-col lg:flex-row gap-12 lg:gap-16 items-start">
                               <div className="w-20 shrink-0">
                                 <span className="text-[10px] font-bold text-[#B0AFA8] block mb-1">{s.grade}</span>
-                                <h4 className="text-[32px] font-black text-secondary leading-none tracking-tighter">{s.id}</h4>
+                                <h4 className="text-[32px] font-bold text-secondary leading-none">{s.id}</h4>
                                 <div className="mt-6 flex items-center gap-1.5 text-secondary/40 group-hover:text-primary transition-colors">
-                                  <span className="text-[12px] font-black leading-none">{totalHours}h</span>
+                                  <span className="text-[12px] font-bold leading-none">{totalHours}h</span>
                                   <span className="material-symbols-outlined text-[16px]">schedule</span>
                                 </div>
                               </div>
@@ -529,7 +564,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                           mapping ? "text-[#444441]" : "text-[#B0AFA8]"
                                         )}>{sub?.name}</span>
                                         {!isFromTemplate && <div className="size-1 rounded-full bg-primary" />}
-                                        {!mapping && <span className="text-[8px] font-black text-red-400 tracking-tighter">Required</span>}
+                                        {!mapping && <span className="text-[8px] font-bold text-red-400">Required</span>}
                                       </div>
                                       <div className="flex justify-between items-center pr-4">
                                         <span className={cn(
@@ -540,7 +575,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                             ? (teachers.find(t => t.id === mapping.teacherId)?.name || mapping.teacherId)
                                             : "Assign Teacher"}
                                         </span>
-                                        {mapping && <span className="text-[11px] font-black text-secondary/20 group-hover/item:text-secondary transition-colors">{mapping.hoursPerWeek}h</span>}
+                                        {mapping && <span className="text-[11px] font-bold text-secondary/20 group-hover/item:text-secondary transition-colors">{mapping.hoursPerWeek}h</span>}
                                       </div>
                                     </div>
                                   );
@@ -582,8 +617,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                         {selectedTimetableSection && (
                           <div className="flex items-center gap-4 pl-8 border-l border-slate-100">
                             <div className="flex flex-col text-right">
-                              <span className="text-[10px] font-black text-[#B0AFA8] uppercase tracking-widest">Selected Roster</span>
-                              <span className="text-[14px] font-black text-secondary">{selectedTimetableSection}</span>
+                              <span className="text-[10px] font-bold text-[#B0AFA8]">Selected Roster</span>
+                              <span className="text-[14px] font-bold text-secondary">{selectedTimetableSection}</span>
                             </div>
                             <button className="size-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
                               <span className="material-symbols-outlined">save</span>
@@ -598,7 +633,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                             <span className="material-symbols-outlined text-[40px]">calendar_view_day</span>
                           </div>
                           <div className="max-w-md space-y-2">
-                            <h3 className="text-[24px] font-black text-secondary tracking-tight">Select a Section</h3>
+                            <h3 className="text-[24px] font-bold text-secondary tracking-tight">Select a Section</h3>
                             <p className="text-[14px] font-medium text-[#B0AFA8] leading-relaxed">
                               Choose a class section from the list above to view or enter their weekly academic schedule.
                             </p>
@@ -608,13 +643,13 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                         <div className="flex-1 p-8 lg:p-12 overflow-auto">
                           <div className="grid grid-cols-6 gap-px bg-slate-100 rounded-[28px] overflow-hidden border border-slate-100 shadow-xl shadow-slate-200/20">
                             {/* Corner */}
-                            <div className="bg-[#FBFBFA] p-4 text-[10px] font-black text-[#B0AFA8] uppercase tracking-[0.2em] flex items-end justify-center">
+                            <div className="bg-[#FBFBFA] p-4 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider flex items-end justify-center">
                               Periods
                             </div>
                             {/* Days Header */}
                             {days.map(day => (
                               <div key={day} className="bg-[#FBFBFA] p-6 text-center">
-                                <span className="text-[14px] font-black text-secondary tracking-tight">{day}</span>
+                                <span className="text-[14px] font-bold text-secondary tracking-tight">{day}</span>
                               </div>
                             ))}
 
@@ -623,7 +658,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               <div key={period} className="contents">
                                 {/* Period Label */}
                                 <div className="bg-white p-6 flex flex-col items-center justify-center border-r border-slate-50">
-                                  <span className="text-[18px] font-black text-secondary leading-none">{period}</span>
+                                  <span className="text-[18px] font-bold text-secondary leading-none">{period}</span>
                                   <span className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-tighter mt-1">Slot</span>
                                 </div>
                                 {/* Day Slots */}
@@ -638,7 +673,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         <div className="h-full flex flex-col justify-between">
                                           <div>
                                             <p className="text-[13px] font-bold text-foreground leading-tight">{entry.subjectName}</p>
-                                            <p className="text-[9px] font-black text-[#B0AFA8] uppercase tracking-wider mt-1">{entry.teacherName}</p>
+                                            <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wide mt-1">{entry.teacherName}</p>
                                           </div>
                                           <button
                                             onClick={(e) => {
@@ -665,7 +700,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                       {assigningSlot?.day === day && assigningSlot?.period === period && (
                                         <div className="absolute inset-0 z-20 bg-white shadow-2xl rounded-xl border border-slate-100 p-4 animate-in fade-in zoom-in duration-200">
                                           <div className="flex justify-between items-center mb-3">
-                                            <span className="text-[10px] font-black text-secondary uppercase tracking-widest">Assign Subject</span>
+                                            <span className="text-[10px] font-bold text-secondary uppercase tracking-wider">Assign Subject</span>
                                             <button onClick={() => setAssigningSlot(null)} className="text-[#B0AFA8] hover:text-secondary">
                                               <span className="material-symbols-outlined text-[16px]">close</span>
                                             </button>
@@ -736,20 +771,25 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         title={editingSubject ? "Edit Subject" : "Add New Subject"}
         subtitle={editingSubject ? "Update the details for this academic subject." : "Add a new subject to your school library. Once added, you can assign it to grades and teachers."}
       >
-        <SubjectForm 
-          initialData={editingSubject} 
-          onClose={() => { setShowSubjectDrawer(false); setEditingSubject(null); }} 
-          onSubmit={onAddSubject} 
+        <SubjectForm
+          initialData={editingSubject}
+          onClose={() => { setShowSubjectDrawer(false); setEditingSubject(null); }}
+          onSubmit={onAddSubject}
         />
       </SideDrawer>
 
       <SideDrawer
         isOpen={showGradeDrawer}
-        onClose={() => setShowGradeDrawer(false)}
-        title="Set Grade Subjects"
-        subtitle="Set up which subjects are taught by default for this grade. You can change these later for specific classes."
+        onClose={() => { setShowGradeDrawer(false); setEditingGrade(null); }}
+        title={editingGrade ? "Edit Grade Template" : "Set Grade Subjects"}
+        subtitle="Choose which subjects are taught by default for this grade. These will be added to all sections automatically."
       >
-        <GradeConfigForm subjects={subjects} onClose={() => setShowGradeDrawer(false)} onSubmit={onAddGradeConfig} />
+        <GradeConfigForm
+          subjects={subjects}
+          initialData={editingGrade}
+          onClose={() => { setShowGradeDrawer(false); setEditingGrade(null); }}
+          onSubmit={onAddGradeConfig}
+        />
       </SideDrawer>
 
       <SideDrawer
@@ -774,7 +814,14 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         isOpen={!!subjectToDelete}
         onClose={() => setSubjectToDelete(null)}
         name={subjectToDelete?.name || ""}
-        onConfirm={onConfirmDelete}
+        onConfirm={onConfirmDeleteSubject}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={!!gradeToDelete}
+        onClose={() => setGradeToDelete(null)}
+        name={gradeToDelete?.grade || ""}
+        onConfirm={onConfirmDeleteGrade}
       />
     </div>
   );
@@ -915,9 +962,10 @@ const DeleteConfirmationModal = ({ isOpen, onClose, name, onConfirm }: any) => {
   );
 };
 
-const GradeConfigForm = ({ subjects, onClose, onSubmit }: any) => {
-  const [grade, setGrade] = useState("Grade 9");
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: any) => {
+  const [grade, setGrade] = useState(initialData?.grade || "");
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>(initialData?.subjects || []);
+  const [formSearch, setFormSearch] = useState("");
 
   const toggleSubject = (id: string) => {
     setSelectedSubjects(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
@@ -925,49 +973,106 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit }: any) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-8 space-y-8 flex-1">
-        <div className="bg-[#F7F8F4] border border-slate-200 rounded-xl p-4 flex gap-3">
-          <span className="material-symbols-outlined text-[#B0AFA8] text-[20px]">account_tree</span>
-          <p className="text-[12px] text-[#444441] leading-relaxed">
-            Set up which subjects are taught by default for this grade. You can change these later for specific classes.
-          </p>
-        </div>
-        <FormGroup label="Target Grade Level" type="select" options={["Grade 1", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]} value={grade} onChange={setGrade} />
+      <div className="p-8 space-y-8 flex-1 overflow-y-auto no-scrollbar">
+        <FormGroup
+          label="Target Grade Level"
+          type="select"
+          options={["Grade 1", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]}
+          value={grade}
+          onChange={setGrade}
+        />
 
-        <div className="space-y-3">
-          <label className="text-[13px] font-semibold text-[#444441] pl-1 flex justify-between">
-            <span>Select Default Subjects</span>
-            <span className="text-primary">{selectedSubjects.length} selected</span>
-          </label>
-          <div className="flex flex-col gap-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-            {subjects.map((s: any) => (
-              <label key={s.id} className={cn(
-                "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all",
-                selectedSubjects.includes(s.id) ? "bg-primary/5 border-primary/30" : "border-slate-100 hover:bg-[#F7F8F4]"
-              )}>
-                <input
-                  type="checkbox"
-                  checked={selectedSubjects.includes(s.id)}
-                  onChange={() => toggleSubject(s.id)}
-                  className="size-4 accent-primary rounded border-slate-300"
-                />
-                <div className="flex flex-col">
-                  <span className={cn("text-[13px] font-semibold", selectedSubjects.includes(s.id) ? "text-primary" : "text-[#444441]")}>{s.name}</span>
-                  <span className="text-[10px] text-[#B0AFA8] font-medium">{s.category}</span>
-                </div>
-              </label>
-            ))}
+        <div className="space-y-6">
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px]">search</span>
+            <input
+              type="text"
+              placeholder="Search subjects..."
+              className="w-full h-11 pl-10 pr-4 bg-[#F7F8F4] border border-slate-200 rounded-xl text-[13px] outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all"
+              value={formSearch}
+              onChange={(e) => setFormSearch(e.target.value)}
+            />
           </div>
+
+          {["Core", "Elective", "Language", "Co-Scholastic"].map(cat => {
+            const catSubjects = subjects
+              .filter((s: any) => s.category === cat)
+              .filter((s: any) =>
+                s.name.toLowerCase().includes(formSearch.toLowerCase()) ||
+                s.code.toLowerCase().includes(formSearch.toLowerCase())
+              );
+
+            if (catSubjects.length === 0) return null;
+
+            return (
+              <div key={cat} className="space-y-3">
+                <div className="flex items-center gap-2 px-1">
+                  <div className={cn(
+                    "size-1.5 rounded-full",
+                    cat === "Core" ? "bg-emerald-400" :
+                      cat === "Elective" ? "bg-blue-400" :
+                        cat === "Language" ? "bg-amber-400" : "bg-purple-400"
+                  )} />
+                  <span className="text-[10px] font-medium text-[#B0AFA8]">{cat}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {catSubjects.map((s: any) => (
+                    <label
+                      key={s.id}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all duration-200 group/item relative overflow-hidden",
+                        selectedSubjects.includes(s.id)
+                          ? "bg-primary/5 border-primary/40"
+                          : "border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50/50"
+                      )}
+                    >
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedSubjects.includes(s.id)}
+                          onChange={() => toggleSubject(s.id)}
+                          className="sr-only"
+                        />
+                        <div className={cn(
+                          "size-5 rounded-lg border flex items-center justify-center transition-all duration-200",
+                          selectedSubjects.includes(s.id)
+                            ? "bg-primary border-primary text-white scale-110"
+                            : "bg-slate-100 border-slate-200 group-hover/item:border-slate-300"
+                        )}>
+                          {selectedSubjects.includes(s.id) && (
+                            <span className="material-symbols-outlined text-[14px] font-bold animate-in zoom-in duration-200">check</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className={cn(
+                          "text-[13px] font-semibold truncate leading-tight transition-colors",
+                          selectedSubjects.includes(s.id) ? "text-foreground" : "text-[#444441] group-hover/item:text-foreground"
+                        )}>{s.name}</span>
+                        <span className="text-[10px] text-[#B0AFA8] font-medium tracking-wide">{s.code}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
+
       <div className="p-8 border-t border-slate-50 bg-[#FBFBFA] flex gap-3">
-        <button onClick={onClose} className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors">Cancel</button>
+        <button
+          onClick={onClose}
+          className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
+        >
+          Cancel
+        </button>
         <button
           onClick={() => onSubmit({ grade, subjects: selectedSubjects })}
           disabled={selectedSubjects.length === 0}
           className="flex-[2] btn-primary h-12 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
         >
-          Save Blueprint
+          {initialData ? "Update Template" : "Save Template"}
         </button>
       </div>
     </div>
@@ -1066,16 +1171,16 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
               </div>
               <div className="flex gap-4">
                 <div className="flex-1 bg-white rounded-lg border border-slate-50 p-3 text-center">
-                  <p className="text-[18px] font-black text-foreground">{teacherMappings.length}</p>
-                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wider mt-0.5">Active Classes</p>
+                  <p className="text-[18px] font-bold text-foreground">{teacherMappings.length}</p>
+                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wide mt-0.5">Active Classes</p>
                 </div>
                 <div className="flex-1 bg-white rounded-lg border border-slate-50 p-3 text-center">
-                  <p className="text-[18px] font-black text-foreground">{totalHours}</p>
-                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wider mt-0.5">Hours / Week</p>
+                  <p className="text-[18px] font-bold text-foreground">{totalHours}</p>
+                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wide mt-0.5">Hours / Week</p>
                 </div>
                 <div className="flex-1 bg-white rounded-lg border border-slate-50 p-3 text-center">
-                  <p className="text-[18px] font-black text-foreground">{selectedTeacher.teachingScope.length}</p>
-                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wider mt-0.5">Grade Scope</p>
+                  <p className="text-[18px] font-bold text-foreground">{selectedTeacher.teachingScope.length}</p>
+                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wide mt-0.5">Grade Scope</p>
                 </div>
               </div>
               {teacherMappings.length > 0 && (
@@ -1158,81 +1263,105 @@ const TierManagementForm = ({ groups, setGroups, gradeConfigs, onClose }: any) =
   return (
     <div className="flex flex-col h-full">
       <div className="p-8 space-y-8 flex-1 overflow-y-auto no-scrollbar">
+
         {/* Tier List */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {groups.map((group: any) => (
-            <div key={group.id} className="p-5 rounded-[20px] border border-slate-100 bg-white shadow-sm space-y-4 hover:shadow-md transition-shadow group/tier relative">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="size-8 rounded-lg bg-[#F7F8F4] flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined text-[18px]">layers</span>
+            <div key={group.id} className="p-6 rounded-[32px] border border-slate-100 bg-white hover:border-slate-200 transition-all group/tier relative">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="size-10 rounded-2xl bg-[#F7F8F4] flex items-center justify-center text-primary shrink-0 border border-slate-100">
+                    <span className="material-symbols-outlined text-[20px]">layers</span>
                   </div>
-                  <input
-                    className="bg-transparent border-none text-[14px] font-black text-foreground outline-none focus:ring-0 p-0 w-full"
-                    value={group.label}
-                    onChange={(e) => {
-                      const newGroups = groups.map((g: any) => g.id === group.id ? { ...g, label: e.target.value } : g);
-                      setGroups(newGroups);
-                    }}
-                  />
+                  <div className="flex flex-col flex-1">
+                    <input
+                      className="bg-transparent border-none text-[14px] font-bold text-foreground outline-none focus:ring-0 p-0 w-full placeholder:text-slate-300"
+                      value={group.label}
+                      placeholder="Name this tier..."
+                      onChange={(e) => {
+                        const newGroups = groups.map((g: any) => g.id === group.id ? { ...g, label: e.target.value } : g);
+                        setGroups(newGroups);
+                      }}
+                    />
+                    <span className="text-[10px] font-medium text-[#B0AFA8] mt-1">Tier Name</span>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1">
-                  {unassignedGrades.length > 0 && (
-                    <MenuDropdown
-                      trigger={
-                        <button className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all" title="Add Unassigned Grade">
-                          <span className="material-symbols-outlined text-[18px]">add</span>
-                        </button>
-                      }
-                      items={unassignedGrades.map((g: string) => ({
-                        label: g,
-                        onClick: () => addGrade(group.id, g)
-                      }))}
-                      width="w-40"
-                    />
-                  )}
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => removeTier(group.id)}
-                    className="size-8 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center opacity-0 group-hover/tier:opacity-100"
+                    className="size-10 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center opacity-0 group-hover/tier:opacity-100"
                     title="Delete Tier"
                   >
-                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                    <span className="material-symbols-outlined text-[20px]">delete</span>
                   </button>
                 </div>
               </div>
 
+
               {/* Grade Chips */}
-              <div className="flex flex-wrap gap-2">
-                {group.grades.length === 0 ? (
-                  <p className="text-[11px] text-[#B0AFA8] italic py-2">No grades assigned.</p>
-                ) : (
-                  group.grades.map((grade: string) => (
-                    <button
-                      key={grade}
-                      onClick={() => removeGrade(group.id, grade)}
-                      className="px-3 py-1.5 bg-[#F7F8F4] border border-slate-100 rounded-lg text-[11px] font-bold text-[#444441] hover:bg-red-50 hover:border-red-100 hover:text-red-600 transition-all flex items-center gap-2 group/chip"
-                    >
-                      {grade}
-                      <span className="material-symbols-outlined text-[14px] text-[#B0AFA8] group-hover/chip:text-red-500">close</span>
-                    </button>
-                  ))
-                )}
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2.5">
+                  {group.grades.length === 0 ? (
+                    <div className="w-full py-6 flex flex-col items-center justify-center border-2 border-dashed border-slate-50 rounded-2xl bg-slate-50/30">
+                      <p className="text-[11px] text-[#B0AFA8] font-medium">No grades assigned to this tier yet</p>
+                    </div>
+                  ) : (
+                    group.grades.map((grade: string) => (
+                      <button
+                        key={grade}
+                        onClick={() => removeGrade(group.id, grade)}
+                        className="px-4 py-2 bg-[#F7F8F4] border border-slate-100 rounded-xl text-[12px] font-semibold text-[#444441] hover:bg-red-50 hover:border-red-100 hover:text-red-600 transition-all flex items-center gap-2 group/chip"
+                      >
+                        {grade}
+                        <span className="material-symbols-outlined text-[14px] text-[#B0AFA8] group-hover/chip:text-red-500 transition-colors">close</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+
+                <div className="pt-2 space-y-4">
+                  <div className="flex items-center gap-2 px-1">
+                    <p className="text-[10px] font-medium text-[#B0AFA8]">Available Grades</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 px-1">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                      .map(n => `Grade ${n}`)
+                      .filter(g => !groups.some((tg: any) => tg.grades.includes(g))) // ONLY unassigned
+                      .length === 0 ? (
+                      <div className="flex items-center gap-2 text-slate-400 py-2">
+                        <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                        <p className="text-[10px] font-semibold italic">All institutional grades have been categorized.</p>
+                      </div>
+                    ) : (
+                      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                        .map(n => `Grade ${n}`)
+                        .filter(g => !groups.some((tg: any) => tg.grades.includes(g)))
+                        .map(g => (
+                          <button
+                            key={g}
+                            onClick={() => addGrade(group.id, g)}
+                            className="px-3 py-1.5 bg-white border border-slate-100 rounded-xl text-[11px] font-bold text-[#444441] hover:bg-primary/5 hover:border-primary/40 transition-all active:scale-95 flex items-center gap-1.5"
+                          >
+                            <span className="material-symbols-outlined text-[14px] text-primary/60">add</span>
+                            {g}
+                          </button>
+                        ))
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           ))}
 
           <button
             onClick={addNewTier}
-            className="w-full py-4 rounded-[20px] border-2 border-dashed border-slate-100 text-[#B0AFA8] hover:border-primary hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2 group"
+            className="w-full h-12 rounded-xl text-[#B0AFA8] hover:text-primary transition-all flex items-center justify-center gap-2 group"
           >
-            <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">add_circle</span>
-            <span className="text-[13px] font-bold">Add New Academic Tier</span>
+            <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">add</span>
+            <span className="text-[13px] font-semibold">Define New Academic Tier</span>
           </button>
         </div>
-      </div>
-      <div className="p-8 border-t border-slate-50 bg-[#FBFBFA]">
-        <button onClick={onClose} className="w-full btn-primary h-12 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20">Done</button>
       </div>
     </div>
   );

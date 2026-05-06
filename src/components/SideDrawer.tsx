@@ -41,20 +41,18 @@ export const SideDrawer = ({
             )}
           >
             {/* Header */}
-            <div className="p-8 pb-6 bg-white border-b border-slate-50 relative shrink-0">
+            <div className="p-8 pb-6 border-b border-slate-50 relative shrink-0">
               <button
                 onClick={onClose}
-                className="absolute top-8 right-8 size-10 rounded-full bg-[#FBFBFA] flex items-center justify-center text-[#B0AFA8] hover:text-foreground transition-all group"
+                className="absolute top-8 right-8 size-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[#B0AFA8] hover:text-foreground transition-all group shadow-sm"
               >
                 <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
               </button>
 
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 mb-2">
-                  {/* <div className="size-1.5 rounded-full bg-primary" /> */}
-                  {/* <span className="text-[12px] font-bold text-[#B0AFA8] tracking-tight">Academic Console</span> */}
                 </div>
-                <h2 className="text-2xl font-black text-foreground tracking-tight leading-tight">{title}</h2>
+                <h2 className="text-2xl font-bold text-foreground tracking-tight leading-tight">{title}</h2>
                 {subtitle && (
                   <p className="text-[13px] font-medium text-[#B0AFA8] mt-2 leading-relaxed">{subtitle}</p>
                 )}
