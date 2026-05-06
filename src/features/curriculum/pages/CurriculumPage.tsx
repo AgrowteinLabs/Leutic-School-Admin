@@ -48,6 +48,15 @@ interface Teacher {
   specializations: string[]; // Subject IDs this teacher specializes in
 }
 
+interface BreakDef {
+  id: string;
+  afterPeriod: number;
+  duration: number;       // minutes
+  type: 'short' | 'lunch' | 'prayer';
+  label: string;
+  days: string[];         // empty = all days; otherwise specific days only
+}
+
 export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
   const { tab } = useParams();
@@ -94,17 +103,63 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
   const [periods] = useState([1, 2, 3, 4, 5, 6, 7, 8]);
-  const [periodConfig, setPeriodConfig] = useState<{ [key: number]: { start: string, end: string } }>({
-    1: { start: "08:30", end: "09:30" },
-    2: { start: "09:30", end: "10:30" },
-    3: { start: "10:30", end: "11:30" },
-    4: { start: "11:30", end: "12:30" },
-    5: { start: "13:30", end: "14:30" },
-    6: { start: "14:30", end: "15:30" },
-    7: { start: "15:30", end: "16:30" },
-    8: { start: "16:30", end: "17:30" },
+  const [scheduleConfig, setScheduleConfig] = useState({
+    schoolStart: "08:30",
+    uniformDuration: true,
+    defaultDuration: 60,
   });
+  const [periodDurations, setPeriodDurations] = useState<{ [key: number]: number }>({});
+  const [breakConfig, setBreakConfig] = useState<BreakDef[]>([
+    { id: "b1", afterPeriod: 2, duration: 15, type: 'short' as const, label: "Short Break" },
+    { id: "b2", afterPeriod: 5, duration: 40, type: 'lunch' as const, label: "Lunch Break" },
+  ]);
+  const [showSchedulePanel, setShowSchedulePanel] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<number | null>(null);
+  const timeToMins = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+  const minsToTime = (mins: number) => {
+    const h = Math.floor(Math.max(0, mins) / 60);
+    const m = Math.max(0, mins) % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
+  const periodConfig = useMemo(() => {
+    let cur = timeToMins(scheduleConfig.schoolStart);
+    const cfg: { [n: number]: { start: string; end: string } } = {};
+    for (const p of periods) {
+      const dur = scheduleConfig.uniformDuration
+        ? scheduleConfig.defaultDuration
+        : (periodDurations[p] || scheduleConfig.defaultDuration);
+      cfg[p] = { start: minsToTime(cur), end: minsToTime(cur + dur) };
+      cur += dur;
+      const brk = breakConfig.find(b => b.afterPeriod === p);
+      if (brk) cur += brk.duration;
+    }
+    return cfg;
+  }, [scheduleConfig, periodDurations, breakConfig, periods]);
+
+  const scheduleSlots = useMemo(() => {
+    type Slot = { kind: 'period'; periodNum: number; rowIdx: number } | { kind: 'break'; brk: BreakDef; rowIdx: number };
+    const slots: Slot[] = [];
+    let rowIdx = 0;
+    for (const p of periods) {
+      slots.push({ kind: 'period', periodNum: p, rowIdx });
+      rowIdx++;
+      const brk = breakConfig.find(b => b.afterPeriod === p);
+      if (brk) {
+        slots.push({ kind: 'break', brk, rowIdx });
+        rowIdx++;
+      }
+    }
+    return slots;
+  }, [breakConfig, periods]);
+
+  const getPeriodRowIdx = (periodNum: number) => {
+    const slot = scheduleSlots.find(s => s.kind === 'period' && s.periodNum === periodNum);
+    return slot ? slot.rowIdx : 0;
+  };
   const [subjectSearch, setSubjectSearch] = useState("");
   const ACADEMIC_AREAS = ["Mathematics", "Science", "Humanities", "Languages", "Arts", "Technology", "Administration", "Sports"];
 
@@ -780,13 +835,185 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 </span>
                               </div>
                             </div>
-                            <button className="h-10 px-6 rounded-xl bg-primary text-white text-[12px] font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                              <span className="material-symbols-outlined text-[18px]">save</span>
-                              <span>Save Schedule</span>
-                            </button>
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => setShowSchedulePanel(prev => !prev)}
+                                className={cn(
+                                  "h-10 px-5 rounded-xl text-[12px] font-bold flex items-center gap-2 border transition-all",
+                                  showSchedulePanel
+                                    ? "bg-secondary text-white border-secondary"
+                                    : "bg-white text-secondary border-[#EBE8E0] hover:border-secondary/30"
+                                )}
+                              >
+                                <span className="material-symbols-outlined text-[18px]">tune</span>
+                                <span>Configure</span>
+                              </button>
+                              <button className="h-10 px-6 rounded-xl bg-primary text-white text-[12px] font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                                <span className="material-symbols-outlined text-[18px]">save</span>
+                                <span>Save Schedule</span>
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
+
+                      {/* Schedule Config Panel */}
+                      {showSchedulePanel && (
+                        <div className="px-10 py-6 border-b border-slate-100 bg-[#FDFCFB]/80 animate-in slide-in-from-top-2 duration-300">
+                          <div className="flex flex-wrap gap-10 items-start">
+
+                            {/* School Start + Period Duration */}
+                            <div className="flex flex-col gap-3">
+                              <span className="text-[11px] font-bold text-slate-400 tracking-tight uppercase">Schedule</span>
+                              <div className="flex items-center gap-4">
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-[10px] text-slate-400 font-medium">School starts</span>
+                                  <input
+                                    type="time"
+                                    value={scheduleConfig.schoolStart}
+                                    onChange={(e) => setScheduleConfig(prev => ({ ...prev, schoolStart: e.target.value }))}
+                                    className="h-9 px-3 rounded-lg border border-[#EBE8E0] text-[12px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white shadow-sm"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-[10px] text-slate-400 font-medium">Period duration</span>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      min={5}
+                                      max={180}
+                                      value={scheduleConfig.defaultDuration}
+                                      onChange={(e) => setScheduleConfig(prev => ({ ...prev, defaultDuration: parseInt(e.target.value) || 60 }))}
+                                      disabled={!scheduleConfig.uniformDuration}
+                                      className="h-9 w-16 px-2 rounded-lg border border-[#EBE8E0] text-[12px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white shadow-sm disabled:opacity-40"
+                                    />
+                                    <span className="text-[11px] text-slate-400">min</span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-[10px] text-slate-400 font-medium">Duration mode</span>
+                                  <button
+                                    onClick={() => setScheduleConfig(prev => ({ ...prev, uniformDuration: !prev.uniformDuration }))}
+                                    className={cn(
+                                      "h-9 px-4 rounded-lg text-[11px] font-bold border transition-all",
+                                      scheduleConfig.uniformDuration
+                                        ? "bg-white border-[#EBE8E0] text-slate-500"
+                                        : "bg-primary/10 border-primary/20 text-primary"
+                                    )}
+                                  >
+                                    {scheduleConfig.uniformDuration ? "Uniform" : "Variable"}
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Variable durations per period */}
+                              {!scheduleConfig.uniformDuration && (
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                  {periods.map(p => (
+                                    <div key={p} className="flex flex-col items-center gap-0.5">
+                                      <span className="text-[9px] text-slate-400 font-semibold">P{p}</span>
+                                      <input
+                                        type="number"
+                                        min={5}
+                                        max={180}
+                                        value={periodDurations[p] || scheduleConfig.defaultDuration}
+                                        onChange={(e) => setPeriodDurations(prev => ({ ...prev, [p]: parseInt(e.target.value) || scheduleConfig.defaultDuration }))}
+                                        className="h-8 w-12 text-center rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white shadow-sm"
+                                      />
+                                      <span className="text-[8px] text-slate-300">min</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Breaks */}
+                            <div className="flex flex-col gap-3 flex-1 min-w-[280px]">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-400 tracking-tight uppercase">Breaks</span>
+                                <button
+                                  onClick={() => setBreakConfig(prev => [
+                                    ...prev,
+                                    { id: `b${Date.now()}`, afterPeriod: periods[Math.floor(periods.length / 2)], duration: 15, type: 'short' as const, label: 'Short Break' }
+                                  ])}
+                                  className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/70 transition-colors"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">add</span>
+                                  Add break
+                                </button>
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                {breakConfig.map(brk => (
+                                  <div key={brk.id} className="flex items-center gap-3 bg-white rounded-xl border border-[#EBE8E0] px-4 py-2.5 shadow-sm">
+                                    <span className={cn("material-symbols-outlined text-[16px]", brk.type === 'lunch' ? "text-amber-400" : "text-slate-400")}>
+                                      {brk.type === 'lunch' ? 'restaurant' : 'free_breakfast'}
+                                    </span>
+                                    <div className="flex items-center gap-2 flex-1 flex-wrap">
+                                      <div className="flex flex-col gap-0.5">
+                                        <span className="text-[9px] text-slate-400">After period</span>
+                                        <select
+                                          value={brk.afterPeriod}
+                                          onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, afterPeriod: parseInt(e.target.value) } : b))}
+                                          className="h-7 px-1.5 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
+                                        >
+                                          {periods.map(p => <option key={p} value={p}>Period {p}</option>)}
+                                        </select>
+                                      </div>
+                                      <div className="flex flex-col gap-0.5">
+                                        <span className="text-[9px] text-slate-400">Duration</span>
+                                        <div className="flex items-center gap-1">
+                                          <input
+                                            type="number"
+                                            min={5}
+                                            max={90}
+                                            value={brk.duration}
+                                            onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, duration: parseInt(e.target.value) || 15 } : b))}
+                                            className="h-7 w-12 text-center rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
+                                          />
+                                          <span className="text-[9px] text-slate-400">min</span>
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col gap-0.5">
+                                        <span className="text-[9px] text-slate-400">Type</span>
+                                        <select
+                                          value={brk.type}
+                                          onChange={(e) => {
+                                            const t = e.target.value as 'short' | 'lunch';
+                                            setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: t, label: t === 'lunch' ? 'Lunch Break' : 'Short Break' } : b));
+                                          }}
+                                          className="h-7 px-1.5 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
+                                        >
+                                          <option value="short">Short</option>
+                                          <option value="lunch">Lunch</option>
+                                        </select>
+                                      </div>
+                                      <div className="flex flex-col gap-0.5">
+                                        <span className="text-[9px] text-slate-400">Label</span>
+                                        <input
+                                          type="text"
+                                          value={brk.label}
+                                          onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, label: e.target.value } : b))}
+                                          className="h-7 w-24 px-2 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
+                                        />
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() => setBreakConfig(prev => prev.filter(b => b.id !== brk.id))}
+                                      className="size-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition-colors"
+                                    >
+                                      <span className="material-symbols-outlined text-[14px]">close</span>
+                                    </button>
+                                  </div>
+                                ))}
+                                {breakConfig.length === 0 && (
+                                  <div className="text-[11px] text-slate-300 font-medium text-center py-3">No breaks configured</div>
+                                )}
+                              </div>
+                            </div>
+
+                          </div>
+                        </div>
+                      )}
 
                       {!selectedTimetableSection ? (
                         <div className="flex-1 flex flex-col items-center justify-center p-20 text-center relative overflow-hidden">
@@ -811,7 +1038,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                           <div className="max-w-[1200px] mx-auto">
                             <div
                               className="grid grid-cols-[100px_repeat(5,1fr)] select-none"
-                              style={{ gridTemplateRows: `auto repeat(${periods.length}, minmax(140px, auto))` }}
+                              style={{ gridTemplateRows: `auto ${scheduleSlots.map(s => s.kind === 'period' ? 'minmax(140px, auto)' : '44px').join(' ')}` }}
                               onMouseLeave={() => extendingSlot && setExtensionTarget(null)}
                               onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
                             >
@@ -830,42 +1057,80 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 </div>
                               ))}
 
-                              {/* Period Labels */}
-                              {periods.map((period, pIdx) => (
-                                <div
-                                  key={`label-${period}`}
-                                  style={{ gridRow: pIdx + 2, gridColumn: 1 }}
-                                  className="flex flex-col items-center justify-start pt-6 gap-2 border-b border-r border-[#EBE8E0] pr-8 relative min-w-[100px]"
-                                >
-                                  <span className="text-[24px] font-bold text-secondary/80 leading-none">{period}</span>
-                                  {editingPeriod === period ? (
-                                    <div className="flex flex-col gap-1 mt-1">
-                                      <input
-                                        autoFocus
-                                        type="text"
-                                        value={periodConfig[period].start}
-                                        onChange={(e) => setPeriodConfig(prev => ({ ...prev, [period]: { ...prev[period], start: e.target.value } }))}
-                                        onBlur={() => setEditingPeriod(null)}
-                                        className="w-14 text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-2 py-1 outline-none focus:border-primary shadow-sm"
-                                      />
-                                      <input
-                                        type="text"
-                                        value={periodConfig[period].end}
-                                        onChange={(e) => setPeriodConfig(prev => ({ ...prev, [period]: { ...prev[period], end: e.target.value } }))}
-                                        onBlur={() => setEditingPeriod(null)}
-                                        className="w-14 text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-2 py-1 outline-none focus:border-primary shadow-sm"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <button
-                                      onClick={() => setEditingPeriod(period)}
-                                      className="text-[11px] font-semibold text-slate-400 tracking-tight hover:text-primary transition-colors"
+                              {/* Period Labels + Break Labels */}
+                              {scheduleSlots.map((slot) => {
+                                const gridRow = slot.rowIdx + 2;
+                                if (slot.kind === 'break') {
+                                  const brk = slot.brk;
+                                  const isLunch = brk.type === 'lunch';
+                                  return (
+                                    <div
+                                      key={`break-label-${brk.id}`}
+                                      style={{ gridRow, gridColumn: 1 }}
+                                      className="flex items-center justify-center border-b border-r border-[#EBE8E0] bg-slate-50/60"
                                     >
-                                      {periodConfig[period].start} — {periodConfig[period].end}
-                                    </button>
-                                  )}
-                                </div>
-                              ))}
+                                      <span className="material-symbols-outlined text-[14px] text-slate-400">
+                                        {isLunch ? 'restaurant' : 'free_breakfast'}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+                                const period = slot.periodNum;
+                                const dur = scheduleConfig.uniformDuration
+                                  ? scheduleConfig.defaultDuration
+                                  : (periodDurations[period] || scheduleConfig.defaultDuration);
+                                return (
+                                  <div
+                                    key={`label-${period}`}
+                                    style={{ gridRow, gridColumn: 1 }}
+                                    className="flex flex-col items-center justify-start pt-6 gap-1.5 border-b border-r border-[#EBE8E0] pr-6 pl-2 relative min-w-[100px]"
+                                  >
+                                    <span className="text-[24px] font-bold text-secondary/80 leading-none">{period}</span>
+                                    {editingPeriod === period ? (
+                                      <div
+                                        className="flex flex-col gap-1 mt-1"
+                                        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setEditingPeriod(null); }}
+                                      >
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[9px] text-slate-400 w-5">dur</span>
+                                          <input
+                                            autoFocus
+                                            type="number"
+                                            min={5}
+                                            max={180}
+                                            value={dur}
+                                            onChange={(e) => {
+                                              const v = parseInt(e.target.value) || scheduleConfig.defaultDuration;
+                                              if (scheduleConfig.uniformDuration) {
+                                                setScheduleConfig(prev => ({ ...prev, defaultDuration: v }));
+                                              } else {
+                                                setPeriodDurations(prev => ({ ...prev, [period]: v }));
+                                              }
+                                            }}
+                                            className="w-12 text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-2 py-1 outline-none focus:border-primary shadow-sm"
+                                          />
+                                          <span className="text-[9px] text-slate-400">min</span>
+                                        </div>
+                                        <div className="text-[9px] text-slate-300 text-center">{periodConfig[period]?.start} — {periodConfig[period]?.end}</div>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => setEditingPeriod(period)}
+                                        className="flex flex-col items-center gap-0.5 group/time"
+                                      >
+                                        <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">
+                                          {periodConfig[period]?.start}
+                                        </span>
+                                        <span className="text-[9px] font-medium text-slate-300">—</span>
+                                        <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">
+                                          {periodConfig[period]?.end}
+                                        </span>
+                                        <span className="text-[8px] text-slate-300 mt-0.5">{dur}m</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
 
                               {/* Day Cells — vertical drag merges periods (CSS span), horizontal drag fills days */}
                               {(() => {
@@ -881,8 +1146,52 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                     }
                                   });
 
-                                return periods.flatMap((period, pIdx) =>
-                                  days.map((day, dIdx) => {
+                                // Render break rows (full-width across all day columns)
+                                const breakRows = scheduleSlots
+                                  .filter(s => s.kind === 'break')
+                                  .map(slot => {
+                                    if (slot.kind !== 'break') return null;
+                                    const { brk, rowIdx } = slot;
+                                    const isLunch = brk.type === 'lunch';
+                                    const brkTimes = (() => {
+                                      let cur = timeToMins(scheduleConfig.schoolStart);
+                                      for (const p of periods) {
+                                        const dur2 = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
+                                        cur += dur2;
+                                        if (breakConfig.find(b => b.id === brk.id && b.afterPeriod === p)) {
+                                          return { start: minsToTime(cur), end: minsToTime(cur + brk.duration) };
+                                        }
+                                        const b2 = breakConfig.find(b => b.afterPeriod === p);
+                                        if (b2) cur += b2.duration;
+                                      }
+                                      return { start: '', end: '' };
+                                    })();
+                                    return (
+                                      <div
+                                        key={`break-row-${brk.id}`}
+                                        style={{ gridRow: rowIdx + 2, gridColumn: '2 / 7' }}
+                                        className={cn(
+                                          "flex items-center justify-center gap-3 border-b border-[#EBE8E0]",
+                                          isLunch ? "bg-amber-50/40" : "bg-slate-50/60"
+                                        )}
+                                      >
+                                        <span className={cn("material-symbols-outlined text-[16px]", isLunch ? "text-amber-400" : "text-slate-400")}>
+                                          {isLunch ? 'restaurant' : 'free_breakfast'}
+                                        </span>
+                                        <span className={cn("text-[11px] font-semibold", isLunch ? "text-amber-600/70" : "text-slate-400")}>
+                                          {brk.label}
+                                        </span>
+                                        <span className="text-[10px] text-slate-300 font-medium">
+                                          {brkTimes.start} — {brkTimes.end} · {brk.duration}m
+                                        </span>
+                                      </div>
+                                    );
+                                  });
+
+                                // Render period day cells
+                                const periodCells = periods.flatMap((period, _pIdx) => {
+                                  const pRowIdx = getPeriodRowIdx(period);
+                                  return days.map((day, dIdx) => {
                                     const cellKey = `${day}-${period}`;
                                     if (coveredCells.has(cellKey)) return null;
 
@@ -914,7 +1223,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                       animate={{ opacity: 1, y: 0 }}
                                       transition={{ delay: (period * 5 + dIdx) * 0.015 }}
                                       style={{
-                                        gridRow: `${pIdx + 2} / span ${spanP}`,
+                                        gridRow: `${pRowIdx + 2} / span ${spanP}`,
                                         gridColumn: dIdx + 2
                                       }}
                                       className={cn(
@@ -1173,8 +1482,10 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                       )}
                                     </motion.div>
                                   );
-                                })
-                              );
+                                  });
+                                });
+
+                                return [...breakRows, ...periodCells];
                             })()}
                             </div>
                           </div>
