@@ -6,16 +6,18 @@ interface SideDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  subtitle?: string;
   children: React.ReactNode;
   maxWidth?: string;
 }
 
-export const SideDrawer = ({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
-  maxWidth = "max-w-[500px]" 
+export const SideDrawer = ({
+  isOpen,
+  onClose,
+  title,
+  subtitle,
+  children,
+  maxWidth = "max-w-[500px]"
 }: SideDrawerProps) => {
   return (
     <AnimatePresence>
@@ -26,30 +28,36 @@ export const SideDrawer = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-slate-900/10 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-[#152328]/30 backdrop-blur-md"
           />
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 35, stiffness: 400 }}
+            transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
             className={cn(
-              "relative w-full bg-[#FBFBFA] shadow-2xl h-full flex flex-col overflow-hidden border-l border-slate-100",
+              "relative w-full bg-[#FBFBFA] shadow-[-20px_0_50px_-10px_rgba(21,35,40,0.1)] h-full flex flex-col overflow-hidden border-l border-white/20",
               maxWidth
             )}
           >
             {/* Header */}
             <div className="p-8 pb-6 bg-white border-b border-slate-50 relative shrink-0">
-              <button 
+              <button
                 onClick={onClose}
                 className="absolute top-8 right-8 size-10 rounded-full bg-[#FBFBFA] flex items-center justify-center text-[#B0AFA8] hover:text-foreground transition-all group"
               >
                 <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
               </button>
-              
+
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-[#B0AFA8] uppercase tracking-[0.2em] mb-1">Management Console</span>
-                <h2 className="text-2xl font-black text-foreground tracking-tight leading-none">{title}</h2>
+                <div className="flex items-center gap-2 mb-2">
+                  {/* <div className="size-1.5 rounded-full bg-primary" /> */}
+                  {/* <span className="text-[12px] font-bold text-[#B0AFA8] tracking-tight">Academic Console</span> */}
+                </div>
+                <h2 className="text-2xl font-black text-foreground tracking-tight leading-tight">{title}</h2>
+                {subtitle && (
+                  <p className="text-[13px] font-medium text-[#B0AFA8] mt-2 leading-relaxed">{subtitle}</p>
+                )}
               </div>
             </div>
 

@@ -5,6 +5,9 @@ import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
+import { SideDrawer } from "../../../components/SideDrawer";
+import { AppDropdown } from "../../../components/AppDropdown";
+import { AppDatePicker } from "../../../components/AppDatePicker";
 
 // Types
 interface Subject {
@@ -55,10 +58,12 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
   const periods = [1, 2, 3, 4, 5, 6, 7, 8];
+  const ACADEMIC_AREAS = ["Mathematics", "Science", "Humanities", "Languages", "Arts", "Technology", "Administration", "Sports"];
 
   // State Data
+
   const [subjects, setSubjects] = useState<Subject[]>([
-    { id: "SUB-001", name: "Mathematics", code: "MAT101", category: "Core", department: "Science" },
+    { id: "SUB-001", name: "Mathematics", code: "MAT101", category: "Core", department: "Mathematics" },
     { id: "SUB-002", name: "English Language", code: "ENG101", category: "Core", department: "Humanities" },
     { id: "SUB-003", name: "Physics", code: "PHY101", category: "Core", department: "Science" },
     { id: "SUB-004", name: "Chemistry", code: "CHE101", category: "Core", department: "Science" },
@@ -108,6 +113,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
+
   // Modal States
   const [showSubjectDrawer, setShowSubjectDrawer] = useState(false);
   const [showGradeDrawer, setShowGradeDrawer] = useState(false);
@@ -115,8 +121,14 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const [showTierDrawer, setShowTierDrawer] = useState(false);
   const [isAddingAdditional, setIsAddingAdditional] = useState(false);
   const [editingMapping, setEditingMapping] = useState<Mapping | null>(null);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
 
   // Handlers
+  // Derived subject areas (replaces hardcoded departments)
+  // Derived subject areas for filtering (All distinct areas currently in use)
+  const activeSubjectAreas = useMemo(() => [...new Set(subjects.map(s => s.department))].sort(), [subjects]);
+
   const handleAddAction = () => {
     if (activeTab === "master") setShowSubjectDrawer(true);
     else if (activeTab === "grades") setShowGradeDrawer(true);
@@ -133,14 +145,35 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     setShowMappingDrawer(true);
   };
 
+  const handleEditSubject = (sub: Subject) => {
+    setEditingSubject(sub);
+    setShowSubjectDrawer(true);
+  };
+
+  const handleDeleteSubject = (sub: Subject) => {
+    setSubjectToDelete(sub);
+  };
+
+  const onConfirmDelete = () => {
+    if (subjectToDelete) {
+      setSubjects(prev => prev.filter(s => s.id !== subjectToDelete.id));
+      setSubjectToDelete(null);
+    }
+  };
+
   const handleAddAdditionalSubject = () => {
     setIsAddingAdditional(true); // Flag for section override
     setShowMappingDrawer(true);
   };
 
-  const onAddSubject = (newSubject: any) => {
-    setSubjects([{ ...newSubject, id: `SUB-${Date.now()}` }, ...subjects]);
+  const onAddSubject = (subjectData: any) => {
+    if (editingSubject) {
+      setSubjects(prev => prev.map(s => s.id === editingSubject.id ? { ...s, ...subjectData } : s));
+    } else {
+      setSubjects([{ ...subjectData, id: `SUB-${Date.now()}` }, ...subjects]);
+    }
     setShowSubjectDrawer(false);
+    setEditingSubject(null);
   };
 
   const onAddGradeConfig = (newConfig: any) => {
@@ -179,7 +212,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             <div className="flex gap-8 overflow-x-auto no-scrollbar">
               {[
                 { id: "master", label: "Subject Master", icon: "book_4" },
-                { id: "grades", label: "Grade Configuration", icon: "account_tree" },
+                { id: "grades", label: "Grade Templates", icon: "account_tree" },
                 { id: "mapping", label: "Teacher Mapping", icon: "assignment_ind" },
                 { id: "timetable", label: "Weekly Timetable", icon: "calendar_view_week" },
               ].map((t) => {
@@ -221,10 +254,10 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pt-8 pb-10">
         <div className="max-w-[1400px] mx-auto space-y-6">
 
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px]">
+          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px] overflow-hidden">
 
             {/* Header / Search Area */}
-            <div className="p-4 border-b border-slate-100/50 flex flex-wrap gap-4 items-center justify-between">
+            <div className="p-3 border-b border-slate-100/50 flex flex-wrap gap-4 items-center justify-between bg-white rounded-t-[24px]">
               <div className="flex-1">
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[20px]">search</span>
@@ -254,6 +287,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                     { label: "Descending", onClick: () => setSortOrder("desc") }
                   ]}
                 />
+
                 <MenuDropdown
                   value={deptFilter}
                   trigger={
@@ -264,11 +298,10 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                   }
                   items={[
                     { label: "All Departments", onClick: () => setDeptFilter("All Departments") },
-                    { label: "Science", onClick: () => setDeptFilter("Science") },
-                    { label: "Humanities", onClick: () => setDeptFilter("Humanities") },
-                    { label: "Technology", onClick: () => setDeptFilter("Technology") },
-                    { label: "Languages", onClick: () => setDeptFilter("Languages") },
-                    { label: "Arts", onClick: () => setDeptFilter("Arts") }
+                    ...activeSubjectAreas.map((area: string) => ({
+                      label: area,
+                      onClick: () => setDeptFilter(area)
+                    }))
                   ]}
                 />
 
@@ -336,9 +369,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                             <tr key={sub.id} className="hover:bg-[#F7F8F4]/30 transition-colors group">
                               <td className="px-8 py-5">
                                 <div className="flex items-center gap-3">
-                                  <div className="size-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center font-bold text-[10px] border border-primary/10">
-                                    {sub.name.substring(0, 2).toUpperCase()}
-                                  </div>
                                   <span className="text-[14px] font-bold text-foreground group-hover:text-primary transition-colors">{sub.name}</span>
                                 </div>
                               </td>
@@ -355,9 +385,22 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               </td>
                               <td className="px-8 py-5 text-[13px] font-medium text-[#444441]">{sub.department}</td>
                               <td className="px-8 py-5 text-right">
-                                <button className="size-8 rounded-lg text-[#B0AFA8] hover:bg-white hover:text-primary hover:shadow-sm transition-all">
-                                  <span className="material-symbols-outlined text-[18px]">edit</span>
-                                </button>
+                                <div className="flex items-center justify-end gap-1">
+                                  <button 
+                                    onClick={() => handleEditSubject(sub)}
+                                    className="size-8 rounded-lg text-[#B0AFA8] hover:bg-white hover:text-primary hover:shadow-sm transition-all flex items-center justify-center"
+                                    title="Edit Subject"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDeleteSubject(sub)}
+                                    className="size-8 rounded-lg text-[#B0AFA8] hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center"
+                                    title="Delete Subject"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -370,60 +413,60 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                       <div className="px-8 pt-6 pb-2">
                         <span className="text-[11px] font-bold text-[#B0AFA8]">{gradeConfigs.length} grade templates configured</span>
                       </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
-                      {[...gradeConfigs]
-                        .filter(g => g.grade.toLowerCase().includes(searchTerm.toLowerCase()))
-                        .sort((a, b) => sortOrder === "asc" ? a.grade.localeCompare(b.grade) : b.grade.localeCompare(a.grade))
-                        .map((config) => {
-                        const group = gradeGroups.find(gg => gg.grades.includes(config.grade));
-                        return (
-                        <div key={config.grade} className="p-6 rounded-[24px] border border-slate-100 bg-white hover:border-primary/30 transition-all group shadow-sm flex flex-col h-full">
-                          <div className="flex justify-between items-start mb-6">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-[18px] font-black text-foreground tracking-tight">{config.grade}</h3>
-                                {group && (
-                                  <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-100 text-[9px] font-black text-[#B0AFA8] tracking-wider">
-                                    {group.label}
-                                  </span>
-                                )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
+                        {[...gradeConfigs]
+                          .filter(g => g.grade.toLowerCase().includes(searchTerm.toLowerCase()))
+                          .sort((a, b) => sortOrder === "asc" ? a.grade.localeCompare(b.grade) : b.grade.localeCompare(a.grade))
+                          .map((config) => {
+                            const group = gradeGroups.find(gg => gg.grades.includes(config.grade));
+                            return (
+                              <div key={config.grade} className="p-6 rounded-[24px] border border-slate-100 bg-white hover:border-primary/30 transition-all group shadow-sm flex flex-col h-full">
+                                <div className="flex justify-between items-start mb-6">
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h3 className="text-[18px] font-black text-foreground tracking-tight">{config.grade}</h3>
+                                      {group && (
+                                        <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-100 text-[9px] font-black text-[#B0AFA8] tracking-wider">
+                                          {group.label}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider">Core Curriculum Template</p>
+                                  </div>
+                                  <button className="size-10 rounded-xl bg-[#F7F8F4] text-[#B0AFA8] hover:text-primary transition-all flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[20px]">settings</span>
+                                  </button>
+                                </div>
+                                <div className="flex flex-wrap gap-2 flex-1 items-start content-start">
+                                  {config.subjects.map(sid => {
+                                    const s = subjects.find(sub => sub.id === sid);
+                                    if (!s) return null;
+                                    return (
+                                      <span key={sid} className={cn(
+                                        "px-3 py-1.5 text-[11px] font-bold rounded-lg border",
+                                        s.category === "Core" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-[#F7F8F4] text-[#444441] border-slate-100"
+                                      )}>
+                                        {s.name}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                                <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between text-[11px] font-bold text-[#B0AFA8]">
+                                  <span>{config.subjects.length} Default Subjects</span>
+                                  <span className="text-primary hover:underline cursor-pointer">Edit Template</span>
+                                </div>
                               </div>
-                              <p className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider">Core Curriculum Template</p>
-                            </div>
-                            <button className="size-10 rounded-xl bg-[#F7F8F4] text-[#B0AFA8] hover:text-primary transition-all flex items-center justify-center">
-                              <span className="material-symbols-outlined text-[20px]">settings</span>
-                            </button>
-                          </div>
-                          <div className="flex flex-wrap gap-2 flex-1 items-start content-start">
-                            {config.subjects.map(sid => {
-                              const s = subjects.find(sub => sub.id === sid);
-                              if (!s) return null;
-                              return (
-                                <span key={sid} className={cn(
-                                  "px-3 py-1.5 text-[11px] font-bold rounded-lg border",
-                                  s.category === "Core" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-[#F7F8F4] text-[#444441] border-slate-100"
-                                )}>
-                                  {s.name}
-                                </span>
-                              );
-                            })}
-                          </div>
-                          <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between text-[11px] font-bold text-[#B0AFA8]">
-                            <span>{config.subjects.length} Default Subjects</span>
-                            <span className="text-primary hover:underline cursor-pointer">Edit Template</span>
-                          </div>
-                        </div>
-                        );
-                      })}
-                      <button
-                        onClick={() => setShowGradeDrawer(true)}
-                        className="rounded-[24px] border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center gap-3 text-[#B0AFA8] hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group min-h-[220px]"
-                      >
-                        <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">add_circle</span>
-                        <span className="text-[13px] font-bold">Add Grade Template</span>
-                        <span className="text-[11px] font-medium text-center opacity-80 px-4">Create a new default subject package for a specific grade level.</span>
-                      </button>
-                    </div>
+                            );
+                          })}
+                        <button
+                          onClick={() => setShowGradeDrawer(true)}
+                          className="rounded-[24px] border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center gap-3 text-[#B0AFA8] hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group min-h-[220px]"
+                        >
+                          <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">add_circle</span>
+                          <span className="text-[13px] font-bold">Add Grade Template</span>
+                          <span className="text-[11px] font-medium text-center opacity-80 px-4">Create a new default subject package for a specific grade level.</span>
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -517,6 +560,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                         })}
                     </div>
                   )}
+
 
                   {activeTab === "timetable" && (
                     <div className="flex flex-col h-full bg-[#FBFBFA]">
@@ -690,87 +734,108 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       </div>
 
       {/* Drawers */}
-      <SideDrawer isOpen={showSubjectDrawer} onClose={() => setShowSubjectDrawer(false)} title="Add Subject to Global Library">
-        <SubjectForm onClose={() => setShowSubjectDrawer(false)} onSubmit={onAddSubject} />
+      <SideDrawer
+        isOpen={showSubjectDrawer}
+        onClose={() => { setShowSubjectDrawer(false); setEditingSubject(null); }}
+        title={editingSubject ? "Edit Subject" : "Add New Subject"}
+        subtitle={editingSubject ? "Update the details for this academic subject." : "Add a new subject to your school library. Once added, you can assign it to grades and teachers."}
+      >
+        <SubjectForm 
+          initialData={editingSubject} 
+          onClose={() => { setShowSubjectDrawer(false); setEditingSubject(null); }} 
+          onSubmit={onAddSubject} 
+        />
       </SideDrawer>
 
-      <SideDrawer isOpen={showGradeDrawer} onClose={() => setShowGradeDrawer(false)} title="Configure Grade Curriculum">
+      <SideDrawer
+        isOpen={showGradeDrawer}
+        onClose={() => setShowGradeDrawer(false)}
+        title="Set Grade Subjects"
+        subtitle="Set up which subjects are taught by default for this grade. You can change these later for specific classes."
+      >
         <GradeConfigForm subjects={subjects} onClose={() => setShowGradeDrawer(false)} onSubmit={onAddGradeConfig} />
       </SideDrawer>
 
-      <SideDrawer isOpen={showMappingDrawer} onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }} title={editingMapping ? "Update Assignment" : isAddingAdditional ? "Assign Custom Subject" : "New Teacher Assignment"}>
+      <SideDrawer
+        isOpen={showMappingDrawer}
+        onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }}
+        title={editingMapping ? "Update Assignment" : isAddingAdditional ? "Assign Custom Subject" : "Assign Teacher"}
+        subtitle="Assign a teacher to a specific subject and class. We will show a warning if the teacher’s profile doesn’t match."
+      >
         <MappingForm subjects={subjects} teachers={teachers} mappings={mappings} initialData={editingMapping} isAdditional={isAddingAdditional} onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }} onSubmit={onAddMapping} />
       </SideDrawer>
 
-      <SideDrawer isOpen={showTierDrawer} onClose={() => setShowTierDrawer(false)} title="Manage Academic Tiers">
+      <SideDrawer
+        isOpen={showTierDrawer}
+        onClose={() => setShowTierDrawer(false)}
+        title="Group Grades"
+        subtitle="Organize your grades into groups like Primary, Secondary, or High School."
+      >
         <TierManagementForm groups={gradeGroups} setGroups={setGradeGroups} gradeConfigs={gradeConfigs} onClose={() => setShowTierDrawer(false)} />
       </SideDrawer>
+
+      <DeleteConfirmationModal
+        isOpen={!!subjectToDelete}
+        onClose={() => setSubjectToDelete(null)}
+        name={subjectToDelete?.name || ""}
+        onConfirm={onConfirmDelete}
+      />
     </div>
   );
 };
 
 // --- Functional Components (Drawers & Forms) ---
 
-const SideDrawer = ({ isOpen, onClose, title, children }: any) => (
-  <AnimatePresence>
-    {isOpen && (
-      <div className="fixed inset-0 z-[100] flex justify-end">
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          onClick={onClose} className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
-        />
-        <motion.div
-          initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="relative w-full max-w-[440px] bg-white h-full shadow-2xl flex flex-col"
-        >
-          <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-[#FBFBFA]">
-            <h3 className="text-lg font-bold text-foreground">{title}</h3>
-            <button onClick={onClose} className="size-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-[#B0AFA8]">
-              <span className="material-symbols-outlined">close</span>
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {children}
-          </div>
-        </motion.div>
-      </div>
-    )}
-  </AnimatePresence>
-);
-
-const SubjectForm = ({ onClose, onSubmit }: any) => {
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [department, setDepartment] = useState("Science");
-  const [category, setCategory] = useState("Core");
+const SubjectForm = ({ onClose, onSubmit, initialData }: any) => {
+  const ACADEMIC_AREAS = ["Mathematics", "Science", "Humanities", "Languages", "Arts", "Technology", "Administration", "Sports"];
+  const [name, setName] = useState(initialData?.name || "");
+  const [code, setCode] = useState(initialData?.code || "");
+  const [department, setDepartment] = useState(initialData?.department || "");
+  const [category, setCategory] = useState(initialData?.category || "Core");
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-8 space-y-6 flex-1">
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex gap-3">
-          <span className="material-symbols-outlined text-primary text-[20px]">info</span>
-          <p className="text-[12px] text-[#444441] leading-relaxed">
-            This subject will be added to the global library. Once added, you can include it in grade templates or assign it directly to sections.
-          </p>
-        </div>
+      <div className="p-8 space-y-8 flex-1">
         <FormGroup label="Subject Name" placeholder="e.g. Political Science" value={name} onChange={setName} />
-        <FormGroup label="Subject Code" placeholder="e.g. POL-101" value={code} onChange={setCode} />
-        <FormGroup label="Academic Department" type="select" options={["Science", "Humanities", "Languages", "Arts", "Technology"]} value={department} onChange={setDepartment} />
 
-        <div className="space-y-2">
-          <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider pl-1">Category Type</label>
-          <select
-            value={category} onChange={(e) => setCategory(e.target.value)}
-            className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 text-[13px] font-semibold text-foreground outline-none focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all appearance-none"
-          >
-            <option value="Core">Core (Mandatory)</option>
-            <option value="Elective">Elective (Optional)</option>
-            <option value="Language">Language</option>
-            <option value="Co-Scholastic">Co-Scholastic (Arts/Sports)</option>
-          </select>
-          <span className="material-symbols-outlined absolute right-12 top-[410px] -translate-y-1/2 text-[#B0AFA8] pointer-events-none">expand_more</span>
-          <p className="text-[11px] text-[#B0AFA8] font-medium pl-1 mt-1">Core subjects are highlighted green in curriculum views.</p>
+        <div className="grid grid-cols-2 gap-4">
+          <FormGroup label="Subject Code" placeholder="e.g. POL-101" value={code} onChange={setCode} />
+          <div className="space-y-2.5 group">
+            <label className="text-[13px] font-bold text-[#B0AFA8] px-1 group-focus-within:text-foreground transition-colors">Subject Area</label>
+            <AppDropdown
+              options={ACADEMIC_AREAS}
+              value={department}
+              onChange={setDepartment}
+              placeholder="e.g. Science"
+              searchable
+            />
+            {department && (
+              <div className="flex gap-2 mt-2 px-1 items-start">
+                <span className="material-symbols-outlined text-[14px] text-primary mt-0.5">info</span>
+                <p className="text-[11px] text-[#B0AFA8] font-medium leading-relaxed">
+                  <span className="text-primary font-bold">{department} includes:</span>{" "}
+                  {department === "Mathematics" ? "Algebra, Geometry, Calculus, Statistics" :
+                    department === "Science" ? "Physics, Chemistry, Biology, Environmental Science" :
+                      department === "Humanities" ? "History, Geography, Political Science, Economics" :
+                        department === "Languages" ? "English, Literature, Regional Languages, Foreign Languages" :
+                          department === "Arts" ? "Music, Dance, Visual Arts, Drama, Photography" :
+                            department === "Technology" ? "Computer Science, AI, Robotics, ICT, Web Design" :
+                              department === "Administration" ? "Business Studies, Accountancy, Entrepreneurship, Ethics" :
+                                department === "Sports" ? "Physical Education, Yoga, Athletics, Health & Fitness" : ""}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-3 group">
+          <label className="text-[13px] font-bold text-[#B0AFA8] px-1 group-focus-within:text-foreground transition-colors">Category Type</label>
+          <AppDropdown
+            options={["Core (Mandatory)", "Elective (Optional)", "Language", "Co-Scholastic (Arts/Sports)"]}
+            value={category === "Core" ? "Core (Mandatory)" : category === "Elective" ? "Elective (Optional)" : category}
+            onChange={(val) => setCategory(val.split(" ")[0])}
+            placeholder="Select category"
+          />
         </div>
       </div>
       <div className="p-8 border-t border-slate-50 bg-[#FBFBFA] flex gap-3">
@@ -779,10 +844,78 @@ const SubjectForm = ({ onClose, onSubmit }: any) => {
           onClick={() => onSubmit({ name, code, department, category })}
           className="flex-[2] btn-primary h-12 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
         >
-          Create Subject
+          {initialData ? "Update Subject" : "Create Subject"}
         </button>
       </div>
     </div>
+  );
+};
+
+
+
+const DeleteConfirmationModal = ({ isOpen, onClose, name, onConfirm }: any) => {
+  const [confirmText, setConfirmText] = useState("");
+  const isMatched = confirmText.toLowerCase() === name.toLowerCase();
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+          />
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl border border-red-100 overflow-hidden"
+          >
+            <div className="p-8 text-center space-y-6">
+              <div className="size-20 rounded-[24px] bg-red-50 flex items-center justify-center text-red-600 mx-auto animate-pulse">
+                <span className="material-symbols-outlined text-[40px]">delete_forever</span>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-[20px] font-bold text-foreground tracking-tight">Delete this subject?</h3>
+                <p className="text-[13px] text-[#444441] leading-relaxed">
+                  Permanently remove <span className="font-bold text-foreground">{name}</span> from the library. This will affect all grade templates.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-[11px] font-bold text-[#B0AFA8] capitalize tracking-normal">
+                  Type <span className="text-foreground">{name}</span> to confirm
+                </p>
+                <input
+                  type="text"
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  placeholder={name}
+                  className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[14px] px-6 text-center text-[14px] font-bold text-foreground focus:border-red-500/50 focus:ring-4 focus:ring-red-500/5 outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 bg-red-50/30 border-t border-red-50 flex gap-3">
+              <button onClick={onClose} className="flex-1 h-12 rounded-2xl text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors">
+                Cancel
+              </button>
+              <button
+                disabled={!isMatched}
+                onClick={onConfirm}
+                className="flex-[2] btn-danger h-12 rounded-2xl transition-all"
+              >
+                Delete Permanently
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -800,13 +933,13 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit }: any) => {
         <div className="bg-[#F7F8F4] border border-slate-200 rounded-xl p-4 flex gap-3">
           <span className="material-symbols-outlined text-[#B0AFA8] text-[20px]">account_tree</span>
           <p className="text-[12px] text-[#444441] leading-relaxed">
-            Create a standard blueprint. Any new section created for <span className="font-bold">{grade}</span> will automatically inherit these selected subjects.
+            Set up which subjects are taught by default for this grade. You can change these later for specific classes.
           </p>
         </div>
         <FormGroup label="Target Grade Level" type="select" options={["Grade 1", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"]} value={grade} onChange={setGrade} />
 
         <div className="space-y-3">
-          <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider pl-1 flex justify-between">
+          <label className="text-[13px] font-semibold text-[#444441] pl-1 flex justify-between">
             <span>Select Default Subjects</span>
             <span className="text-primary">{selectedSubjects.length} selected</span>
           </label>
@@ -865,18 +998,11 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
   return (
     <div className="flex flex-col h-full">
       <div className="p-8 space-y-6 flex-1 overflow-y-auto no-scrollbar">
-        {isAdditional ? (
+        {isAdditional && (
           <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3">
             <span className="material-symbols-outlined text-amber-600 text-[20px]">stars</span>
-            <p className="text-[12px] text-amber-900 leading-relaxed">
-              <span className="font-bold">Custom Override:</span> You are adding a subject specifically to this section that is NOT part of the standard grade template.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-[#F7F8F4] border border-slate-200 rounded-xl p-4 flex gap-3">
-            <span className="material-symbols-outlined text-[#B0AFA8] text-[20px]">assignment_ind</span>
-            <p className="text-[12px] text-[#444441] leading-relaxed">
-              Assign a faculty member to teach a standard curriculum subject for a specific class section.
+            <p className="text-[12px] text-amber-900 leading-relaxed font-medium">
+              You are adding a subject to this specific class that isn't in the regular list for this grade.
             </p>
           </div>
         )}
@@ -886,23 +1012,18 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
           <FormGroup label="Section" placeholder="e.g. A" value={section} onChange={setSection} />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider pl-1">Select Subject</label>
-          <div className="relative">
-            <select
-              value={subjectId} onChange={(e) => setSubjectId(e.target.value)}
-              className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 text-[13px] font-semibold text-foreground outline-none focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all appearance-none"
-            >
-              {subjects.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({s.category})</option>)}
-            </select>
-            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] pointer-events-none">expand_more</span>
-          </div>
-        </div>
+        <FormGroup
+          label="Select Subject" type="select"
+          options={subjects.map((s: any) => ({ val: s.id, label: s.name }))}
+          value={subjectId} onChange={setSubjectId}
+          icon="subject"
+        />
 
         <FormGroup
           label="Assign Teacher" type="select"
-          options={teachers.map((t: any) => ({ val: t.id, label: `${t.name} (${t.dept})` }))}
+          options={teachers.map((t: any) => ({ val: t.id, label: t.name }))}
           value={teacherId} onChange={setTeacherId}
+          icon="person"
         />
 
         {/* ── Soft Warning Engine ── */}
@@ -1016,11 +1137,13 @@ const TierManagementForm = ({ groups, setGroups, gradeConfigs, onClose }: any) =
   const addGrade = (groupId: string, grade: string) => {
     const newGroups = groups.map((g: any) => {
       if (g.id === groupId) {
-        return { ...g, grades: [...g.grades, grade].sort((a: string, b: string) => {
-          const numA = parseInt(a.replace(/\D/g, ""));
-          const numB = parseInt(b.replace(/\D/g, ""));
-          return numA - numB;
-        }) };
+        return {
+          ...g, grades: [...g.grades, grade].sort((a: string, b: string) => {
+            const numA = parseInt(a.replace(/\D/g, ""));
+            const numB = parseInt(b.replace(/\D/g, ""));
+            return numA - numB;
+          })
+        };
       }
       return g;
     });
@@ -1039,13 +1162,6 @@ const TierManagementForm = ({ groups, setGroups, gradeConfigs, onClose }: any) =
   return (
     <div className="flex flex-col h-full">
       <div className="p-8 space-y-8 flex-1 overflow-y-auto no-scrollbar">
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex gap-3">
-          <span className="material-symbols-outlined text-primary text-[20px]">account_tree</span>
-          <p className="text-[12px] text-[#444441] leading-relaxed">
-            Organize your institution&apos;s academic structure. You can add new tiers, rename them, and assign grades to each.
-          </p>
-        </div>
-
         {/* Tier List */}
         <div className="space-y-6">
           {groups.map((group: any) => (
@@ -1064,7 +1180,7 @@ const TierManagementForm = ({ groups, setGroups, gradeConfigs, onClose }: any) =
                     }}
                   />
                 </div>
-                
+
                 <div className="flex items-center gap-1">
                   {unassignedGrades.length > 0 && (
                     <MenuDropdown
@@ -1107,33 +1223,6 @@ const TierManagementForm = ({ groups, setGroups, gradeConfigs, onClose }: any) =
                   ))
                 )}
               </div>
-
-              {/* Inline Suggestion Chips (Impossible to Break UI) */}
-              <div className="pt-2 space-y-3">
-                <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest pl-1">Assign Available Grades</p>
-                <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-slate-50/50 border border-slate-100/50 min-h-[44px]">
-                  { [1,2,3,4,5,6,7,8,9,10,11,12]
-                    .map(n => `Grade ${n}`)
-                    .filter(g => !groups.some((tg: any) => tg.grades.includes(g))) // ONLY unassigned
-                    .length === 0 ? (
-                      <p className="text-[10px] text-slate-400 font-medium italic py-1">All grades are currently assigned.</p>
-                    ) : (
-                      [1,2,3,4,5,6,7,8,9,10,11,12]
-                      .map(n => `Grade ${n}`)
-                      .filter(g => !groups.some((tg: any) => tg.grades.includes(g)))
-                      .map(g => (
-                        <button
-                          key={g}
-                          onClick={() => addGrade(group.id, g)}
-                          className="px-2.5 py-1 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-primary hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm active:scale-95"
-                        >
-                          + {g}
-                        </button>
-                      ))
-                    )
-                  }
-                </div>
-              </div>
             </div>
           ))}
 
@@ -1153,34 +1242,49 @@ const TierManagementForm = ({ groups, setGroups, gradeConfigs, onClose }: any) =
   );
 };
 
-const FormGroup = ({ label, type = "text", placeholder, options, value, onChange }: any) => (
-  <div className="space-y-2">
-    <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider pl-1">{label}</label>
+const FormGroup = ({ label, type = "text", placeholder, options, value, onChange, icon }: any) => (
+  <div className="space-y-2.5 group">
+    <label className="text-[13px] font-bold text-[#B0AFA8] px-1 group-focus-within:text-foreground transition-colors">
+      {label}
+    </label>
     <div className="relative">
       {type === "select" ? (
-        <select
-          value={value}
-          onChange={(e) => onChange && onChange(e.target.value)}
-          className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 text-[13px] font-semibold text-foreground outline-none focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all appearance-none"
-        >
-          {options.map((o: any) => (
-            <option key={typeof o === 'string' ? o : o.val} value={typeof o === 'string' ? o : o.val}>
-              {typeof o === 'string' ? o : o.label}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <input
-          type={type}
+        <AppDropdown
+          options={options.map((o: any) => typeof o === 'string' ? o : o.label)}
+          value={typeof value === 'string' ? value : options.find((o: any) => o.val === value)?.label || ""}
+          onChange={(val: string) => {
+            const selected = options.find((o: any) => (typeof o === 'string' ? o : o.label) === val);
+            onChange && onChange(typeof selected === 'string' ? selected : selected.val);
+          }}
           placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange && onChange(e.target.value)}
-          className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 text-[13px] font-semibold text-foreground outline-none focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all"
+          icon={icon}
         />
+      ) : type === "date" ? (
+        <AppDatePicker
+          value={value ? new Date(value) : null}
+          onChange={(d) => onChange && onChange(d.toISOString())}
+          placeholder={placeholder}
+          icon={icon}
+        />
+      ) : (
+        <div className="relative">
+          {icon && (
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px] group-focus-within:text-primary transition-colors z-10">
+              {icon}
+            </span>
+          )}
+          <input
+            type={type}
+            placeholder={placeholder}
+            value={value}
+            onChange={(e) => onChange && onChange(e.target.value)}
+            className={cn(
+              "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white",
+              icon ? "pl-12 pr-6" : "px-6"
+            )}
+          />
+        </div>
       )}
-      {type === "select" && <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] pointer-events-none">expand_more</span>}
     </div>
   </div>
 );
-
-

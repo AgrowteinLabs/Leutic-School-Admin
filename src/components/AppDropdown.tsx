@@ -48,7 +48,8 @@ export const AppDropdown = ({
     if (!isOpen) setSearchQuery(value || "");
   }, [isOpen, value]);
 
-  const displayValue = (searchable && isOpen) ? searchQuery : (value || placeholder);
+  const displayValue = (searchable && isOpen) ? searchQuery : (value || "");
+  const placeholderValue = searchable ? (value || "") : (value || placeholder);
 
   const filteredOptions = searchable
     ? options.filter((opt: string) => opt.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -92,7 +93,7 @@ export const AppDropdown = ({
               icon ? "pl-12 pr-6" : "px-6"
             )}
           >
-            {displayValue}
+            {value || placeholder}
             <input ref={hiddenInputRef} className="absolute opacity-0 w-0 h-0 border-0 p-0 m-0" aria-hidden="true" tabIndex={-1} />
           </div>
         )}
