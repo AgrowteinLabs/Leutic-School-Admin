@@ -410,9 +410,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                   {activeTab === "grades" && (
                     <div className="flex flex-col">
-                      <div className="px-8 pt-6 pb-2">
-                        <span className="text-[11px] font-bold text-[#B0AFA8]">{gradeConfigs.length} grade templates configured</span>
-                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
                         {[...gradeConfigs]
                           .filter(g => g.grade.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -718,15 +715,14 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               </AnimatePresence>
             </div>
 
-            {/* Pagination Footer */}
-            <div className="border-t border-slate-100 p-4 px-8">
+            <div className="bg-white rounded-b-[24px]">
               <TablePagination
                 currentPage={currentPage}
-                totalPages={1}
-                totalResults={activeTab === "master" ? subjects.length : activeTab === "grades" ? gradeConfigs.length : mappings.length}
+                totalItems={activeTab === "master" ? subjects.length : activeTab === "grades" ? gradeConfigs.length : mappings.length}
                 itemsPerPage={itemsPerPage}
                 onPageChange={setCurrentPage}
-                onLimitChange={setItemsPerPage}
+                onItemsPerPageChange={setItemsPerPage}
+                itemName={activeTab === "master" ? "subjects" : activeTab === "grades" ? "templates" : "mappings"}
               />
             </div>
           </div>
