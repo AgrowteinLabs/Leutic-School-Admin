@@ -921,8 +921,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         "group relative min-h-[140px] transition-all duration-300 py-8 px-6 border-b border-[#EBE8E0]",
                                         dIdx < days.length - 1 && "border-r",
                                         !entry && !isInHRange && "cursor-pointer hover:bg-white/80 hover:shadow-[0_20px_50px_rgba(230,220,200,0.3)] hover:z-10",
-                                        isInHRange && !entry && "bg-primary/[0.04]",
-                                        isInHRange && entry && "bg-amber-50/40",
+                                        isInHRange && "bg-primary/[0.04]",
                                         isVerticalTarget && "bg-primary/[0.02]",
                                         entry && spanP > 1 && "border-l-[3px] border-l-primary/25"
                                       )}
@@ -944,14 +943,20 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                           if (extendingSlot.direction === 'horizontal') {
                                             const src = days.indexOf(extendingSlot.day);
                                             const tgt = days.indexOf(extensionTarget.day);
-                                            const newEntries: any[] = [];
-                                            for (let d = src + 1; d <= tgt; d++) {
-                                              const occupied = timetableEntries.some(e =>
-                                                e.section === selectedTimetableSection && e.day === days[d] && e.period === extendingSlot.period
-                                              );
-                                              if (!occupied) newEntries.push({ ...extendingSlot.entry, day: days[d], period: extendingSlot.period });
-                                            }
-                                            if (newEntries.length > 0) setTimetableEntries(prev => [...prev, ...newEntries]);
+                                            const newEntries = Array.from({ length: tgt - src }, (_, i) => ({
+                                              ...extendingSlot.entry,
+                                              day: days[src + 1 + i],
+                                              period: extendingSlot.period
+                                            }));
+                                            setTimetableEntries(prev => [
+                                              ...prev.filter(e => !(
+                                                e.section === selectedTimetableSection &&
+                                                e.period === extendingSlot.period &&
+                                                days.indexOf(e.day) > src &&
+                                                days.indexOf(e.day) <= tgt
+                                              )),
+                                              ...newEntries
+                                            ]);
                                           } else {
                                             setTimetableEntries(prev => prev.map(e =>
                                               e === extendingSlot.entry ? { ...e, spanPeriods: (e.spanPeriods || 1) + 1 } : e
@@ -976,18 +981,13 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         </div>
                                       )}
 
-                                      {/* Horizontal fill ghost preview */}
-                                      {isInHRange && !entry && extendingSlot && (
-                                        <div className="absolute inset-0 pointer-events-none flex flex-col justify-center px-6 gap-0.5">
-                                          <div className="absolute inset-[3px] border border-dashed border-primary/25 rounded-sm" />
-                                          <p className="text-[13px] font-semibold text-secondary/25 leading-tight">{extendingSlot.entry.subjectName}</p>
+                                      {/* Horizontal fill ghost preview — shown on all cells in range, overrides existing */}
+                                      {isInHRange && extendingSlot && (
+                                        <div className="absolute inset-0 pointer-events-none flex flex-col justify-center px-6 gap-0.5 z-10">
+                                          <div className="absolute inset-[3px] border border-dashed border-primary/30 rounded-sm" />
+                                          <p className="text-[13px] font-semibold text-secondary/30 leading-tight">{extendingSlot.entry.subjectName}</p>
                                           <p className="text-[11px] text-slate-300">{extendingSlot.entry.teacherName}</p>
                                         </div>
-                                      )}
-
-                                      {/* Horizontal fill: already-filled warning */}
-                                      {isInHRange && entry && (
-                                        <div className="absolute inset-[3px] border border-dashed border-amber-400/50 rounded-sm pointer-events-none z-10" />
                                       )}
 
                                       {entry ? (
