@@ -31,7 +31,10 @@ export const StudentProfilePage = () => {
       auraScore: 98.4,
       attendanceRate: 98,
       gpa: 3.9,
-      enrollmentDate: "Aug 2021",
+      enrollmentDate: "Aug 15, 2021",
+      bloodGroup: "O+",
+      guardianName: "Ramesh S.",
+      phone: "+91 98472-11002",
       status: "Active",
       img: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=400&h=400&fit=crop",
     },
@@ -44,7 +47,10 @@ export const StudentProfilePage = () => {
         auraScore: 64.2,
         attendanceRate: 72,
         gpa: 2.1,
-        enrollmentDate: "Aug 2022",
+        enrollmentDate: "Sept 12, 2023",
+        bloodGroup: "AB+",
+        guardianName: "Kishore K.",
+        phone: "+91 98765-43211",
         status: "At Risk",
         img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
       },
@@ -57,7 +63,10 @@ export const StudentProfilePage = () => {
         auraScore: 91.5,
         attendanceRate: 94,
         gpa: 3.7,
-        enrollmentDate: "Jan 2022",
+        enrollmentDate: "Jan 15, 2022",
+        bloodGroup: "A-",
+        guardianName: "Vinay V.",
+        phone: "+91 99887-76655",
         status: "Active",
         img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
       },
@@ -261,17 +270,56 @@ export const StudentProfilePage = () => {
                         <span className="text-3xl font-bold text-foreground tracking-tight">{student.attendanceRate}%</span>
                         <p className="text-[10px] text-[#2E7D32] font-bold mt-2 uppercase tracking-widest leading-none">Consistent High</p>
                     </div>
-                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left">
-                        <div className="flex justify-between items-start mb-4">
-                            <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest">GPA Index</p>
-                            <GraduationCap size={16} className="text-[#B0AFA8] hidden sm:block" />
-                        </div>
-                        <span className="text-3xl font-bold text-foreground tracking-tight">{student.gpa}</span>
-                        <p className="text-[10px] text-[#B0AFA8] font-bold mt-2 uppercase tracking-widest italic">Rank: 08/120</p>
-                    </div>
+                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left">
+                  <div className="flex justify-between items-start mb-4">
+                    <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest">GPA Index</p>
+                    <GraduationCap size={16} className="text-[#B0AFA8] hidden sm:block" />
+                  </div>
+                  <span className="text-3xl font-bold text-foreground tracking-tight">{student.gpa}</span>
+                  <p className="text-[10px] text-[#B0AFA8] font-bold mt-2 uppercase tracking-widest italic">Rank: 08/120</p>
+                </div>
+              </div>
+
+              {/* Participation Intelligence Breakdown */}
+              <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm space-y-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <h3 className="text-foreground font-semibold text-base flex items-center gap-2">
+                      <Activity size={18} className="text-primary" />
+                      Participation Intelligence
+                    </h3>
+                    <p className="text-[12px] text-[#B0AFA8] font-medium">Weighted analysis of holistic student engagement</p>
+                  </div>
+                  <div className="px-4 py-2 bg-[#F7F8F4] rounded-xl border border-slate-100">
+                    <span className="text-xl font-black text-foreground">{student.participation}%</span>
+                    <span className="text-[10px] font-bold text-[#B0AFA8] ml-2 uppercase">Composite</span>
+                  </div>
                 </div>
 
-                {/* Combined Activity & History Table */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
+                  {[
+                    { label: "Attendance Consistency", val: 98, color: "bg-primary" },
+                    { label: "Assignment Hygiene", val: 94, color: "bg-secondary" },
+                    { label: "Class Engagement", val: 86, color: "bg-orange-400" },
+                    { label: "Activity Density", val: 90, color: "bg-emerald-500" },
+                  ].map((p, i) => (
+                    <div key={i} className="space-y-3">
+                      <div className="flex justify-between items-end">
+                        <p className="text-[11px] font-bold text-[#444441] uppercase tracking-tight">{p.label}</p>
+                        <p className="text-[13px] font-black text-foreground">{p.val}%</p>
+                      </div>
+                      <div className="h-1.5 bg-[#F7F8F4] rounded-full overflow-hidden">
+                        <div 
+                          className={cn("h-full transition-all duration-1000 delay-300", p.color)} 
+                          style={{ width: `${p.val}%` }} 
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Combined Activity & History Table */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                     <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-[#F7F8F4]/50">
                         <h3 className="text-foreground font-semibold text-base flex items-center gap-2">
@@ -367,21 +415,22 @@ export const StudentProfilePage = () => {
         }
       />
 
-      <div className="flex-1 overflow-y-auto no-scrollbar mx-auto w-full max-w-[1400px] space-y-12">
-        {/* Profile Identity Card */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-10 border-b border-slate-200 pb-12 pt-6 px-6 lg:px-10">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="relative group">
-                <div
-                    className="size-24 sm:size-28 rounded-[32px] bg-cover bg-center border-4 border-white shadow-2xl grayscale hover:grayscale-0 transition-all duration-1000 transform group-hover:rotate-1 group-hover:scale-105"
-                    style={{ backgroundImage: `url("${student.img}")` }}
-                />
-                <div className={cn(
-                    "absolute -bottom-1 -right-1 size-5 rounded-full border-4 border-[#F9FAFB]",
-                    student.status === "Active" ? "bg-[#EAF2D7]0" : "bg-[#FEF3C7]0"
-                )} />
-            </div>
-            <div className="text-center md:text-left space-y-3">
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        <div className="max-w-[1400px] mx-auto space-y-12">
+          {/* Profile Identity Card */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-10 border-b border-slate-200 pb-12 pt-6 px-6 lg:px-10">
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="relative group">
+                  <div
+                      className="size-24 sm:size-28 rounded-[32px] bg-cover bg-center border-4 border-white shadow-2xl grayscale hover:grayscale-0 transition-all duration-1000 transform group-hover:rotate-1 group-hover:scale-105"
+                      style={{ backgroundImage: `url("${student.img}")` }}
+                  />
+                  <div className={cn(
+                      "absolute -bottom-1 -right-1 size-5 rounded-full border-4 border-[#F9FAFB]",
+                      student.status === "Active" ? "bg-[#EAF2D7]0" : "bg-[#FEF3C7]0"
+                  )} />
+              </div>
+              <div className="text-center md:text-left space-y-4 flex-1">
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
                     <span className="px-3 py-1 bg-white rounded-full text-[10px] font-black text-foreground border border-slate-100 shadow-sm uppercase tracking-widest">
                         {student.id}
@@ -389,39 +438,60 @@ export const StudentProfilePage = () => {
                     <span className="text-[#B0AFA8] text-[13px] font-medium italic opacity-60">Verified Institutional User</span>
                 </div>
                 <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">{student.name}</h2>
+                
+                {/* Basic Info Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-slate-100/50">
+                  <div>
+                    <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-1">First Joining</p>
+                    <p className="text-[13px] font-bold text-foreground">{student.enrollmentDate}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-1">Blood Group</p>
+                    <p className="text-[13px] font-bold text-foreground">{student.bloodGroup}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-1">Guardian</p>
+                    <p className="text-[13px] font-bold text-foreground">{student.guardianName}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-1">Phone</p>
+                    <p className="text-[13px] font-bold text-foreground">{student.phone}</p>
+                  </div>
+                </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-center md:items-end gap-1.5 opacity-60 transition-all hover:opacity-100 cursor-default group">
-            <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest leading-none group-hover:text-primary transition-colors">Digital Registry</p>
-            <p className="text-lg sm:text-xl font-bold text-foreground italic tracking-tight underline decoration-primary/30 decoration-4 underline-offset-8">Adarsha Vidya Bhavan</p>
+            <div className="flex flex-col items-center md:items-end gap-1.5 opacity-60 transition-all hover:opacity-100 cursor-default group">
+              <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest leading-none group-hover:text-primary transition-colors">Digital Registry</p>
+              <p className="text-lg sm:text-xl font-bold text-foreground italic tracking-tight underline decoration-primary/30 decoration-4 underline-offset-8">Adarsha Vidya Bhavan</p>
+            </div>
           </div>
-        </div>
 
-        {/* Global Navigation Tabs */}
-        <div className="flex gap-6 sm:gap-12 border-b border-slate-200 sticky top-0 bg-white/95 backdrop-blur-xl z-20 pt-2 transition-all px-6 lg:px-10">
-          {["Overview", "Academic History", "Behavioral Records", "Parental Contact"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                "pb-6 text-[13px] sm:text-[14px] font-bold transition-all relative group tracking-tight",
-                activeTab === tab
-                  ? "text-foreground"
-                  : "text-[#B0AFA8] hover:text-foreground whitespace-nowrap"
-              )}
-            >
-              {tab}
-              {activeTab === tab && (
-                <div className="absolute bottom-[-1px] left-0 right-0 h-[3px] bg-secondary rounded-full animate-in zoom-in-y duration-300" />
-              )}
-            </button>
-          ))}
-        </div>
+          {/* Global Navigation Tabs */}
+          <div className="flex gap-6 sm:gap-12 border-b border-slate-200 sticky top-0 bg-white/95 backdrop-blur-xl z-20 pt-2 transition-all px-6 lg:px-10">
+            {["Overview", "Academic History", "Behavioral Records", "Parental Contact"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  "pb-6 text-[13px] sm:text-[14px] font-bold transition-all relative group tracking-tight",
+                  activeTab === tab
+                    ? "text-foreground"
+                    : "text-[#B0AFA8] hover:text-foreground whitespace-nowrap"
+                )}
+              >
+                {tab}
+                {activeTab === tab && (
+                  <div className="absolute bottom-[-1px] left-0 right-0 h-[3px] bg-secondary rounded-full animate-in zoom-in-y duration-300" />
+                )}
+              </button>
+            ))}
+          </div>
 
-        {/* Master Content Renderer */}
-        <div className="pb-32 px-6 lg:px-10">
-            {renderTabContent()}
+          {/* Master Content Renderer */}
+          <div className="pb-32 px-6 lg:px-10">
+              {renderTabContent()}
+          </div>
         </div>
       </div>
     </div>

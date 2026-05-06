@@ -5,6 +5,7 @@ import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
 import successAnimation from "../../../assets/animations/success.json";
+import { AppDropdown } from "../../../components/AppDropdown";
 
 export const CreateClassPage = () => {
     const navigate = useNavigate();
@@ -39,13 +40,13 @@ export const CreateClassPage = () => {
                     <div className="flex gap-3">
                         <button
                             onClick={() => navigate(-1)}
-                            className="btn-text px-4 py-2 rounded-[10px] text-[13px] transition-all"
+                            className="btn-text px-6 h-10 rounded-xl text-[13px] font-bold transition-all"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleFinalize}
-                            className="btn-primary px-6 py-2 rounded-[10px] text-[13px] font-semibold transition-all"
+                            className="btn-primary px-6 h-10 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30"
                         >
                             Finalize & Create Class
                         </button>
@@ -145,13 +146,13 @@ export const CreateClassPage = () => {
                     <div className="flex justify-end items-center gap-4 py-8">
                         <button
                             onClick={() => navigate(-1)}
-                            className="btn-text px-8 py-2.5 rounded-2xl text-[14px] font-bold transition-all"
+                            className="btn-text px-8 h-10 rounded-xl text-[13px] font-bold transition-all"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleFinalize}
-                            className="btn-primary px-12 py-2.5 rounded-2xl text-[14px] font-bold transition-all shadow-lg"
+                            className="btn-primary px-10 h-10 rounded-xl text-[13px] font-bold transition-all shadow-sm shadow-slate-100/30"
                         >
                             Finalize & Create Class
                         </button>
@@ -200,13 +201,13 @@ export const CreateClassPage = () => {
                             <div className="flex flex-col gap-3">
                                 <button
                                     onClick={() => navigate("/classes/1")}
-                                    className="btn-primary w-full h-14 rounded-2xl text-[15px] font-bold shadow-xl shadow-primary/20"
+                                    className="btn-primary w-full h-10 rounded-xl text-[13px] font-bold shadow-xl shadow-primary/20"
                                 >
                                     View Class Details
                                 </button>
                                 <button
                                     onClick={() => navigate("/")}
-                                    className="btn-text w-full h-12 rounded-xl text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
+                                    className="btn-text w-full h-10 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
                                 >
                                     Back to Dashboard
                                 </button>
@@ -219,106 +220,13 @@ export const CreateClassPage = () => {
     );
 };
 
-const CustomSelect = ({ options, value, onChange, placeholder = "Select option", searchable = false }: any) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    useEffect(() => {
-        if (!isOpen) setSearchQuery(value || "");
-    }, [isOpen, value]);
-
-    const displayValue = (searchable && isOpen) ? searchQuery : (value || placeholder);
-
-    const filteredOptions = searchable
-        ? options.filter((opt: string) => opt.toLowerCase().includes(searchQuery.toLowerCase()))
-        : options;
-
-    return (
-        <div className="relative" ref={containerRef}>
-            <div className={cn(
-                "w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center justify-between cursor-pointer hover:border-slate-200 transition-all relative overflow-hidden h-12",
-                isOpen && "border-primary/50 bg-white"
-            )}>
-                {searchable ? (
-                    <input
-                        type="text"
-                        value={displayValue}
-                        onChange={(e) => { setSearchQuery(e.target.value); if (!isOpen) setIsOpen(true); }}
-                        onFocus={() => setIsOpen(true)}
-                        placeholder={placeholder}
-                        className="w-full h-full bg-transparent px-6 outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] z-10"
-                    />
-                ) : (
-                    <div
-                        onClick={() => setIsOpen(!isOpen)}
-                        className={cn("w-full px-6 text-[14px] font-semibold transition-colors flex items-center h-full", value ? "text-foreground" : "text-[#B0AFA8]")}
-                    >
-                        {displayValue}
-                    </div>
-                )}
-                <span
-                    onClick={() => setIsOpen(!isOpen)}
-                    className={cn("material-symbols-outlined text-[#B0AFA8] absolute right-4 top-1/2 -translate-y-1/2 transition-transform duration-500 z-0", isOpen && "rotate-180 text-primary")}
-                >
-                    expand_more
-                </span>
-            </div>
-
-            {isOpen && (
-                <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-slate-100 rounded-[24px] shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300">
-                    <div className="max-h-64 overflow-y-auto no-scrollbar">
-                        {filteredOptions.length > 0 ? (
-                            filteredOptions.map((opt: string) => {
-                                const isSelected = value === opt;
-                                return (
-                                    <div
-                                        key={opt}
-                                        onClick={() => { onChange?.(opt); setIsOpen(false); }}
-                                        className={cn(
-                                            "px-4 py-3 mx-2 my-1 rounded-[10px] text-[14px] font-semibold cursor-pointer transition-all flex items-center justify-between group",
-                                            isSelected
-                                                ? "bg-[#EAF2D7] text-foreground border border-[#D9EA85]"
-                                                : "text-[#444441] hover:bg-[#F7F8F4] hover:text-foreground"
-                                        )}
-                                    >
-                                        <span className="flex-1">{opt}</span>
-                                        {isSelected && (
-                                            <span className="material-symbols-outlined text-[20px] text-foreground animate-in zoom-in duration-300">check_circle</span>
-                                        )}
-                                    </div>
-                                );
-                            })
-                        ) : (
-                            <div className="px-6 py-8 text-center space-y-2">
-                                <span className="material-symbols-outlined text-[#B0AFA8] text-[40px]">person_search</span>
-                                <p className="text-[12px] font-bold text-[#B0AFA8]">No results found</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
 const FormGroup = ({ label, placeholder, icon, type = "input", options = [], searchable = false, disabled = false, optional = false, uppercase = false }: any) => {
     const [selectedValue, setSelectedValue] = useState("");
     const [inputValue, setInputValue] = useState("");
 
     return (
         <div className="space-y-2.5 group">
-            <label className="text-[13px] font-bold text-[#444441] px-1 group-focus-within:text-foreground transition-colors flex items-center justify-between">
+            <label className="text-[13px] font-bold text-[#B0AFA8] px-1 group-focus-within:text-foreground transition-colors flex items-center justify-between">
                 {label}
                 {optional && <span className="text-[11px] text-[#B0AFA8] font-medium normal-case tracking-normal">(Optional)</span>}
             </label>
@@ -343,7 +251,7 @@ const FormGroup = ({ label, placeholder, icon, type = "input", options = [], sea
                     />
                 )}
                 {type === "select" && (
-                    <CustomSelect
+                    <AppDropdown
                         options={options}
                         value={selectedValue}
                         onChange={setSelectedValue}

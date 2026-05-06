@@ -23,6 +23,7 @@ import { TransportationHubPage } from "./features/transportation/pages/Transport
 import { StaffProfilePage } from "./features/settings/pages/StaffProfilePage";
 import { DriverProfilePage } from "./features/transportation/pages/DriverProfilePage";
 import { FeesPage } from "./features/finance/pages/FeesPage";
+import { CurriculumPage } from "./features/curriculum/pages/CurriculumPage";
 
 function App() {
   return (
@@ -37,10 +38,11 @@ function App() {
           <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/students/:id" element={<StudentProfilePage />} />
           <Route path="/academics" element={<AcademicHubPage />} />
-          <Route path="/directory" element={<DirectoryPage />} />
-          <Route path="/directory/enroll-student" element={<EnrollStudentPage />} />
-          <Route path="/directory/add-staff" element={<AddStaffPage />} />
-          <Route path="/directory/add-driver" element={<AddDriverPage />} />
+          <Route path="/directory/:tab?" element={<DirectoryPage />} />
+          <Route path="/curriculum/:tab?" element={<CurriculumPage />} />
+          <Route path="/directory/students/add" element={<EnrollStudentPage />} />
+          <Route path="/directory/staff/add" element={<AddStaffPage />} />
+          <Route path="/directory/drivers/add" element={<AddDriverPage />} />
           <Route path="/transportation/add-vehicle" element={<AddVehiclePage />} />
           <Route path="/communications" element={<CommunicationsHubPage />} />
           <Route path="/transportation" element={<TransportationHubPage />} />

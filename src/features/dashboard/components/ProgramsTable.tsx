@@ -1,16 +1,16 @@
 export const ProgramsTable = () => {
     const events = [
-        { name: "Regional Science Fair", date: "Mar 05", type: "Competition", teacher: "Dr. Sunitha V.",  daysLeft: 4  },
-        { name: "PTA General Meeting",   date: "Mar 08", type: "Meeting",     teacher: "Admin Office",   daysLeft: 7  },
-        { name: "Term 2 Examinations",   date: "Mar 15", type: "Exam",        teacher: "All Teachers",   daysLeft: 14 },
-        { name: "Inter-High Arts Expo",  date: "Mar 22", type: "Event",       teacher: "Ms. Amrita S.",  daysLeft: 21 },
+        { name: "Regional Science Fair", date: "Mar 05", type: "Competition", teacher: "Dr. Sunitha V.", daysLeft: 4 },
+        { name: "PTA General Meeting", date: "Mar 08", type: "Meeting", teacher: "Admin Office", daysLeft: 7 },
+        { name: "Term 2 Examinations", date: "Mar 15", type: "Exam", teacher: "All Teachers", daysLeft: 14 },
+        { name: "Inter-High Arts Expo", date: "Mar 22", type: "Event", teacher: "Ms. Amrita S.", daysLeft: 21 },
     ];
 
     const typeColors: Record<string, string> = {
         Competition: "bg-[#DBEAFE] text-[#1565C0] border-[#BFDBFE]",
-        Meeting:     "bg-[#EAF2D7] text-[#3D6B2C] border-[#D9EA85]",
-        Exam:        "bg-[#FEE2E2] text-[#B91C1C] border-[#FECACA]",
-        Event:       "bg-[#FEF3C7] text-[#B45309] border-[#FDE68A]",
+        Meeting: "bg-[#EAF2D7] text-[#3D6B2C] border-[#D9EA85]",
+        Exam: "bg-[#FEE2E2] text-[#B91C1C] border-[#FECACA]",
+        Event: "bg-[#FEF3C7] text-[#B45309] border-[#FDE68A]",
     };
 
     return (

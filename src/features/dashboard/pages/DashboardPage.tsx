@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../../components/StatCard";
 import { ParticipationOverview } from "../components/ParticipationOverview";
 import { ProgramsTable } from "../components/ProgramsTable";
 import { AlertsSection } from "../components/Alerts";
 import { TopBar } from "../../../components/Header";
+import { StudentDrawer } from "../../students/components/StudentDrawer";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
 import {
     Users,
@@ -22,8 +25,51 @@ import {
 
 export const DashboardPage = () => {
     const navigate = useNavigate();
+    const [selectedStudent, setSelectedStudent] = useState<any>(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+    const mockStudents = [
+        {
+            name: "Aavya S.",
+            id: "OA-2024-001",
+            grade: "12th Grade",
+            section: "A",
+            participation: 92,
+            auraScore: 98.4,
+            attendanceRate: 98,
+            gpa: 3.9,
+            status: "Active",
+            img: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=400&h=400&fit=crop",
+            phone: "+91 98472-11002"
+        },
+        {
+            name: "Manoj P.",
+            id: "OA-2024-112",
+            grade: "11th Grade",
+            section: "C",
+            participation: 62,
+            auraScore: 68.2,
+            attendanceRate: 72,
+            gpa: 2.8,
+            status: "At Risk",
+            img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+            phone: "+91 91234-56789"
+        }
+    ];
+
+    const handleSearch = () => {
+        // Mocking a search result for "Aavya" or "Manoj"
+        setSelectedStudent(mockStudents[0]);
+        setIsDrawerOpen(true);
+    };
+
+    const handleClassMonitorClick = (grade: string) => {
+        setSelectedStudent(mockStudents[1]); // Mocking the "Critical" student
+        setIsDrawerOpen(true);
+    };
+
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FBFBFA]">
             <TopBar
                 title="Home Overview"
                 subtitle="Daily insight and performance overview"
@@ -71,27 +117,30 @@ export const DashboardPage = () => {
                             {/* Quick Access */}
                             <div className="py-2 px-6">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-foreground text-[15px] font-semibold">Quick Access</h3>
+                                    <h3 className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-[0.15em]">Quick Access</h3>
                                 </div>
 
                                 <div className="space-y-6">
-                                    {/* Know Your Student search */}
-                                    <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-[18px] p-2 focus-within:ring-2 focus-within:ring-primary transition-all group/search">
-                                        <div className="pl-4 text-[#B0AFA8] group-focus-within/search:text-foreground transition-colors">
-                                            <Search size={20} strokeWidth={2.5} />
+                                    <div className="flex-1 max-w-2xl relative">
+                                        <div className="ai-border-container ai-border-on-load rounded-[18px]">
+                                            <div className="ai-border-content rounded-[17px] flex items-center gap-3 p-1.5 focus-within:border-primary focus-within:ring-[4px] focus-within:ring-primary/10 transition-all duration-300 group/search">
+                                                <div className="pl-4 text-[#B0AFA8] group-focus-within/search:text-primary transition-colors">
+                                                    <Search size={18} strokeWidth={2.5} />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Know Your Student — Search Name, ID or Roll Number..."
+                                                    className="flex-1 bg-transparent border-none outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] py-2.5 px-1"
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                                />
+                                                <button
+                                                    onClick={handleSearch}
+                                                    className="btn-primary h-10 px-6 rounded-xl text-[12px] font-bold whitespace-nowrap shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all"
+                                                >
+                                                    Get Profile
+                                                </button>
+                                            </div>
                                         </div>
-                                        <input
-                                            type="text"
-                                            placeholder="Know Your Student — Enter Name, Enrollment ID or Roll Number..."
-                                            className="flex-1 bg-transparent border-none outline-none text-[14px] font-normal text-foreground placeholder-[#B0AFA8] py-3 px-1"
-                                            onKeyDown={(e) => e.key === 'Enter' && navigate("/know-your-student")}
-                                        />
-                                        <button
-                                            onClick={() => navigate("/know-your-student")}
-                                            className="btn-primary px-6 py-2.5 rounded-[10px] text-[12px] whitespace-nowrap"
-                                        >
-                                            Get Details
-                                        </button>
                                     </div>
 
                                     {/* Action Icons */}
@@ -199,15 +248,12 @@ export const DashboardPage = () => {
                     <div className="w-full relative">
                         <div className="flex items-center justify-between mb-6 relative z-10">
                             <div>
-                                <h3 className="text-foreground text-[15px] font-semibold">Class Monitor Focus</h3>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="size-1.5 rounded-full bg-[#2E7D32] animate-pulse" />
-                                    <p className="text-[#B0AFA8] text-[11px] font-medium">AI-Driven Risk Detection Active</p>
-                                </div>
+                                <h3 className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-[0.15em]">Class Monitor</h3>
+
                             </div>
                             <button
                                 onClick={() => navigate("/classes")}
-                                className="text-[11px] font-medium text-[#3D6B2C] hover:underline underline-offset-2"
+                                className="text-[11px] font-bold text-[#3D6B2C] hover:underline underline-offset-4 decoration-primary/30 transition-all"
                             >
                                 Full Report
                             </button>
@@ -219,7 +265,7 @@ export const DashboardPage = () => {
                                 { grade: "9-D", teacher: "Ms. Dhanya S.", issue: "Grade Decline", detail: "Average Drop", score: 76, status: "warning" },
                                 { grade: "10-A", teacher: "Dr. Lakshmi K.", issue: "Absenteeism", detail: "Unusual spikes", score: 68, status: "warning" },
                             ].map((item, i) => (
-                                <div key={i} className="group relative">
+                                <div key={i} className="group relative" onClick={() => handleClassMonitorClick(item.grade)}>
                                     <div className="flex items-center gap-4 p-5 rounded-[18px] bg-white border border-slate-100 hover:border-primary/20 transition-all duration-500 cursor-pointer h-full">
                                         {/* Circular Gauge */}
                                         <div className="relative size-12 shrink-0">
@@ -265,6 +311,12 @@ export const DashboardPage = () => {
                     </div>
                 </div>
             </div>
+
+            <StudentDrawer
+                isOpen={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)}
+                student={selectedStudent}
+            />
         </div>
     );
 };

@@ -2,9 +2,9 @@ export const ParticipationOverview = () => {
     // circumference at r=56: 2 × π × 56 ≈ 351.86
     // 4px gap between each segment; offsets pre-computed
     const attendanceData = [
-        { label: "Present", count: 1068, color: "bg-[#2E7D32]",  arc: 298.6,  offset: -2,      stroke: "#2E7D32" },
-        { label: "Absent",  count: 124,  color: "bg-[#E63535]",  arc: 31.19,  offset: -304.6,  stroke: "#E63535" },
-        { label: "Late",    count: 48,   color: "bg-[#EF9800]",  arc: 10.07,  offset: -339.79, stroke: "#EF9800" },
+        { label: "Present", count: 1068, color: "bg-[#2E7D32]", arc: 298.6, offset: -2, stroke: "#2E7D32" },
+        { label: "Absent", count: 124, color: "bg-[#E63535]", arc: 31.19, offset: -304.6, stroke: "#E63535" },
+        { label: "Late", count: 48, color: "bg-[#EF9800]", arc: 10.07, offset: -339.79, stroke: "#EF9800" },
     ];
     const C = 351.86;
 

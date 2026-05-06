@@ -50,8 +50,8 @@ export const StatCard = ({
                         <span
                             className={cn(
                                 "text-[11px] font-medium",
-                                trendType === "up"     && "text-[#2E7D32]",
-                                trendType === "down"   && "text-[#B91C1C]",
+                                trendType === "up" && "text-[#2E7D32]",
+                                trendType === "down" && "text-[#B91C1C]",
                                 trendType === "stable" && "text-[#B0AFA8]"
                             )}
                         >

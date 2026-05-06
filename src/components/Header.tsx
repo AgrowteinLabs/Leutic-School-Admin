@@ -157,9 +157,9 @@ export const TopBar = ({
                             )}
                         </div>
                         {actions}
-                        <button className="relative h-10 w-10 bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center justify-center text-[#444441] hover:bg-[#EAF2D7] transition-colors">
-                            <span className="material-symbols-outlined text-[20px]">notifications</span>
-                            <span className="absolute top-1 right-1 w-4 h-4 bg-[#B91C1C] rounded-full text-[9px] text-white font-bold flex items-center justify-center">3</span>
+                        <button className="relative p-2 text-[#B0AFA8] hover:text-foreground transition-all duration-300 group">
+                            <span className="material-symbols-outlined text-[24px]">notifications</span>
+                            <span className="absolute top-1 right-1 size-4 bg-[#B91C1C] rounded-full text-[9px] text-white font-black flex items-center justify-center border-2 border-white shadow-sm">3</span>
                         </button>
                     </div>
                 </div>
@@ -241,7 +241,7 @@ export const TopBar = ({
                         {/* Footer */}
                         <div className="px-10 py-8 bg-[#F7F8F4]/30 border-t border-slate-100 flex items-center justify-between shrink-0">
                             <p className="text-[12px] font-semi-bold text-[#B0AFA8] hidden sm:block">
-                                <span className="text-primary font-bold">{selectedLabels.length} of {allActions.length}</span> Actions Pinned to Header
+                                <span className="text-primary font-bold">{selectedLabels.length} of {allActions.length}</span> Actions pinned to header
                             </p>
                             <div className="flex gap-4 w-full sm:w-auto">
                                 <button

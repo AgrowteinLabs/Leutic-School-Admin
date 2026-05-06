@@ -24,6 +24,15 @@ export const AppDropdown = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen && !searchable && hiddenInputRef.current) {
+      hiddenInputRef.current.focus();
+    } else if (!isOpen && !searchable && hiddenInputRef.current) {
+      hiddenInputRef.current.blur();
+    }
+  }, [isOpen, searchable]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -47,10 +56,13 @@ export const AppDropdown = ({
 
   return (
     <div className={cn("relative", width)} ref={containerRef}>
-      <div className={cn(
-        "w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center justify-between cursor-pointer hover:border-slate-200 transition-all relative overflow-hidden h-12",
-        isOpen && "border-primary/50 bg-white"
-      )}>
+      <div 
+        tabIndex={0}
+        className={cn(
+          "w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center justify-between cursor-pointer hover:border-slate-200 transition-all relative overflow-hidden h-12 outline-none",
+          isOpen && "border-primary/50 ring-4 ring-primary/5 bg-white"
+        )}
+      >
         {icon && (
           <span className={cn(
             "material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[18px] transition-colors z-20 pointer-events-none",
@@ -81,6 +93,7 @@ export const AppDropdown = ({
             )}
           >
             {displayValue}
+            <input ref={hiddenInputRef} className="absolute opacity-0 w-0 h-0 border-0 p-0 m-0" aria-hidden="true" tabIndex={-1} />
           </div>
         )}
         <span
