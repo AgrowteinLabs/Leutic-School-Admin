@@ -109,9 +109,12 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     defaultDuration: 60,
   });
   const [periodDurations, setPeriodDurations] = useState<{ [key: number]: number }>({});
+  // per-day overrides: e.g. Friday periods can be shorter { Friday: { 4: 45 } }
+  const [perDayDurations, setPerDayDurations] = useState<{ [day: string]: { [period: number]: number } }>({});
   const [breakConfig, setBreakConfig] = useState<BreakDef[]>([
-    { id: "b1", afterPeriod: 2, duration: 15, type: 'short' as const, label: "Short Break" },
-    { id: "b2", afterPeriod: 5, duration: 40, type: 'lunch' as const, label: "Lunch Break" },
+    { id: "b1", afterPeriod: 2, duration: 15, type: 'short' as const, label: "Short Break", days: [] },
+    { id: "b2", afterPeriod: 5, duration: 40, type: 'lunch' as const, label: "Lunch Break", days: ["Monday","Tuesday","Wednesday","Thursday"] },
+    { id: "b3", afterPeriod: 4, duration: 30, type: 'prayer' as const, label: "Juma Prayer", days: ["Friday"] },
   ]);
   const [showSchedulePanel, setShowSchedulePanel] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<number | null>(null);
@@ -125,31 +128,49 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
 
-  const periodConfig = useMemo(() => {
-    let cur = timeToMins(scheduleConfig.schoolStart);
-    const cfg: { [n: number]: { start: string; end: string } } = {};
-    for (const p of periods) {
-      const dur = scheduleConfig.uniformDuration
-        ? scheduleConfig.defaultDuration
-        : (periodDurations[p] || scheduleConfig.defaultDuration);
-      cfg[p] = { start: minsToTime(cur), end: minsToTime(cur + dur) };
-      cur += dur;
-      const brk = breakConfig.find(b => b.afterPeriod === p);
-      if (brk) cur += brk.duration;
+  // Per-day period config: accounts for day-specific break durations + per-day period length overrides
+  const periodConfigByDay = useMemo(() => {
+    const allDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const result: { [day: string]: { [p: number]: { start: string; end: string; dur: number } } } = {};
+    for (const day of allDays) {
+      let cur = timeToMins(scheduleConfig.schoolStart);
+      const cfg: { [p: number]: { start: string; end: string; dur: number } } = {};
+      for (const p of periods) {
+        const baseDur = scheduleConfig.uniformDuration
+          ? scheduleConfig.defaultDuration
+          : (periodDurations[p] || scheduleConfig.defaultDuration);
+        const dur = perDayDurations[day]?.[p] ?? baseDur;
+        cfg[p] = { start: minsToTime(cur), end: minsToTime(cur + dur), dur };
+        cur += dur;
+        // add all breaks that apply to this day after this period
+        for (const brk of breakConfig.filter(b => b.afterPeriod === p && (b.days.length === 0 || b.days.includes(day)))) {
+          cur += brk.duration;
+        }
+      }
+      result[day] = cfg;
     }
-    return cfg;
-  }, [scheduleConfig, periodDurations, breakConfig, periods]);
+    return result;
+  }, [scheduleConfig, periodDurations, perDayDurations, breakConfig, periods]);
+
+  // Standard config derived from Monday's per-day config — correctly includes all breaks that apply to Mon
+  const periodConfig = useMemo(() => {
+    const mon = periodConfigByDay["Monday"];
+    if (!mon) return {} as { [n: number]: { start: string; end: string } };
+    return Object.fromEntries(Object.entries(mon).map(([k, v]) => [Number(k), { start: v.start, end: v.end }]));
+  }, [periodConfigByDay]);
 
   const scheduleSlots = useMemo(() => {
-    type Slot = { kind: 'period'; periodNum: number; rowIdx: number } | { kind: 'break'; brk: BreakDef; rowIdx: number };
+    // Each period-slot is followed by at most ONE breaks-slot (grouping ALL breaks after that period)
+    type Slot = { kind: 'period'; periodNum: number; rowIdx: number } | { kind: 'breaks'; brks: BreakDef[]; maxDuration: number; rowIdx: number };
     const slots: Slot[] = [];
     let rowIdx = 0;
     for (const p of periods) {
       slots.push({ kind: 'period', periodNum: p, rowIdx });
       rowIdx++;
-      const brk = breakConfig.find(b => b.afterPeriod === p);
-      if (brk) {
-        slots.push({ kind: 'break', brk, rowIdx });
+      const brks = breakConfig.filter(b => b.afterPeriod === p);
+      if (brks.length > 0) {
+        const maxDuration = Math.max(...brks.map(b => b.duration));
+        slots.push({ kind: 'breaks', brks, maxDuration, rowIdx });
         rowIdx++;
       }
     }
@@ -927,6 +948,70 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               )}
                             </div>
 
+                            {/* Per-day period overrides */}
+                            <div className="flex flex-col gap-3 min-w-[240px]">
+                              <span className="text-[11px] font-bold text-slate-400 tracking-tight uppercase">Day Overrides</span>
+                              <div className="flex flex-col gap-2">
+                                <p className="text-[10px] text-slate-400 leading-relaxed max-w-[220px]">Set different period lengths for specific days (e.g. shorter periods on Friday).</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {days.map(d => {
+                                    const hasOverride = !!perDayDurations[d] && Object.keys(perDayDurations[d]).length > 0;
+                                    return (
+                                      <button
+                                        key={d}
+                                        onClick={() => setPerDayDurations(prev => {
+                                          if (prev[d]) {
+                                            const next = { ...prev };
+                                            delete next[d];
+                                            return next;
+                                          }
+                                          return { ...prev, [d]: {} };
+                                        })}
+                                        className={cn(
+                                          "h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all",
+                                          hasOverride ? "bg-secondary/10 border-secondary/30 text-secondary" : "bg-white border-[#EBE8E0] text-slate-400 hover:border-slate-300"
+                                        )}
+                                      >
+                                        {d.slice(0, 3)}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                {Object.keys(perDayDurations).map(day => (
+                                  <div key={day} className="bg-white rounded-xl border border-[#EBE8E0] px-3 py-2.5 shadow-sm">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-[10px] font-bold text-secondary">{day}</span>
+                                      <button onClick={() => setPerDayDurations(prev => { const n = { ...prev }; delete n[day]; return n; })} className="text-slate-300 hover:text-red-400 transition-colors">
+                                        <span className="material-symbols-outlined text-[13px]">close</span>
+                                      </button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {periods.map(p => {
+                                        const baseDur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
+                                        const val = perDayDurations[day]?.[p] ?? baseDur;
+                                        const isDiff = perDayDurations[day]?.[p] !== undefined && perDayDurations[day][p] !== baseDur;
+                                        return (
+                                          <div key={p} className="flex flex-col items-center gap-0.5">
+                                            <span className={cn("text-[8px] font-semibold", isDiff ? "text-primary" : "text-slate-400")}>P{p}</span>
+                                            <input
+                                              type="number" min={5} max={180}
+                                              value={val}
+                                              onChange={(e) => {
+                                                const v = parseInt(e.target.value) || baseDur;
+                                                setPerDayDurations(prev => ({ ...prev, [day]: { ...(prev[day] || {}), [p]: v } }));
+                                              }}
+                                              className={cn("h-7 w-10 text-center rounded-lg border text-[10px] font-semibold outline-none bg-white shadow-sm", isDiff ? "border-primary/40 text-primary" : "border-[#EBE8E0] text-secondary")}
+                                            />
+                                            <span className="text-[7px] text-slate-300">m</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
                             {/* Breaks */}
                             <div className="flex flex-col gap-3 flex-1 min-w-[280px]">
                               <div className="flex items-center justify-between">
@@ -934,7 +1019,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 <button
                                   onClick={() => setBreakConfig(prev => [
                                     ...prev,
-                                    { id: `b${Date.now()}`, afterPeriod: periods[Math.floor(periods.length / 2)], duration: 15, type: 'short' as const, label: 'Short Break' }
+                                    { id: `b${Date.now()}`, afterPeriod: periods[Math.floor(periods.length / 2)], duration: 15, type: 'short' as const, label: 'Short Break', days: [] }
                                   ])}
                                   className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/70 transition-colors"
                                 >
@@ -943,68 +1028,117 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 </button>
                               </div>
                               <div className="flex flex-col gap-2">
-                                {breakConfig.map(brk => (
-                                  <div key={brk.id} className="flex items-center gap-3 bg-white rounded-xl border border-[#EBE8E0] px-4 py-2.5 shadow-sm">
-                                    <span className={cn("material-symbols-outlined text-[16px]", brk.type === 'lunch' ? "text-amber-400" : "text-slate-400")}>
-                                      {brk.type === 'lunch' ? 'restaurant' : 'free_breakfast'}
-                                    </span>
-                                    <div className="flex items-center gap-2 flex-1 flex-wrap">
-                                      <div className="flex flex-col gap-0.5">
-                                        <span className="text-[9px] text-slate-400">After period</span>
-                                        <select
-                                          value={brk.afterPeriod}
-                                          onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, afterPeriod: parseInt(e.target.value) } : b))}
-                                          className="h-7 px-1.5 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
+                                {breakConfig.map(brk => {
+                                  const isPrayer = brk.type === 'prayer';
+                                  const isLunch = brk.type === 'lunch';
+                                  const iconName = isPrayer ? 'mosque' : isLunch ? 'restaurant' : 'free_breakfast';
+                                  const iconCls = isPrayer ? "text-emerald-500" : isLunch ? "text-amber-400" : "text-slate-400";
+                                  const appliesToAllDays = brk.days.length === 0;
+                                  return (
+                                    <div key={brk.id} className="flex flex-col gap-2 bg-white rounded-xl border border-[#EBE8E0] px-4 py-3 shadow-sm">
+                                      <div className="flex items-center gap-3">
+                                        <span className={cn("material-symbols-outlined text-[16px]", iconCls)}>{iconName}</span>
+                                        <div className="flex items-center gap-2 flex-1 flex-wrap">
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[9px] text-slate-400">After period</span>
+                                            <select
+                                              value={brk.afterPeriod}
+                                              onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, afterPeriod: parseInt(e.target.value) } : b))}
+                                              className="h-7 px-1.5 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
+                                            >
+                                              {periods.map(p => <option key={p} value={p}>Period {p}</option>)}
+                                            </select>
+                                          </div>
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[9px] text-slate-400">Duration</span>
+                                            <div className="flex items-center gap-1">
+                                              <input
+                                                type="number" min={5} max={120}
+                                                value={brk.duration}
+                                                onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, duration: parseInt(e.target.value) || 15 } : b))}
+                                                className="h-7 w-12 text-center rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
+                                              />
+                                              <span className="text-[9px] text-slate-400">min</span>
+                                            </div>
+                                          </div>
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[9px] text-slate-400">Type</span>
+                                            <select
+                                              value={brk.type}
+                                              onChange={(e) => {
+                                                const t = e.target.value as BreakDef['type'];
+                                                const defaultLabel = t === 'lunch' ? 'Lunch Break' : t === 'prayer' ? 'Prayer Break' : 'Short Break';
+                                                setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: t, label: b.label || defaultLabel } : b));
+                                              }}
+                                              className="h-7 px-1.5 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
+                                            >
+                                              <option value="short">Short</option>
+                                              <option value="lunch">Lunch</option>
+                                              <option value="prayer">Prayer</option>
+                                            </select>
+                                          </div>
+                                          <div className="flex flex-col gap-0.5">
+                                            <span className="text-[9px] text-slate-400">Label</span>
+                                            <input
+                                              type="text" value={brk.label}
+                                              onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, label: e.target.value } : b))}
+                                              className="h-7 w-24 px-2 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
+                                            />
+                                          </div>
+                                        </div>
+                                        <button
+                                          onClick={() => setBreakConfig(prev => prev.filter(b => b.id !== brk.id))}
+                                          className="size-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition-colors shrink-0"
                                         >
-                                          {periods.map(p => <option key={p} value={p}>Period {p}</option>)}
-                                        </select>
+                                          <span className="material-symbols-outlined text-[14px]">close</span>
+                                        </button>
                                       </div>
-                                      <div className="flex flex-col gap-0.5">
-                                        <span className="text-[9px] text-slate-400">Duration</span>
+
+                                      {/* Day selector */}
+                                      <div className="flex items-center gap-2 pl-7">
+                                        <span className="text-[9px] text-slate-400 font-semibold shrink-0">Applies to</span>
                                         <div className="flex items-center gap-1">
-                                          <input
-                                            type="number"
-                                            min={5}
-                                            max={90}
-                                            value={brk.duration}
-                                            onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, duration: parseInt(e.target.value) || 15 } : b))}
-                                            className="h-7 w-12 text-center rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
-                                          />
-                                          <span className="text-[9px] text-slate-400">min</span>
+                                          {days.map(d => {
+                                            const active = appliesToAllDays || brk.days.includes(d);
+                                            const short = d.slice(0, 3);
+                                            return (
+                                              <button
+                                                key={d}
+                                                onClick={() => {
+                                                  setBreakConfig(prev => prev.map(b => {
+                                                    if (b.id !== brk.id) return b;
+                                                    if (appliesToAllDays) {
+                                                      // switching from "all" → select only this day
+                                                      return { ...b, days: [d] };
+                                                    }
+                                                    const newDays = b.days.includes(d)
+                                                      ? b.days.filter(x => x !== d)
+                                                      : [...b.days, d];
+                                                    return { ...b, days: newDays };
+                                                  }));
+                                                }}
+                                                className={cn(
+                                                  "h-6 px-2 rounded-md text-[9px] font-bold transition-all",
+                                                  active
+                                                    ? isPrayer ? "bg-emerald-100 text-emerald-700" : isLunch ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"
+                                                    : "bg-white border border-slate-200 text-slate-300"
+                                                )}
+                                              >
+                                                {short}
+                                              </button>
+                                            );
+                                          })}
+                                          <button
+                                            onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, days: [] } : b))}
+                                            className={cn("h-6 px-2 rounded-md text-[9px] font-bold transition-all ml-1", appliesToAllDays ? "bg-slate-700 text-white" : "bg-white border border-slate-200 text-slate-300")}
+                                          >
+                                            All
+                                          </button>
                                         </div>
                                       </div>
-                                      <div className="flex flex-col gap-0.5">
-                                        <span className="text-[9px] text-slate-400">Type</span>
-                                        <select
-                                          value={brk.type}
-                                          onChange={(e) => {
-                                            const t = e.target.value as 'short' | 'lunch';
-                                            setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: t, label: t === 'lunch' ? 'Lunch Break' : 'Short Break' } : b));
-                                          }}
-                                          className="h-7 px-1.5 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
-                                        >
-                                          <option value="short">Short</option>
-                                          <option value="lunch">Lunch</option>
-                                        </select>
-                                      </div>
-                                      <div className="flex flex-col gap-0.5">
-                                        <span className="text-[9px] text-slate-400">Label</span>
-                                        <input
-                                          type="text"
-                                          value={brk.label}
-                                          onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, label: e.target.value } : b))}
-                                          className="h-7 w-24 px-2 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
-                                        />
-                                      </div>
                                     </div>
-                                    <button
-                                      onClick={() => setBreakConfig(prev => prev.filter(b => b.id !== brk.id))}
-                                      className="size-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition-colors"
-                                    >
-                                      <span className="material-symbols-outlined text-[14px]">close</span>
-                                    </button>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                                 {breakConfig.length === 0 && (
                                   <div className="text-[11px] text-slate-300 font-medium text-center py-3">No breaks configured</div>
                                 )}
@@ -1038,7 +1172,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                           <div className="max-w-[1200px] mx-auto">
                             <div
                               className="grid grid-cols-[100px_repeat(5,1fr)] select-none"
-                              style={{ gridTemplateRows: `auto ${scheduleSlots.map(s => s.kind === 'period' ? 'minmax(140px, auto)' : '44px').join(' ')}` }}
+                              style={{ gridTemplateRows: `auto ${scheduleSlots.map(s => { if (s.kind === 'period') { const baseDur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[s.periodNum] || scheduleConfig.defaultDuration); return `minmax(${Math.max(120, Math.round(baseDur * 2.4))}px, auto)`; } return `${Math.max(36, Math.round(s.maxDuration * 1.5))}px`; }).join(' ')}` }}
                               onMouseLeave={() => extendingSlot && setExtensionTarget(null)}
                               onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
                             >
@@ -1060,18 +1194,25 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               {/* Period Labels + Break Labels */}
                               {scheduleSlots.map((slot) => {
                                 const gridRow = slot.rowIdx + 2;
-                                if (slot.kind === 'break') {
-                                  const brk = slot.brk;
-                                  const isLunch = brk.type === 'lunch';
+                                if (slot.kind === 'breaks') {
+                                  const { brks } = slot;
                                   return (
                                     <div
-                                      key={`break-label-${brk.id}`}
+                                      key={`breaks-label-${slot.rowIdx}`}
                                       style={{ gridRow, gridColumn: 1 }}
-                                      className="flex items-center justify-center border-b border-r border-[#EBE8E0] bg-slate-50/60"
+                                      className="flex flex-col items-center justify-center gap-1 border-b border-r border-[#EBE8E0] bg-slate-50/60 overflow-hidden py-1"
                                     >
-                                      <span className="material-symbols-outlined text-[14px] text-slate-400">
-                                        {isLunch ? 'restaurant' : 'free_breakfast'}
-                                      </span>
+                                      {brks.map(brk => {
+                                        const ip = brk.type === 'prayer'; const il = brk.type === 'lunch';
+                                        return (
+                                          <div key={brk.id} className="flex flex-col items-center gap-0.5">
+                                            <span className={cn("material-symbols-outlined text-[12px]", ip ? "text-emerald-500" : il ? "text-amber-400" : "text-slate-400")}>
+                                              {ip ? 'mosque' : il ? 'restaurant' : 'free_breakfast'}
+                                            </span>
+                                            <span className="text-[7px] font-semibold text-slate-400 text-center leading-tight px-1 truncate max-w-full">{brk.label}</span>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   );
                                 }
@@ -1083,16 +1224,15 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                   <div
                                     key={`label-${period}`}
                                     style={{ gridRow, gridColumn: 1 }}
-                                    className="flex flex-col items-center justify-start pt-6 gap-1.5 border-b border-r border-[#EBE8E0] pr-6 pl-2 relative min-w-[100px]"
+                                    className="flex flex-col items-center justify-center gap-1 border-b border-r border-[#EBE8E0] px-2 relative overflow-hidden"
                                   >
-                                    <span className="text-[24px] font-bold text-secondary/80 leading-none">{period}</span>
+                                    <span className="text-[22px] font-bold text-secondary/80 leading-none">{period}</span>
                                     {editingPeriod === period ? (
                                       <div
-                                        className="flex flex-col gap-1 mt-1"
+                                        className="flex flex-col items-center gap-1"
                                         onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setEditingPeriod(null); }}
                                       >
                                         <div className="flex items-center gap-1">
-                                          <span className="text-[9px] text-slate-400 w-5">dur</span>
                                           <input
                                             autoFocus
                                             type="number"
@@ -1101,17 +1241,18 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                             value={dur}
                                             onChange={(e) => {
                                               const v = parseInt(e.target.value) || scheduleConfig.defaultDuration;
+                                              setPeriodDurations(prev => ({ ...prev, [period]: v }));
                                               if (scheduleConfig.uniformDuration) {
-                                                setScheduleConfig(prev => ({ ...prev, defaultDuration: v }));
-                                              } else {
-                                                setPeriodDurations(prev => ({ ...prev, [period]: v }));
+                                                setScheduleConfig(prev => ({ ...prev, uniformDuration: false }));
                                               }
                                             }}
-                                            className="w-12 text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-2 py-1 outline-none focus:border-primary shadow-sm"
+                                            className="w-10 text-center text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-1 py-1 outline-none focus:border-primary shadow-sm"
                                           />
-                                          <span className="text-[9px] text-slate-400">min</span>
+                                          <span className="text-[9px] text-slate-400">m</span>
                                         </div>
-                                        <div className="text-[9px] text-slate-300 text-center">{periodConfig[period]?.start} — {periodConfig[period]?.end}</div>
+                                        <div className="text-[8px] text-slate-300 text-center leading-tight">
+                                          {periodConfig[period]?.start}<br />{periodConfig[period]?.end}
+                                        </div>
                                       </div>
                                     ) : (
                                       <button
@@ -1121,7 +1262,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">
                                           {periodConfig[period]?.start}
                                         </span>
-                                        <span className="text-[9px] font-medium text-slate-300">—</span>
+                                        <span className="text-[8px] font-medium text-slate-300">—</span>
                                         <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">
                                           {periodConfig[period]?.end}
                                         </span>
@@ -1146,46 +1287,54 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                     }
                                   });
 
-                                // Render break rows (full-width across all day columns)
+                                // Render break rows — one row per period-slot, all breaks at that position grouped
                                 const breakRows = scheduleSlots
-                                  .filter(s => s.kind === 'break')
-                                  .map(slot => {
-                                    if (slot.kind !== 'break') return null;
-                                    const { brk, rowIdx } = slot;
-                                    const isLunch = brk.type === 'lunch';
-                                    const brkTimes = (() => {
-                                      let cur = timeToMins(scheduleConfig.schoolStart);
-                                      for (const p of periods) {
-                                        const dur2 = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
-                                        cur += dur2;
-                                        if (breakConfig.find(b => b.id === brk.id && b.afterPeriod === p)) {
-                                          return { start: minsToTime(cur), end: minsToTime(cur + brk.duration) };
-                                        }
-                                        const b2 = breakConfig.find(b => b.afterPeriod === p);
-                                        if (b2) cur += b2.duration;
+                                  .filter(s => s.kind === 'breaks')
+                                  .flatMap(slot => {
+                                    if (slot.kind !== 'breaks') return [];
+                                    const { brks, rowIdx } = slot;
+                                    return days.map((day, dIdx) => {
+                                      // find the break that applies to this day in this slot
+                                      const brk = brks.find(b => b.days.length === 0 || b.days.includes(day));
+                                      if (!brk) {
+                                        // No break for this day — show pass-through (time is continuous here)
+                                        return (
+                                          <div
+                                            key={`breaks-none-${rowIdx}-${day}`}
+                                            style={{ gridRow: rowIdx + 2, gridColumn: dIdx + 2 }}
+                                            className={cn("border-b border-[#EBE8E0] flex items-center justify-center", dIdx < days.length - 1 && "border-r")}
+                                          >
+                                            <div className="w-10 h-px bg-[#EBE8E0]" />
+                                          </div>
+                                        );
                                       }
-                                      return { start: '', end: '' };
-                                    })();
-                                    return (
-                                      <div
-                                        key={`break-row-${brk.id}`}
-                                        style={{ gridRow: rowIdx + 2, gridColumn: '2 / 7' }}
-                                        className={cn(
-                                          "flex items-center justify-center gap-3 border-b border-[#EBE8E0]",
-                                          isLunch ? "bg-amber-50/40" : "bg-slate-50/60"
-                                        )}
-                                      >
-                                        <span className={cn("material-symbols-outlined text-[16px]", isLunch ? "text-amber-400" : "text-slate-400")}>
-                                          {isLunch ? 'restaurant' : 'free_breakfast'}
-                                        </span>
-                                        <span className={cn("text-[11px] font-semibold", isLunch ? "text-amber-600/70" : "text-slate-400")}>
-                                          {brk.label}
-                                        </span>
-                                        <span className="text-[10px] text-slate-300 font-medium">
-                                          {brkTimes.start} — {brkTimes.end} · {brk.duration}m
-                                        </span>
-                                      </div>
-                                    );
+                                      const isPrayer = brk.type === 'prayer';
+                                      const isLunch = brk.type === 'lunch';
+                                      // per-day start time (uses day-aware cascade)
+                                      const brkStart = timeToMins(periodConfigByDay[day]?.[brk.afterPeriod]?.end || periodConfig[brk.afterPeriod]?.end || scheduleConfig.schoolStart);
+                                      const brkEnd = brkStart + brk.duration;
+                                      const icon = isPrayer ? 'mosque' : isLunch ? 'restaurant' : 'free_breakfast';
+                                      const colorCls = isPrayer ? "bg-emerald-50/60" : isLunch ? "bg-amber-50/40" : "bg-slate-50/60";
+                                      const textCls = isPrayer ? "text-emerald-600/70" : isLunch ? "text-amber-600/70" : "text-slate-400";
+                                      const iconCls = isPrayer ? "text-emerald-500" : isLunch ? "text-amber-400" : "text-slate-400";
+                                      return (
+                                        <div
+                                          key={`breaks-${rowIdx}-${day}`}
+                                          style={{ gridRow: rowIdx + 2, gridColumn: dIdx + 2 }}
+                                          className={cn(
+                                            "flex items-center justify-center gap-1.5 border-b border-[#EBE8E0]",
+                                            dIdx < days.length - 1 && "border-r",
+                                            colorCls
+                                          )}
+                                        >
+                                          <span className={cn("material-symbols-outlined text-[13px]", iconCls)}>{icon}</span>
+                                          <div className="flex flex-col leading-tight">
+                                            <span className={cn("text-[10px] font-semibold", textCls)}>{brk.label}</span>
+                                            <span className="text-[9px] text-slate-300">{minsToTime(brkStart)} – {minsToTime(brkEnd)}</span>
+                                          </div>
+                                        </div>
+                                      );
+                                    });
                                   });
 
                                 // Render period day cells
@@ -1299,6 +1448,25 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                       {/* Grain on hover */}
                                       <div className="absolute inset-0 opacity-0 group-hover:opacity-[0.02] pointer-events-none transition-opacity"
                                         style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/felt.png")' }} />
+
+                                      {/* Per-day period time label — top-left corner (hidden for spanned cells, time already shown below teacher) */}
+                                      {spanP === 1 && (() => {
+                                        const dayCfg = periodConfigByDay[day]?.[period];
+                                        if (!dayCfg) return null;
+                                        const monCfg = periodConfigByDay["Monday"]?.[period];
+                                        const isDiff = monCfg && (dayCfg.start !== monCfg.start || dayCfg.end !== monCfg.end);
+                                        return (
+                                          <div className={cn(
+                                            "absolute top-2 left-3 flex items-center gap-1 pointer-events-none z-[5]",
+                                            isDiff ? "opacity-70" : "opacity-30"
+                                          )}>
+                                            <span className="text-[8px] font-semibold text-secondary tracking-wide">{dayCfg.start}</span>
+                                            <span className="text-[7px] text-slate-400">–</span>
+                                            <span className="text-[8px] font-semibold text-secondary tracking-wide">{dayCfg.end}</span>
+                                            {isDiff && <span className="text-[7px] text-primary font-bold ml-0.5">*</span>}
+                                          </div>
+                                        );
+                                      })()}
 
                                       {/* Vertical extend preview overlay */}
                                       {isVerticalTarget && (
