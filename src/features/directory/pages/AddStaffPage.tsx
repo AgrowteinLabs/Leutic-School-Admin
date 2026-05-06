@@ -135,7 +135,7 @@ export const AddStaffPage = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
                                             <FormGroup label="Employee ID" placeholder="e.g. STAFF-2024-001" />
                                             <FormGroup label="Joining Date" type="date" placeholder="DD / MM / YYYY" icon="calendar_today" maxDate={new Date()} />
-                                            <FormGroup label="Department" type="select" options={["Mathematics", "Science", "Humanities", "Administration", "Sports"]} searchable />
+                                            <FormGroup label="Subject Area" type="select" options={["Mathematics", "Science", "Humanities", "Languages", "Arts", "Technology", "Administration", "Sports"]} searchable />
                                             <FormGroup label="Designation" placeholder="e.g. Senior Faculty" />
                                             <FormGroup label="Qualifications" placeholder="e.g. PhD in Applied Mathematics" />
                                             <FormGroup label="Years of Experience" placeholder="e.g. 8 Years" />

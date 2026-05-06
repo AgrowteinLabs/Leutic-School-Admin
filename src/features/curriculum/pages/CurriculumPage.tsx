@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
@@ -56,7 +56,41 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const [timetableEntries, setTimetableEntries] = useState<any[]>([]);
   const [assigningSlot, setAssigningSlot] = useState<{ day: string, period: number } | null>(null);
 
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const handleTabChange = (newTab: string) => {
+    if (hasUnsavedChanges) {
+      setPendingTab(newTab);
+      setShowConfirmModal(true);
+    } else {
+      navigate(`/curriculum/${newTab}`);
+    }
+  };
+
+  const confirmNavigation = () => {
+    if (pendingTab) {
+      setHasUnsavedChanges(false);
+      navigate(`/curriculum/${pendingTab}`);
+      setShowConfirmModal(false);
+      setPendingTab(null);
+    }
+  };
+
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+  // Browser-level navigation guard for unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
   const periods = [1, 2, 3, 4, 5, 6, 7, 8];
   const ACADEMIC_AREAS = ["Mathematics", "Science", "Humanities", "Languages", "Arts", "Technology", "Administration", "Sports"];
 
@@ -141,6 +175,28 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     }
   };
 
+  const handleQuickAssign = (grade: string, section: string, subjectId: string, teacherId: string, isFromTemplate: boolean) => {
+    const existingIndex = mappings.findIndex(m => m.grade === grade && m.section === section && m.subjectId === subjectId);
+
+    if (existingIndex > -1) {
+      const newMappings = [...mappings];
+      newMappings[existingIndex] = { ...newMappings[existingIndex], teacherId };
+      setMappings(newMappings);
+    } else {
+      const newMapping = {
+        id: `m-${Date.now()}`,
+        grade,
+        section,
+        subjectId,
+        teacherId,
+        isAdditional: !isFromTemplate,
+        hoursPerWeek: 4 // Default
+      };
+      setMappings([...mappings, newMapping]);
+    }
+    setHasUnsavedChanges(true);
+  };
+
   const handleEditMapping = (mapping: Mapping) => {
     setEditingMapping(mapping);
     setIsAddingAdditional(!!mapping.isAdditional);
@@ -201,12 +257,18 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   };
 
   const onAddMapping = (newMapping: any) => {
-    if (editingMapping) {
+    if (editingMapping && editingMapping.id) {
       setMappings(prev => prev.map(m => m.id === editingMapping.id ? { ...m, ...newMapping } : m));
     } else {
-      setMappings([{ ...newMapping, id: `MAP-${Date.now()}` }, ...mappings]);
+      setMappings(prev => [{ ...newMapping, id: `MAP-${Date.now()}` }, ...prev]);
     }
     setShowMappingDrawer(false);
+    setEditingMapping(null);
+  };
+
+  const handleDeleteMapping = (id: string) => {
+    setMappings(prev => prev.filter(m => m.id !== id));
+    setHasUnsavedChanges(true);
   };
 
   return (
@@ -239,7 +301,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 return (
                   <button
                     key={t.id}
-                    onClick={() => navigate(`/curriculum/${t.id}`)}
+                    onClick={() => handleTabChange(t.id)}
                     className={cn(
                       "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
                       isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
@@ -347,13 +409,15 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                   </button>
                 )}
 
-                <button
-                  onClick={handleAddAction}
-                  className="btn-primary h-10 px-6 flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-[20px]">add</span>
-                  {activeTab === "master" ? "New Subject" : activeTab === "grades" ? "Configure Grade" : "New Mapping"}
-                </button>
+                {activeTab !== "mapping" && (
+                  <button
+                    onClick={handleAddAction}
+                    className="btn-primary h-10 px-6 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">add</span>
+                    {activeTab === "master" ? "New Subject" : "Configure Grade"}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -510,7 +574,12 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                           const keyB = `${b.grade}-${b.id}`;
                           return sortOrder === "asc" ? keyA.localeCompare(keyB) : keyB.localeCompare(keyA);
                         })
-                        .filter(s => `${s.grade}-${s.id}`.toLowerCase().includes(searchTerm.toLowerCase())).map(s => {
+                        .filter(s => {
+                          const fullSearch = `${s.grade} ${s.id}`.toLowerCase();
+                          const shortSearch = `${s.grade.replace("Grade ", "")} ${s.id}`.toLowerCase();
+                          const normalizedTerm = searchTerm.toLowerCase();
+                          return fullSearch.includes(normalizedTerm) || shortSearch.includes(normalizedTerm);
+                        }).map(s => {
                           const gradeConfig = gradeConfigs.find(gc => gc.grade === s.grade);
                           const sectionMappings = mappings.filter(m => m.grade === s.grade && m.section === s.id);
 
@@ -519,17 +588,13 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                           const additionalSubjectIds = sectionMappings.filter(m => m.isAdditional).map(m => m.subjectId);
                           const allSubjectIds = Array.from(new Set([...templateSubjectIds, ...additionalSubjectIds]));
 
-                          const totalHours = sectionMappings.reduce((acc, curr) => acc + curr.hoursPerWeek, 0);
-
                           return (
-                            <div key={`${s.grade}-${s.id}`} className="group px-8 py-10 border-b border-slate-50 hover:bg-[#F9F9F8]/40 transition-all flex flex-col lg:flex-row gap-12 lg:gap-16 items-start">
-                              <div className="w-20 shrink-0">
-                                <span className="text-[10px] font-bold text-[#B0AFA8] block mb-1">{s.grade}</span>
-                                <h4 className="text-[32px] font-bold text-secondary leading-none">{s.id}</h4>
-                                <div className="mt-6 flex items-center gap-1.5 text-secondary/40 group-hover:text-primary transition-colors">
-                                  <span className="text-[12px] font-bold leading-none">{totalHours}h</span>
-                                  <span className="material-symbols-outlined text-[16px]">schedule</span>
-                                </div>
+                            <div key={`${s.grade}-${s.id}`} className="group px-8 py-10 border-b border-slate-100 hover:bg-[#F9F9F8]/40 transition-all flex flex-col lg:flex-row gap-12 lg:gap-16 items-start">
+                              <div className="w-24 shrink-0 flex flex-col pt-1">
+                                <span className="text-[12px] font-bold text-[#B0AFA8] mb-2">Grade</span>
+                                <h4 className="text-[28px] font-bold text-secondary leading-none">
+                                  {s.grade.replace("Grade ", "")} {s.id}
+                                </h4>
                               </div>
 
                               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-10">
@@ -544,15 +609,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                   return (
                                     <div
                                       key={sid}
-                                      onClick={() => {
-                                        if (mapping) handleEditMapping(mapping);
-                                        else {
-                                          setIsAddingAdditional(!isFromTemplate);
-                                          setEditingMapping(null);
-                                          setShowMappingDrawer(true);
-                                        }
-                                      }}
-                                      className="flex flex-col gap-1 relative group/item cursor-pointer"
+                                      className="flex flex-col gap-1 relative group/item"
                                     >
                                       <div className={cn(
                                         "absolute -left-6 top-0 bottom-0 w-[1px] transition-colors",
@@ -566,26 +623,51 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         {!isFromTemplate && <div className="size-1 rounded-full bg-primary" />}
                                         {!mapping && <span className="text-[8px] font-bold text-red-400">Required</span>}
                                       </div>
-                                      <div className="flex justify-between items-center pr-4">
-                                        <span className={cn(
-                                          "text-[11px] font-semibold",
-                                          mapping ? "text-secondary" : "text-[#B0AFA8]"
-                                        )}>
-                                          {mapping
-                                            ? (teachers.find(t => t.id === mapping.teacherId)?.name || mapping.teacherId)
-                                            : "Assign Teacher"}
-                                        </span>
-                                        {mapping && <span className="text-[11px] font-bold text-secondary/20 group-hover/item:text-secondary transition-colors">{mapping.hoursPerWeek}h</span>}
+                                      {!isFromTemplate && mapping && (
+                                        <button
+                                          onClick={() => handleDeleteMapping(mapping.id)}
+                                          className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all z-10"
+                                          title="Remove Custom Subject"
+                                        >
+                                          <span className="material-symbols-outlined text-[16px]">delete</span>
+                                        </button>
+                                      )}
+                                      <div className="flex flex-col pr-4">
+                                        <select
+                                          className="bg-transparent border-none p-0 text-[11px] font-medium text-secondary focus:ring-0 cursor-pointer outline-none w-full"
+                                          value={mapping?.teacherId || ""}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val) {
+                                              handleQuickAssign(s.grade, s.id, sid, val, isFromTemplate);
+                                            }
+                                          }}
+                                        >
+                                          <option value="" disabled className="text-slate-400">Assign Teacher</option>
+                                          {teachers
+                                            .filter(t => t.specializations.includes(sid))
+                                            .map(t => (
+                                              <option key={t.id} value={t.id} className="text-[#444441]">{t.name}</option>
+                                            ))}
+                                        </select>
                                       </div>
                                     </div>
                                   );
                                 })}
-                              </div>
-
-                              <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-all pt-1">
-                                <button className="h-9 px-4 rounded-full border border-slate-100 text-[10px] font-bold text-[#B0AFA8] hover:text-primary hover:border-primary transition-all">
-                                  Section Audit
-                                </button>
+                                {/* Add Custom Subject Trigger (Ultra-Minimal Link) */}
+                                <div className="flex items-center pt-1">
+                                  <button
+                                    onClick={() => {
+                                      setEditingMapping({ grade: s.grade, section: s.id, isAdditional: true } as any);
+                                      setIsAddingAdditional(true);
+                                      setShowMappingDrawer(true);
+                                    }}
+                                    className="flex items-center gap-1.5 text-[#B0AFA8] hover:text-primary transition-all group/plus active:scale-95"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px] group-hover:rotate-90 transition-transform duration-300">add</span>
+                                    <span className="text-[11px] font-bold tracking-tight">Add Custom</span>
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           );
@@ -764,6 +846,88 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         </div>
       </div>
 
+      {/* ── Global Action Bar (Quiet Luxury Save Mechanism) ── */}
+      <AnimatePresence>
+        {hasUnsavedChanges && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-6"
+          >
+            <div className="bg-white/80 backdrop-blur-xl border border-slate-200/60 p-2 pl-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="size-2 rounded-full bg-primary animate-pulse" />
+                <div className="flex flex-col">
+                  <p className="text-[13px] font-bold text-secondary">Save Changes?</p>
+                  <p className="text-[10px] text-[#B0AFA8] font-medium">You have changes that need to be saved.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setHasUnsavedChanges(false)}
+                  className="h-11 px-6 rounded-xl text-[12px] font-bold text-[#B0AFA8] hover:text-secondary hover:bg-slate-50 transition-all"
+                >
+                  Discard
+                </button>
+                <button
+                  onClick={() => {
+                    // Simulating API sync
+                    setTimeout(() => setHasUnsavedChanges(false), 800);
+                  }}
+                  className="h-11 px-8 bg-secondary text-white rounded-xl text-[12px] font-bold shadow-lg shadow-secondary/10 hover:bg-secondary/90 active:scale-95 transition-all flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-primary">sync</span>
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Confirmation Modal (Quiet Luxury Navigation Guard) ── */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+          >
+            <div className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" onClick={() => setShowConfirmModal(false)} />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-[32px] shadow-2xl p-8 max-w-md w-full relative z-10 border border-slate-100"
+            >
+              <div className="size-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 mb-6 border border-amber-100">
+                <span className="material-symbols-outlined text-[28px]">warning</span>
+              </div>
+              <h3 className="text-[20px] font-bold text-secondary mb-2">Unsaved Changes</h3>
+              <p className="text-[14px] text-[#B0AFA8] leading-relaxed mb-8">
+                You have pending teacher assignments. Moving to another tab will discard these modifications. Are you sure you want to proceed?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:bg-slate-50 transition-all"
+                >
+                  Stay Here
+                </button>
+                <button
+                  onClick={confirmNavigation}
+                  className="flex-1 h-12 rounded-xl bg-red-50 text-red-600 text-[13px] font-bold hover:bg-red-100 transition-all"
+                >
+                  Discard & Move
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Drawers */}
       <SideDrawer
         isOpen={showSubjectDrawer}
@@ -798,7 +962,16 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         title={editingMapping ? "Update Assignment" : isAddingAdditional ? "Assign Custom Subject" : "Assign Teacher"}
         subtitle="Assign a teacher to a specific subject and class. We will show a warning if the teacher’s profile doesn’t match."
       >
-        <MappingForm subjects={subjects} teachers={teachers} mappings={mappings} initialData={editingMapping} isAdditional={isAddingAdditional} onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }} onSubmit={onAddMapping} />
+        <MappingForm 
+          subjects={subjects} 
+          teachers={teachers} 
+          mappings={mappings} 
+          gradeConfigs={gradeConfigs}
+          initialData={editingMapping} 
+          isAdditional={isAddingAdditional} 
+          onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }} 
+          onSubmit={onAddMapping} 
+        />
       </SideDrawer>
 
       <SideDrawer
@@ -1079,12 +1252,23 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: any) => {
   );
 };
 
-const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, onClose, onSubmit }: any) => {
-  const [grade, setGrade] = useState(initialData?.grade || "Grade 8");
-  const [section, setSection] = useState(initialData?.section || "A");
-  const [subjectId, setSubjectId] = useState(initialData?.subjectId || subjects[0]?.id || "");
-  const [teacherId, setTeacherId] = useState(initialData?.teacherId || teachers[0]?.id || "");
-  const [hoursPerWeek, setHoursPerWeek] = useState(initialData?.hoursPerWeek?.toString() || "4");
+const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, onClose, onSubmit, gradeConfigs }: any) => {
+  const [grade, setGrade] = useState(initialData?.grade || "");
+  const [section, setSection] = useState(initialData?.section || "");
+  const [subjectId, setSubjectId] = useState(initialData?.subjectId || "");
+  const [teacherId, setTeacherId] = useState(initialData?.teacherId || "");
+
+  // Update when initialData changes (for contextual + button)
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.grade) setGrade(initialData.grade);
+      if (initialData.section) setSection(initialData.section);
+      if (initialData.subjectId) setSubjectId(initialData.subjectId);
+      if (initialData.teacherId) setTeacherId(initialData.teacherId);
+    }
+  }, [initialData]);
+
+  const isFormValid = grade && section && subjectId && teacherId;
 
   // Derived warning intelligence
   const selectedTeacher = teachers.find((t: any) => t.id === teacherId);
@@ -1094,35 +1278,35 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
 
   // Teacher workload calculation
   const teacherMappings = (mappings || []).filter((m: any) => m.teacherId === teacherId);
-  const totalHours = teacherMappings.reduce((sum: number, m: any) => sum + (m.hoursPerWeek || 0), 0);
 
   return (
     <div className="flex flex-col h-full">
       <div className="p-8 space-y-6 flex-1 overflow-y-auto no-scrollbar">
-        {isAdditional && (
-          <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3">
-            <span className="material-symbols-outlined text-amber-600 text-[20px]">stars</span>
-            <p className="text-[12px] text-amber-900 leading-relaxed font-medium">
-              You are adding a subject to this specific class that isn't in the regular list for this grade.
-            </p>
-          </div>
-        )}
-
         <div className="grid grid-cols-2 gap-4">
-          <FormGroup label="Grade" type="select" options={["Grade 8", "Grade 9", "Grade 10"]} value={grade} onChange={setGrade} />
+          <FormGroup 
+            label="Grade" type="select" 
+            options={gradeConfigs.map((g: any) => g.grade)} 
+            value={grade} onChange={setGrade} 
+          />
           <FormGroup label="Section" placeholder="e.g. A" value={section} onChange={setSection} />
         </div>
 
         <FormGroup
           label="Select Subject" type="select"
-          options={subjects.map((s: any) => ({ val: s.id, label: s.name }))}
+          options={[
+            { val: "", label: "Choose a Subject", disabled: true },
+            ...subjects.map((s: any) => ({ val: s.id, label: s.name }))
+          ]}
           value={subjectId} onChange={setSubjectId}
           icon="subject"
         />
 
         <FormGroup
           label="Assign Teacher" type="select"
-          options={teachers.map((t: any) => ({ val: t.id, label: t.name }))}
+          options={[
+            { val: "", label: "Choose a Teacher", disabled: true },
+            ...teachers.map((t: any) => ({ val: t.id, label: t.name }))
+          ]}
           value={teacherId} onChange={setTeacherId}
           icon="person"
         />
@@ -1167,31 +1351,27 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
                   <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">badge</span>
                   <span className="text-[12px] font-bold text-foreground">{selectedTeacher.name}</span>
                 </div>
-                <span className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider">{selectedTeacher.qualification}</span>
+                <span className="text-[10px] font-semibold text-[#B0AFA8]">{selectedTeacher.qualification}</span>
               </div>
               <div className="flex gap-4">
                 <div className="flex-1 bg-white rounded-lg border border-slate-50 p-3 text-center">
                   <p className="text-[18px] font-bold text-foreground">{teacherMappings.length}</p>
-                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wide mt-0.5">Active Classes</p>
-                </div>
-                <div className="flex-1 bg-white rounded-lg border border-slate-50 p-3 text-center">
-                  <p className="text-[18px] font-bold text-foreground">{totalHours}</p>
-                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wide mt-0.5">Hours / Week</p>
+                  <p className="text-[9px] font-medium text-[#B0AFA8] mt-0.5">Active Classes</p>
                 </div>
                 <div className="flex-1 bg-white rounded-lg border border-slate-50 p-3 text-center">
                   <p className="text-[18px] font-bold text-foreground">{selectedTeacher.teachingScope.length}</p>
-                  <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wide mt-0.5">Grade Scope</p>
+                  <p className="text-[9px] font-medium text-[#B0AFA8] mt-0.5">Grade Scope</p>
                 </div>
               </div>
               {teacherMappings.length > 0 && (
                 <div className="space-y-1.5 pt-1">
-                  <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider">Current Assignments</p>
+                  <p className="text-[10px] font-medium text-[#B0AFA8]">Current Assignments</p>
                   {teacherMappings.map((m: any) => {
                     const sub = subjects.find((s: any) => s.id === m.subjectId);
                     return (
                       <div key={m.id} className="flex items-center justify-between text-[11px] py-1.5 px-2 rounded-lg hover:bg-white transition-colors">
                         <span className="font-semibold text-[#444441]">{sub?.name || m.subjectId}</span>
-                        <span className="text-[#B0AFA8] font-medium">{m.grade} {m.section} · {m.hoursPerWeek}h/wk</span>
+                        <span className="text-[#B0AFA8] font-medium">{m.grade} {m.section}</span>
                       </div>
                     );
                   })}
@@ -1201,18 +1381,15 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
           </div>
         )}
 
-        <div className="w-1/2">
-          <FormGroup label="Weekly Hours" type="number" placeholder="e.g. 4" value={hoursPerWeek} onChange={setHoursPerWeek} />
-          <p className="text-[10px] text-[#B0AFA8] font-medium pl-1 mt-1">Number of periods per week.</p>
-        </div>
       </div>
       <div className="p-8 border-t border-slate-50 bg-[#FBFBFA] flex gap-3">
         <button onClick={onClose} className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors">Cancel</button>
         <button
-          onClick={() => onSubmit({ grade, section, subjectId, teacherId, hoursPerWeek: Number(hoursPerWeek), isAdditional })}
-          className="flex-[2] btn-primary h-12 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
+          onClick={() => isFormValid && onSubmit({ grade, section, subjectId, teacherId, isAdditional })}
+          disabled={!isFormValid}
+          className="flex-[2] btn-primary h-12 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
         >
-          {initialData ? "Update Mapping" : "Confirm Assignment"}
+          {initialData?.id ? "Update Mapping" : "Confirm Assignment"}
         </button>
       </div>
     </div>
