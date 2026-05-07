@@ -92,6 +92,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   };
 
   const ALL_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const [stickyDayHeaders, setStickyDayHeaders] = useState(true);
   const [activeDays, setActiveDays] = useState(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
   const days = activeDays;
 
@@ -441,10 +442,10 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         </>
       )}
 
-      <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pt-4 pb-10">
-        <div className="max-w-[1400px] mx-auto space-y-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pb-10">
+        <div className="max-w-[1400px] mx-auto space-y-6 pt-4">
 
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px] overflow-hidden">
+          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px]">
 
             {/* Header / Search Area (Hidden for Timetable to maximize space) */}
             {activeTab !== "timetable" && (
@@ -541,6 +542,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3 }}
+                  className="rounded-[23px]"
                 >
                   {activeTab === "master" && (
                     <table className="w-full text-left">
@@ -788,69 +790,69 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
 
                   {activeTab === "timetable" && (
-                    <div className="flex flex-col bg-[#FDFCFB]/50 backdrop-blur-sm">
+                    <div className="flex flex-col bg-[#FDFCFB]/50 backdrop-blur-sm rounded-[24px] -mx-[1px] w-[calc(100%+2px)] border-x border-slate-100">
                       {/* Hierarchical Section Selector (Sleek Typographic Index) */}
-                      <div className="px-10 py-8 bg-white border-b border-slate-100 flex flex-col gap-12">
-                          {/* 1. Academic Index (Grades) */}
-                          <div className="flex flex-col gap-4">
-                            <div className="flex items-center gap-3">
-                              <span className="text-[13px] font-semibold text-slate-400 tracking-tight">Academic index</span>
-                              <div className="h-px flex-1 bg-slate-50" />
-                            </div>
-                            <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
-                              {gradeConfigs.map(config => (
+                      <div className="px-10 py-8 bg-white border-b border-x border-slate-100 flex flex-col gap-12 rounded-t-[24px] -mx-[1px] w-[calc(100%+2px)]">
+                        {/* 1. Academic Index (Grades) */}
+                        <div className="flex flex-col gap-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[13px] font-semibold text-slate-400 tracking-tight">Academic index</span>
+                            <div className="h-px flex-1 bg-slate-50" />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                            {gradeConfigs.map(config => (
+                              <button
+                                key={config.grade}
+                                onClick={() => {
+                                  setSelectedTimetableGrade(config.grade);
+                                  setSelectedTimetableSection("");
+                                }}
+                                className={cn(
+                                  "text-[15px] transition-all relative py-1",
+                                  selectedTimetableGrade === config.grade
+                                    ? "font-semibold text-secondary"
+                                    : "font-medium text-slate-400 hover:text-secondary"
+                                )}
+                              >
+                                {config.grade}
+                                {selectedTimetableGrade === config.grade && (
+                                  <motion.div layoutId="grade-underline" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-primary" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 2. Class Roster (Sections) */}
+                        <div className="flex flex-col gap-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[13px] font-semibold text-slate-400 tracking-tight">Section roster</span>
+                            <div className="h-px flex-1 bg-slate-50" />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                            {sections
+                              .filter(s => s.grade === selectedTimetableGrade)
+                              .map(s => (
                                 <button
-                                  key={config.grade}
-                                  onClick={() => {
-                                    setSelectedTimetableGrade(config.grade);
-                                    setSelectedTimetableSection("");
-                                  }}
+                                  key={`${s.grade}-${s.id}`}
+                                  onClick={() => setSelectedTimetableSection(`${s.grade}-${s.id}`)}
                                   className={cn(
-                                    "text-[15px] transition-all relative py-1",
-                                    selectedTimetableGrade === config.grade
-                                      ? "font-semibold text-secondary"
-                                      : "font-medium text-slate-400 hover:text-secondary"
+                                    "size-8 rounded-full text-[13px] transition-all flex items-center justify-center",
+                                    selectedTimetableSection === `${s.grade}-${s.id}`
+                                      ? "font-semibold text-white bg-primary shadow-lg shadow-primary/20"
+                                      : "font-medium text-slate-400 hover:text-secondary hover:bg-slate-50"
                                   )}
                                 >
-                                  {config.grade}
-                                  {selectedTimetableGrade === config.grade && (
-                                    <motion.div layoutId="grade-underline" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-primary" />
-                                  )}
+                                  {s.id}
                                 </button>
                               ))}
-                            </div>
-                          </div>
-
-                          {/* 2. Class Roster (Sections) */}
-                          <div className="flex flex-col gap-4">
-                            <div className="flex items-center gap-3">
-                              <span className="text-[13px] font-semibold text-slate-400 tracking-tight">Section roster</span>
-                              <div className="h-px flex-1 bg-slate-50" />
-                            </div>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-                              {sections
-                                .filter(s => s.grade === selectedTimetableGrade)
-                                .map(s => (
-                                  <button
-                                    key={`${s.grade}-${s.id}`}
-                                    onClick={() => setSelectedTimetableSection(`${s.grade}-${s.id}`)}
-                                    className={cn(
-                                      "size-8 rounded-full text-[13px] transition-all flex items-center justify-center",
-                                      selectedTimetableSection === `${s.grade}-${s.id}`
-                                        ? "font-semibold text-white bg-primary shadow-lg shadow-primary/20"
-                                        : "font-medium text-slate-400 hover:text-secondary hover:bg-slate-50"
-                                    )}
-                                  >
-                                    {s.id}
-                                  </button>
-                                ))}
                           </div>
                         </div>
                       </div>
 
                       {/* 3. Selection Summary Overlay (Independent Sticky Bar) */}
                       {selectedTimetableSection && (
-                        <div className="bg-white border-b border-slate-100 px-10 py-4 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+                        <div className="sticky top-[-1px] z-30 bg-white/95 backdrop-blur-md border-b border-x border-slate-100 px-10 py-4 flex items-center justify-between  animate-in fade-in slide-in-from-top-2 duration-500 -mx-[1px] w-[calc(100%+2px)]">
                           <div className="flex items-center gap-4">
                             <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                               <span className="material-symbols-outlined text-[20px]">check_circle</span>
@@ -862,25 +864,40 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => setShowSchedulePanel(!showSchedulePanel)}
-                              className={cn(
-                                "h-10 px-6 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all",
-                                showSchedulePanel
-                                  ? "bg-secondary text-white shadow-inner"
-                                  : "bg-white border border-slate-100 text-[#B0AFA8] hover:bg-[#F7F8F4] hover:text-foreground hover:shadow-sm"
-                              )}
-                            >
-                              <span className="material-symbols-outlined text-[18px]">
-                                {showSchedulePanel ? 'expand_less' : 'settings_input_component'}
-                              </span>
-                              <span>{configSaved && !showSchedulePanel ? 'Configured' : 'Configure'}</span>
-                            </button>
-                            <button className="btn-primary gap-2">
-                              <span className="material-symbols-outlined text-[18px]">save</span>
-                              <span>Save Schedule</span>
-                            </button>
+                          <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer group/toggle"
+                              onClick={() => setStickyDayHeaders(!stickyDayHeaders)}>
+                              <div className={cn(
+                                "w-7 h-4 rounded-full relative transition-all duration-300",
+                                stickyDayHeaders ? "bg-primary" : "bg-slate-200"
+                              )}>
+                                <div className={cn(
+                                  "absolute top-0.5 size-3 rounded-full bg-white transition-all duration-300",
+                                  stickyDayHeaders ? "left-[13px]" : "left-0.5"
+                                )} />
+                              </div>
+                              <span className="text-[10px] font-medium text-[#B0AFA8] group-hover/toggle:text-secondary transition-colors ">Day rows always at top</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => setShowSchedulePanel(!showSchedulePanel)}
+                                className={cn(
+                                  "h-10 px-6 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all",
+                                  showSchedulePanel
+                                    ? "bg-secondary text-white shadow-inner"
+                                    : "bg-white border border-slate-100 text-[#B0AFA8] hover:bg-[#F7F8F4] hover:text-foreground hover:shadow-sm"
+                                )}
+                              >
+                                <span className="material-symbols-outlined text-[18px]">
+                                  {showSchedulePanel ? 'expand_less' : 'settings_input_component'}
+                                </span>
+                                <span>{configSaved && !showSchedulePanel ? 'Configured' : 'Configure'}</span>
+                              </button>
+                              <button className="btn-primary gap-2">
+                                <span className="material-symbols-outlined text-[18px]">save</span>
+                                <span>Save Schedule</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1243,7 +1260,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                       </AnimatePresence>
 
                       {!selectedTimetableSection ? (
-                        <div className="flex-1 flex flex-col items-center justify-center p-20 text-center relative overflow-hidden">
+                        <div className="flex-1 flex flex-col items-center justify-center p-20 text-center relative overflow-hidden rounded-b-[23px]">
                           {/* Editorial Background Element */}
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[400px] font-black text-slate-50/50 select-none pointer-events-none">
                             Schedule
@@ -1261,13 +1278,16 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                           </div>
                         </div>
                       ) : (
-                        <div ref={timetableRef} className="flex-1 overflow-auto bg-transparent">
+                        <div ref={timetableRef} className="flex-1 bg-transparent">
                           <div className="max-w-[1200px] mx-auto select-none"
                             onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
                             onMouseLeave={() => extendingSlot && setExtensionTarget(null)}>
 
                             {/* Day headers */}
-                            <div className="flex border-b border-[#EBE8E0] bg-[#FDFCFB]/90 sticky top-0 z-20 backdrop-blur-sm">
+                            <div className={cn(
+                              "flex border-b border-[#EBE8E0] bg-[#FDFCFB]/90 z-20 backdrop-blur-sm",
+                              stickyDayHeaders ? "sticky top-[64px]" : "relative"
+                            )}>
                               <div className="w-[100px] shrink-0 border-r border-[#EBE8E0]" />
                               {days.map((day, dIdx) => (
                                 <div key={day} className={cn("flex-1 py-5 px-6 bg-[#FDFCFB]/80", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}>
