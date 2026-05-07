@@ -444,7 +444,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pt-4 pb-10">
         <div className="max-w-[1400px] mx-auto space-y-6">
 
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px]">
+          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px] overflow-hidden">
 
             {/* Header / Search Area (Hidden for Timetable to maximize space) */}
             {activeTab !== "timetable" && (
