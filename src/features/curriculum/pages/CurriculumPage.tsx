@@ -102,7 +102,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasUnsavedChanges]);
-  const [periods] = useState([1, 2, 3, 4, 5, 6, 7, 8]);
+  const [numPeriods, setNumPeriods] = useState(8);
+  const periods = useMemo(() => Array.from({ length: numPeriods }, (_, i) => i + 1), [numPeriods]);
   const [scheduleConfig, setScheduleConfig] = useState({
     schoolStart: "08:30",
     uniformDuration: true,
@@ -934,6 +935,25 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               )}
                             </div>
 
+                            {/* Period count +/- */}
+                            <div className="flex flex-col gap-3">
+                              <span className="text-[11px] font-bold text-slate-400 tracking-tight uppercase">Periods</span>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[10px] text-slate-400 font-medium">Count</span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => setNumPeriods(p => Math.max(1, p - 1))}
+                                    className="size-8 rounded-lg border border-[#EBE8E0] text-secondary hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center text-[16px] font-bold bg-white shadow-sm"
+                                  >−</button>
+                                  <span className="text-[15px] font-bold text-secondary w-6 text-center">{numPeriods}</span>
+                                  <button
+                                    onClick={() => setNumPeriods(p => Math.min(16, p + 1))}
+                                    className="size-8 rounded-lg border border-[#EBE8E0] text-secondary hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center text-[16px] font-bold bg-white shadow-sm"
+                                  >+</button>
+                                </div>
+                              </div>
+                            </div>
+
                             {/* Per-day period overrides */}
                             <div className="flex flex-col gap-3 min-w-[240px]">
                               <span className="text-[11px] font-bold text-slate-400 tracking-tight uppercase">Day Overrides</span>
@@ -1318,7 +1338,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                               transition={{ delay: (p * 5 + dIdx) * 0.01 }}
                                               style={{ top: cellTop, height: cellHeight, left: 0, right: 0, position: 'absolute', zIndex: entry ? 2 : 1 }}
                                               className={cn(
-                                                "group border-b border-[#EBE8E0] transition-colors duration-200 py-4 px-4 overflow-hidden",
+                                                "group border-b border-[#EBE8E0] transition-colors duration-200 py-4 px-4",
                                                 !entry && !isInHRange && "cursor-pointer hover:bg-white/90 hover:shadow-[0_4px_20px_rgba(230,220,200,0.4)] hover:z-[15]",
                                                 isInHRange && "bg-primary/[0.04]",
                                                 entry && spanP > 1 && "border-l-[3px] border-l-slate-300"
@@ -1415,59 +1435,72 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                   <p className="text-[11px] text-slate-300">{extendingSlot.entry.teacherName}</p>
                                                 </div>
                                               )}
-                                              {assigningSlot?.day === day && assigningSlot?.period === p && (
-                                                <div className="absolute inset-2 z-[30] bg-[#FDFCFB] shadow-[0_20px_60px_rgba(200,180,150,0.3)] rounded-xl border border-[#EBE8E0] p-4 animate-in fade-in zoom-in-95 duration-200">
-                                                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '12px 12px' }} />
-                                                  <div className="relative z-10 flex flex-col h-full">
-                                                    <div className="flex justify-between items-center mb-4">
-                                                      <span className="text-[11px] font-semibold text-slate-400 tracking-tight">Assign subject</span>
-                                                      <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); setSubjectSearch(""); }} className="text-slate-300 hover:text-secondary transition-colors">
-                                                        <span className="material-symbols-outlined text-[14px]">close</span>
-                                                      </button>
-                                                    </div>
-                                                    <div className="relative group/search z-50">
-                                                      <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-primary/40 group-focus-within/search:text-primary transition-colors">search</span>
-                                                      <input autoFocus type="text" placeholder="Subject name..."
-                                                             value={subjectSearch}
-                                                             onChange={(e) => setSubjectSearch(e.target.value)}
-                                                             onClick={(e) => e.stopPropagation()}
-                                                             className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all" />
-                                                      {subjectSearch.length > 0 && (
-                                                        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#EBE8E0] rounded-lg shadow-[0_20px_50px_rgba(200,180,150,0.35)] z-[100] max-h-[220px] overflow-y-auto no-scrollbar py-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                          {mappings
-                                                            .filter(m => `${m.grade}-${m.section}` === selectedTimetableSection)
-                                                            .filter(m => { const sub = subjects.find(s => s.id === m.subjectId); return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()); })
-                                                            .map(m => {
-                                                              const sub = subjects.find(s => s.id === m.subjectId);
-                                                              const teacher = teachers.find(t => t.id === m.teacherId);
-                                                              return (
-                                                                <button key={m.id}
-                                                                        onClick={(e) => {
-                                                                          e.stopPropagation();
-                                                                          setTimetableEntries(prev => [...prev, { section: selectedTimetableSection, day, period: p, subjectId: m.subjectId, subjectName: sub?.name || "", teacherId: m.teacherId, teacherName: teacher?.name || m.teacherId }]);
-                                                                          setAssigningSlot(null); setSubjectSearch("");
-                                                                        }}
-                                                                        className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt">
-                                                                  <div className="space-y-0.5">
-                                                                    <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">{sub?.name}</p>
-                                                                    <p className="text-[10px] font-medium text-slate-400">{teacher?.name || m.teacherId}</p>
-                                                                  </div>
-                                                                  <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">add_circle</span>
-                                                                </button>
-                                                              );
-                                                            })}
-                                                          {mappings.filter(m => { const sub = subjects.find(s => s.id === m.subjectId); return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()) && `${m.grade}-${m.section}` === selectedTimetableSection; }).length === 0 && (
-                                                            <div className="px-3 py-6 text-center"><p className="text-[11px] text-slate-400 font-medium">No results found</p></div>
-                                                          )}
-                                                        </div>
-                                                      )}
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              )}
                                             </motion.div>
                                           );
                                         })}
+
+                                        {/* Assignment popover — rendered at day-column level so it sits above break cells */}
+                                        {assigningSlot?.day === day && (() => {
+                                          const ap = assigningSlot.period;
+                                          const aCfg = periodConfigByDay[day]?.[ap];
+                                          if (!aCfg) return null;
+                                          const aTop = (timeToMins(aCfg.start) - schoolStartMins) * SCALE;
+                                          const aHeight = Math.max(160, aCfg.dur * SCALE);
+                                          return (
+                                            <div style={{ top: aTop, height: aHeight, left: 0, right: 0, position: 'absolute', zIndex: 50 }}
+                                                 className="p-2">
+                                              <div className="relative h-full bg-[#FDFCFB] shadow-[0_20px_60px_rgba(200,180,150,0.3)] rounded-xl border border-[#EBE8E0] p-4 animate-in fade-in zoom-in-95 duration-200">
+                                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none rounded-xl" style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '12px 12px' }} />
+                                                <div className="relative flex flex-col gap-3">
+                                                  <div className="flex justify-between items-center">
+                                                    <span className="text-[11px] font-semibold text-slate-400 tracking-tight">Assign subject</span>
+                                                    <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); setSubjectSearch(""); }} className="text-slate-300 hover:text-secondary transition-colors">
+                                                      <span className="material-symbols-outlined text-[14px]">close</span>
+                                                    </button>
+                                                  </div>
+                                                  <div className="relative group/search">
+                                                    <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-primary/40 group-focus-within/search:text-primary transition-colors">search</span>
+                                                    <input autoFocus type="text" placeholder="Subject name..."
+                                                           value={subjectSearch}
+                                                           onChange={(e) => setSubjectSearch(e.target.value)}
+                                                           onClick={(e) => e.stopPropagation()}
+                                                           className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all" />
+                                                    {subjectSearch.length > 0 && (
+                                                      <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#EBE8E0] rounded-lg shadow-[0_20px_50px_rgba(200,180,150,0.35)] max-h-[220px] overflow-y-auto no-scrollbar py-1 animate-in fade-in slide-in-from-top-1 duration-200"
+                                                           style={{ zIndex: 10 }}>
+                                                        {mappings
+                                                          .filter(m => `${m.grade}-${m.section}` === selectedTimetableSection)
+                                                          .filter(m => { const sub = subjects.find(s => s.id === m.subjectId); return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()); })
+                                                          .map(m => {
+                                                            const sub = subjects.find(s => s.id === m.subjectId);
+                                                            const teacher = teachers.find(t => t.id === m.teacherId);
+                                                            return (
+                                                              <button key={m.id}
+                                                                      onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setTimetableEntries(prev => [...prev, { section: selectedTimetableSection, day, period: ap, subjectId: m.subjectId, subjectName: sub?.name || "", teacherId: m.teacherId, teacherName: teacher?.name || m.teacherId }]);
+                                                                        setAssigningSlot(null); setSubjectSearch("");
+                                                                      }}
+                                                                      className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt">
+                                                                <div className="space-y-0.5">
+                                                                  <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">{sub?.name}</p>
+                                                                  <p className="text-[10px] font-medium text-slate-400">{teacher?.name || m.teacherId}</p>
+                                                                </div>
+                                                                <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">add_circle</span>
+                                                              </button>
+                                                            );
+                                                          })}
+                                                        {mappings.filter(m => { const sub = subjects.find(s => s.id === m.subjectId); return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()) && `${m.grade}-${m.section}` === selectedTimetableSection; }).length === 0 && (
+                                                          <div className="px-3 py-6 text-center"><p className="text-[11px] text-slate-400 font-medium">No results found</p></div>
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          );
+                                        })()}
                                       </div>
                                     );
                                   })}
@@ -1483,16 +1516,18 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               </AnimatePresence>
             </div>
 
-            <div className="bg-white rounded-b-[24px]">
-              <TablePagination
-                currentPage={currentPage}
-                totalItems={activeTab === "master" ? subjects.length : activeTab === "grades" ? gradeConfigs.length : mappings.length}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={setItemsPerPage}
-                itemName={activeTab === "master" ? "subjects" : activeTab === "grades" ? "templates" : "mappings"}
-              />
-            </div>
+            {activeTab !== "timetable" && (
+              <div className="bg-white rounded-b-[24px]">
+                <TablePagination
+                  currentPage={currentPage}
+                  totalItems={activeTab === "master" ? subjects.length : activeTab === "grades" ? gradeConfigs.length : mappings.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                  itemName={activeTab === "master" ? "subjects" : activeTab === "grades" ? "templates" : "mappings"}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
