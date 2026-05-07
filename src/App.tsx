@@ -35,7 +35,7 @@ function App() {
           <Route path="/classes" element={<ClassesPage />} />
           <Route path="/classes/create" element={<CreateClassPage />} />
           <Route path="/classes/:id" element={<ClassDetailsPage />} />
-          <Route path="/attendance" element={<AttendancePage />} />
+          <Route path="/attendance/:tab?" element={<AttendancePage />} />
           <Route path="/students/:id" element={<StudentProfilePage />} />
           <Route path="/academics" element={<AcademicHubPage />} />
           <Route path="/directory/:tab?" element={<DirectoryPage />} />

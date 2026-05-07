@@ -9,6 +9,7 @@ interface AppDropdownProps {
   placeholder?: string;
   searchable?: boolean;
   icon?: string;
+  height?: string;
 }
 
 export const AppDropdown = ({
@@ -19,6 +20,7 @@ export const AppDropdown = ({
   placeholder = "Select option",
   searchable = false,
   icon,
+  height = "h-12",
 }: AppDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,7 +61,8 @@ export const AppDropdown = ({
       <div 
         tabIndex={0}
         className={cn(
-          "w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center justify-between cursor-pointer hover:border-slate-200 transition-all relative overflow-hidden h-12 outline-none",
+          "w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center justify-between cursor-pointer hover:border-slate-200 transition-all relative overflow-hidden outline-none",
+          height,
           isOpen && "border-primary/50 ring-4 ring-primary/5 bg-white"
         )}
       >

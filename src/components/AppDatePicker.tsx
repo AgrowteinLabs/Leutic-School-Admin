@@ -9,6 +9,7 @@ interface AppDatePickerProps {
   width?: string;
   icon?: string;
   maxDate?: Date;
+  height?: string;
 }
 
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -20,7 +21,8 @@ export const AppDatePicker = ({
   width = "w-full",
   placeholder = "DD / MM / YYYY",
   icon = "calendar_today",
-  maxDate
+  maxDate,
+  height = "h-12",
 }: AppDatePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -98,7 +100,8 @@ export const AppDatePicker = ({
         tabIndex={0}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center cursor-pointer hover:border-slate-200 transition-all relative overflow-hidden h-12 outline-none group",
+          "w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center cursor-pointer hover:border-slate-200 transition-all relative overflow-hidden outline-none group",
+          height,
           isOpen && "border-primary/50 ring-4 ring-primary/5 bg-white"
         )}
       >
