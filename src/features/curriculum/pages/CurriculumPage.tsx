@@ -50,9 +50,10 @@ interface Teacher {
 
 interface BreakDef {
   id: string;
-  afterPeriod: number;
+  period: number;
+  placement: 'before' | 'after';
   duration: number;       // minutes
-  type: 'short' | 'lunch' | 'prayer';
+  type: 'short' | 'lunch' | 'other';
   label: string;
   days: string[];         // empty = all days; otherwise specific days only
 }
@@ -89,7 +90,9 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     }
   };
 
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const ALL_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const [activeDays, setActiveDays] = useState(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
+  const days = activeDays;
 
   // Browser-level navigation guard for unsaved changes
   useEffect(() => {
@@ -113,11 +116,12 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   // per-day overrides: e.g. Friday periods can be shorter { Friday: { 4: 45 } }
   const [perDayDurations, setPerDayDurations] = useState<{ [day: string]: { [period: number]: number } }>({});
   const [breakConfig, setBreakConfig] = useState<BreakDef[]>([
-    { id: "b1", afterPeriod: 2, duration: 15, type: 'short' as const, label: "Short Break", days: [] },
-    { id: "b2", afterPeriod: 5, duration: 40, type: 'lunch' as const, label: "Lunch Break", days: ["Monday","Tuesday","Wednesday","Thursday"] },
-    { id: "b3", afterPeriod: 4, duration: 30, type: 'prayer' as const, label: "Juma Prayer", days: ["Friday"] },
+    { id: "b1", period: 2, placement: 'after', duration: 15, type: 'short', label: "Short Break", days: [] },
+    { id: "b2", period: 5, placement: 'after', duration: 40, type: 'lunch', label: "Lunch Break", days: ["Monday", "Tuesday", "Wednesday", "Thursday"] },
+    { id: "b3", period: 4, placement: 'after', duration: 30, type: 'other', label: "Prayer", days: ["Friday"] },
   ]);
   const [showSchedulePanel, setShowSchedulePanel] = useState(false);
+  const [configSaved, setConfigSaved] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<number | null>(null);
   const timeToMins = (t: string) => {
     const [h, m] = t.split(':').map(Number);
@@ -129,29 +133,35 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
 
-  // Per-day period config: accounts for day-specific break durations + per-day period length overrides
-  const periodConfigByDay = useMemo(() => {
-    const allDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-    const result: { [day: string]: { [p: number]: { start: string; end: string; dur: number } } } = {};
+  // Per-day period config + break start times (handles before/after placement)
+  const { periodConfigByDay, breakStartByDay } = useMemo(() => {
+    const allDays = days;
+    const pCfg: { [day: string]: { [p: number]: { start: string; end: string; dur: number } } } = {};
+    const bStarts: { [day: string]: { [id: string]: string } } = {};
+    const applicable = (b: BreakDef, day: string) => b.days.length === 0 || b.days.includes(day);
     for (const day of allDays) {
       let cur = timeToMins(scheduleConfig.schoolStart);
-      const cfg: { [p: number]: { start: string; end: string; dur: number } } = {};
+      pCfg[day] = {};
+      bStarts[day] = {};
       for (const p of periods) {
+        for (const brk of breakConfig.filter(b => b.period === p && b.placement === 'before' && applicable(b, day))) {
+          bStarts[day][brk.id] = minsToTime(cur);
+          cur += brk.duration;
+        }
         const baseDur = scheduleConfig.uniformDuration
           ? scheduleConfig.defaultDuration
           : (periodDurations[p] || scheduleConfig.defaultDuration);
         const dur = perDayDurations[day]?.[p] ?? baseDur;
-        cfg[p] = { start: minsToTime(cur), end: minsToTime(cur + dur), dur };
+        pCfg[day][p] = { start: minsToTime(cur), end: minsToTime(cur + dur), dur };
         cur += dur;
-        // add all breaks that apply to this day after this period
-        for (const brk of breakConfig.filter(b => b.afterPeriod === p && (b.days.length === 0 || b.days.includes(day)))) {
+        for (const brk of breakConfig.filter(b => b.period === p && b.placement === 'after' && applicable(b, day))) {
+          bStarts[day][brk.id] = minsToTime(cur);
           cur += brk.duration;
         }
       }
-      result[day] = cfg;
     }
-    return result;
-  }, [scheduleConfig, periodDurations, perDayDurations, breakConfig, periods]);
+    return { periodConfigByDay: pCfg, breakStartByDay: bStarts };
+  }, [scheduleConfig, periodDurations, perDayDurations, breakConfig, periods, days]);
 
 
 
@@ -160,13 +170,13 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const totalDayMinutes = useMemo(() => {
     const schoolStart = timeToMins(scheduleConfig.schoolStart);
     let maxEnd = 0;
-    for (const day of ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]) {
+    for (const day of days) {
       const lastP = periods[periods.length - 1];
       const lastCfg = periodConfigByDay[day]?.[lastP];
       if (lastCfg) maxEnd = Math.max(maxEnd, timeToMins(lastCfg.end) - schoolStart);
     }
     return maxEnd + 40;
-  }, [scheduleConfig.schoolStart, periodConfigByDay, periods]);
+  }, [scheduleConfig.schoolStart, periodConfigByDay, periods, days]);
 
   const timeTicks = useMemo(() => {
     const start = timeToMins(scheduleConfig.schoolStart);
@@ -845,16 +855,21 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                             </div>
                             <div className="flex items-center gap-3">
                               <button
-                                onClick={() => setShowSchedulePanel(prev => !prev)}
+                                onClick={() => { setShowSchedulePanel(prev => !prev); setConfigSaved(false); }}
                                 className={cn(
                                   "h-10 px-5 rounded-xl text-[12px] font-bold flex items-center gap-2 border transition-all",
                                   showSchedulePanel
                                     ? "bg-secondary text-white border-secondary"
-                                    : "bg-white text-secondary border-[#EBE8E0] hover:border-secondary/30"
+                                    : configSaved
+                                      ? "bg-primary/10 text-primary border-primary/20"
+                                      : "bg-white text-secondary border-[#EBE8E0] hover:border-secondary/30"
                                 )}
                               >
-                                <span className="material-symbols-outlined text-[18px]">tune</span>
-                                <span>Configure</span>
+                                <span className="material-symbols-outlined text-[18px]"
+                                  style={{ fontVariationSettings: configSaved && !showSchedulePanel ? "'FILL' 1" : "'FILL' 0" }}>
+                                  {configSaved && !showSchedulePanel ? 'check_circle' : 'tune'}
+                                </span>
+                                <span>{configSaved && !showSchedulePanel ? 'Configured' : 'Configure'}</span>
                               </button>
                               <button className="h-10 px-6 rounded-xl bg-primary text-white text-[12px] font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                                 <span className="material-symbols-outlined text-[18px]">save</span>
@@ -866,294 +881,326 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                       </div>
 
                       {/* Schedule Config Panel */}
-                      {showSchedulePanel && (
-                        <div className="px-10 py-6 border-b border-slate-100 bg-[#FDFCFB]/80 animate-in slide-in-from-top-2 duration-300">
-                          <div className="flex flex-wrap gap-10 items-start">
+                      <AnimatePresence>
+                        {showSchedulePanel && (
+                          <motion.div
+                            key="cfg-panel"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+                            style={{ overflow: 'hidden' }}
+                          >
+                            <div className="px-8 py-6 border-b border-[#EBE8E0] bg-[#F8F7F4]">
+                              <div className="flex flex-wrap gap-3 items-start">
 
-                            {/* School Start + Period Duration */}
-                            <div className="flex flex-col gap-3">
-                              <span className="text-[11px] font-bold text-slate-400 tracking-tight uppercase">Schedule</span>
-                              <div className="flex items-center gap-4">
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-[10px] text-slate-400 font-medium">School starts</span>
-                                  <input
-                                    type="time"
-                                    value={scheduleConfig.schoolStart}
-                                    onChange={(e) => setScheduleConfig(prev => ({ ...prev, schoolStart: e.target.value }))}
-                                    className="h-9 px-3 rounded-lg border border-[#EBE8E0] text-[12px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white shadow-sm"
-                                  />
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-[10px] text-slate-400 font-medium">Period duration</span>
+                                {/* Schedule card */}
+                                <div className="bg-white rounded-[20px] border border-[#EBE8E0] p-5 shadow-sm flex flex-col gap-4">
                                   <div className="flex items-center gap-2">
-                                    <input
-                                      type="number"
-                                      min={5}
-                                      max={180}
-                                      value={scheduleConfig.defaultDuration}
-                                      onChange={(e) => setScheduleConfig(prev => ({ ...prev, defaultDuration: parseInt(e.target.value) || 60 }))}
-                                      disabled={!scheduleConfig.uniformDuration}
-                                      className="h-9 w-16 px-2 rounded-lg border border-[#EBE8E0] text-[12px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white shadow-sm disabled:opacity-40"
-                                    />
-                                    <span className="text-[11px] text-slate-400">min</span>
+                                    <span className="material-symbols-outlined text-[15px] text-primary/50">schedule</span>
+                                    <span className="text-[12px] font-semibold text-secondary tracking-tight">Schedule</span>
                                   </div>
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                  <span className="text-[10px] text-slate-400 font-medium">Duration mode</span>
-                                  <button
-                                    onClick={() => setScheduleConfig(prev => ({ ...prev, uniformDuration: !prev.uniformDuration }))}
-                                    className={cn(
-                                      "h-9 px-4 rounded-lg text-[11px] font-bold border transition-all",
-                                      scheduleConfig.uniformDuration
-                                        ? "bg-white border-[#EBE8E0] text-slate-500"
-                                        : "bg-primary/10 border-primary/20 text-primary"
-                                    )}
-                                  >
-                                    {scheduleConfig.uniformDuration ? "Uniform" : "Variable"}
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Variable durations per period */}
-                              {!scheduleConfig.uniformDuration && (
-                                <div className="flex flex-wrap gap-2 mt-1">
-                                  {periods.map(p => (
-                                    <div key={p} className="flex flex-col items-center gap-0.5">
-                                      <span className="text-[9px] text-slate-400 font-semibold">P{p}</span>
-                                      <input
-                                        type="number"
-                                        min={5}
-                                        max={180}
-                                        value={periodDurations[p] || scheduleConfig.defaultDuration}
-                                        onChange={(e) => setPeriodDurations(prev => ({ ...prev, [p]: parseInt(e.target.value) || scheduleConfig.defaultDuration }))}
-                                        className="h-8 w-12 text-center rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white shadow-sm"
-                                      />
-                                      <span className="text-[8px] text-slate-300">min</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Period count +/- */}
-                            <div className="flex flex-col gap-3">
-                              <span className="text-[11px] font-bold text-slate-400 tracking-tight uppercase">Periods</span>
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[10px] text-slate-400 font-medium">Count</span>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => setNumPeriods(p => Math.max(1, p - 1))}
-                                    className="size-8 rounded-lg border border-[#EBE8E0] text-secondary hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center text-[16px] font-bold bg-white shadow-sm"
-                                  >−</button>
-                                  <span className="text-[15px] font-bold text-secondary w-6 text-center">{numPeriods}</span>
-                                  <button
-                                    onClick={() => setNumPeriods(p => Math.min(16, p + 1))}
-                                    className="size-8 rounded-lg border border-[#EBE8E0] text-secondary hover:border-primary/30 hover:text-primary transition-all flex items-center justify-center text-[16px] font-bold bg-white shadow-sm"
-                                  >+</button>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Per-day period overrides */}
-                            <div className="flex flex-col gap-3 min-w-[240px]">
-                              <span className="text-[11px] font-bold text-slate-400 tracking-tight uppercase">Day Overrides</span>
-                              <div className="flex flex-col gap-2">
-                                <p className="text-[10px] text-slate-400 leading-relaxed max-w-[220px]">Set different period lengths for specific days (e.g. shorter periods on Friday).</p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {days.map(d => {
-                                    const hasOverride = !!perDayDurations[d] && Object.keys(perDayDurations[d]).length > 0;
-                                    return (
-                                      <button
-                                        key={d}
-                                        onClick={() => setPerDayDurations(prev => {
-                                          if (prev[d]) {
-                                            const next = { ...prev };
-                                            delete next[d];
-                                            return next;
-                                          }
-                                          return { ...prev, [d]: {} };
-                                        })}
-                                        className={cn(
-                                          "h-7 px-2.5 rounded-lg text-[10px] font-bold border transition-all",
-                                          hasOverride ? "bg-secondary/10 border-secondary/30 text-secondary" : "bg-white border-[#EBE8E0] text-slate-400 hover:border-slate-300"
-                                        )}
-                                      >
-                                        {d.slice(0, 3)}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                                {Object.keys(perDayDurations).map(day => (
-                                  <div key={day} className="bg-white rounded-xl border border-[#EBE8E0] px-3 py-2.5 shadow-sm">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="text-[10px] font-bold text-secondary">{day}</span>
-                                      <button onClick={() => setPerDayDurations(prev => { const n = { ...prev }; delete n[day]; return n; })} className="text-slate-300 hover:text-red-400 transition-colors">
-                                        <span className="material-symbols-outlined text-[13px]">close</span>
-                                      </button>
-                                    </div>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {periods.map(p => {
-                                        const baseDur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
-                                        const val = perDayDurations[day]?.[p] ?? baseDur;
-                                        const isDiff = perDayDurations[day]?.[p] !== undefined && perDayDurations[day][p] !== baseDur;
+                                  {/* Working days */}
+                                  <div className="flex flex-col gap-1.5">
+                                    <span className="text-[10px] font-medium text-slate-400">Working days</span>
+                                    <div className="flex gap-1.5">
+                                      {ALL_WEEK.map(d => {
+                                        const isActive = activeDays.includes(d);
+                                        const isSun = d === "Sunday";
                                         return (
-                                          <div key={p} className="flex flex-col items-center gap-0.5">
-                                            <span className={cn("text-[8px] font-semibold", isDiff ? "text-primary" : "text-slate-400")}>P{p}</span>
-                                            <input
-                                              type="number" min={5} max={180}
-                                              value={val}
-                                              onChange={(e) => {
-                                                const v = parseInt(e.target.value) || baseDur;
-                                                setPerDayDurations(prev => ({ ...prev, [day]: { ...(prev[day] || {}), [p]: v } }));
-                                              }}
-                                              className={cn("h-7 w-10 text-center rounded-lg border text-[10px] font-semibold outline-none bg-white shadow-sm", isDiff ? "border-primary/40 text-primary" : "border-[#EBE8E0] text-secondary")}
-                                            />
-                                            <span className="text-[7px] text-slate-300">m</span>
-                                          </div>
+                                          <button key={d}
+                                            onClick={() => setActiveDays(prev =>
+                                              prev.includes(d)
+                                                ? prev.length > 1 ? prev.filter(x => x !== d) : prev
+                                                : [...ALL_WEEK.filter(w => [...prev, d].includes(w))]
+                                            )}
+                                            className={cn(
+                                              "h-8 px-2.5 rounded-xl text-[10px] font-semibold border transition-all",
+                                              isActive
+                                                ? isSun ? "bg-rose-500 text-white border-rose-500 shadow-sm" : "bg-secondary text-white border-secondary shadow-sm"
+                                                : "bg-[#F8F7F4] border-[#EBE8E0] text-slate-400 hover:border-slate-300 hover:text-secondary/60"
+                                            )}>
+                                            {d.slice(0, 3)}
+                                          </button>
                                         );
                                       })}
                                     </div>
                                   </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Breaks */}
-                            <div className="flex flex-col gap-3 flex-1 min-w-[280px]">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold text-slate-400 tracking-tight uppercase">Breaks</span>
-                                <button
-                                  onClick={() => setBreakConfig(prev => [
-                                    ...prev,
-                                    { id: `b${Date.now()}`, afterPeriod: periods[Math.floor(periods.length / 2)], duration: 15, type: 'short' as const, label: 'Short Break', days: [] }
-                                  ])}
-                                  className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/70 transition-colors"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">add</span>
-                                  Add break
-                                </button>
-                              </div>
-                              <div className="flex flex-col gap-2">
-                                {breakConfig.map(brk => {
-                                  const isPrayer = brk.type === 'prayer';
-                                  const isLunch = brk.type === 'lunch';
-                                  const iconName = isPrayer ? 'mosque' : isLunch ? 'restaurant' : 'free_breakfast';
-                                  const iconCls = isPrayer ? "text-emerald-500" : isLunch ? "text-amber-400" : "text-slate-400";
-                                  const appliesToAllDays = brk.days.length === 0;
-                                  return (
-                                    <div key={brk.id} className="flex flex-col gap-2 bg-white rounded-xl border border-[#EBE8E0] px-4 py-3 shadow-sm">
-                                      <div className="flex items-center gap-3">
-                                        <span className={cn("material-symbols-outlined text-[16px]", iconCls)}>{iconName}</span>
-                                        <div className="flex items-center gap-2 flex-1 flex-wrap">
-                                          <div className="flex flex-col gap-0.5">
-                                            <span className="text-[9px] text-slate-400">After period</span>
-                                            <select
-                                              value={brk.afterPeriod}
-                                              onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, afterPeriod: parseInt(e.target.value) } : b))}
-                                              className="h-7 px-1.5 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
-                                            >
-                                              {periods.map(p => <option key={p} value={p}>Period {p}</option>)}
-                                            </select>
-                                          </div>
-                                          <div className="flex flex-col gap-0.5">
-                                            <span className="text-[9px] text-slate-400">Duration</span>
-                                            <div className="flex items-center gap-1">
-                                              <input
-                                                type="number" min={5} max={120}
-                                                value={brk.duration}
-                                                onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, duration: parseInt(e.target.value) || 15 } : b))}
-                                                className="h-7 w-12 text-center rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
-                                              />
-                                              <span className="text-[9px] text-slate-400">min</span>
-                                            </div>
-                                          </div>
-                                          <div className="flex flex-col gap-0.5">
-                                            <span className="text-[9px] text-slate-400">Type</span>
-                                            <select
-                                              value={brk.type}
-                                              onChange={(e) => {
-                                                const t = e.target.value as BreakDef['type'];
-                                                const defaultLabel = t === 'lunch' ? 'Lunch Break' : t === 'prayer' ? 'Prayer Break' : 'Short Break';
-                                                setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: t, label: b.label || defaultLabel } : b));
-                                              }}
-                                              className="h-7 px-1.5 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
-                                            >
-                                              <option value="short">Short</option>
-                                              <option value="lunch">Lunch</option>
-                                              <option value="prayer">Prayer</option>
-                                            </select>
-                                          </div>
-                                          <div className="flex flex-col gap-0.5">
-                                            <span className="text-[9px] text-slate-400">Label</span>
-                                            <input
-                                              type="text" value={brk.label}
-                                              onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, label: e.target.value } : b))}
-                                              className="h-7 w-24 px-2 rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/30 bg-white"
-                                            />
-                                          </div>
-                                        </div>
-                                        <button
-                                          onClick={() => setBreakConfig(prev => prev.filter(b => b.id !== brk.id))}
-                                          className="size-6 flex items-center justify-center text-slate-300 hover:text-red-400 transition-colors shrink-0"
-                                        >
-                                          <span className="material-symbols-outlined text-[14px]">close</span>
-                                        </button>
-                                      </div>
-
-                                      {/* Day selector */}
-                                      <div className="flex items-center gap-2 pl-7">
-                                        <span className="text-[9px] text-slate-400 font-semibold shrink-0">Applies to</span>
-                                        <div className="flex items-center gap-1">
-                                          {days.map(d => {
-                                            const active = appliesToAllDays || brk.days.includes(d);
-                                            const short = d.slice(0, 3);
-                                            return (
-                                              <button
-                                                key={d}
-                                                onClick={() => {
-                                                  setBreakConfig(prev => prev.map(b => {
-                                                    if (b.id !== brk.id) return b;
-                                                    if (appliesToAllDays) {
-                                                      // switching from "all" → select only this day
-                                                      return { ...b, days: [d] };
-                                                    }
-                                                    const newDays = b.days.includes(d)
-                                                      ? b.days.filter(x => x !== d)
-                                                      : [...b.days, d];
-                                                    return { ...b, days: newDays };
-                                                  }));
-                                                }}
-                                                className={cn(
-                                                  "h-6 px-2 rounded-md text-[9px] font-bold transition-all",
-                                                  active
-                                                    ? isPrayer ? "bg-emerald-100 text-emerald-700" : isLunch ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"
-                                                    : "bg-white border border-slate-200 text-slate-300"
-                                                )}
-                                              >
-                                                {short}
-                                              </button>
-                                            );
-                                          })}
-                                          <button
-                                            onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, days: [] } : b))}
-                                            className={cn("h-6 px-2 rounded-md text-[9px] font-bold transition-all ml-1", appliesToAllDays ? "bg-slate-700 text-white" : "bg-white border border-slate-200 text-slate-300")}
-                                          >
-                                            All
-                                          </button>
-                                        </div>
+                                  <div className="flex items-end gap-3 flex-wrap">
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-[10px] font-medium text-slate-400">School starts</span>
+                                      <input type="time" value={scheduleConfig.schoolStart}
+                                        onChange={(e) => setScheduleConfig(prev => ({ ...prev, schoolStart: e.target.value }))}
+                                        className="h-9 px-3 rounded-xl border border-[#EBE8E0] text-[12px] font-semibold text-secondary outline-none focus:border-primary/40 bg-[#F8F7F4] w-[128px] transition-colors" />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-[10px] font-medium text-slate-400">Period duration</span>
+                                      <div className="flex items-center gap-2">
+                                        <input type="number" min={5} max={180} value={scheduleConfig.defaultDuration}
+                                          onChange={(e) => setScheduleConfig(prev => ({ ...prev, defaultDuration: parseInt(e.target.value) || 60 }))}
+                                          disabled={!scheduleConfig.uniformDuration}
+                                          className="h-9 w-16 px-2 text-center rounded-xl border border-[#EBE8E0] text-[12px] font-semibold text-secondary outline-none focus:border-primary/40 bg-[#F8F7F4] disabled:opacity-40 transition-colors" />
+                                        <span className="text-[11px] text-slate-400 font-medium">min</span>
                                       </div>
                                     </div>
-                                  );
-                                })}
-                                {breakConfig.length === 0 && (
-                                  <div className="text-[11px] text-slate-300 font-medium text-center py-3">No breaks configured</div>
-                                )}
+                                    <button onClick={() => setScheduleConfig(prev => ({ ...prev, uniformDuration: !prev.uniformDuration }))}
+                                      className={cn("h-9 px-4 rounded-xl text-[11px] font-semibold border transition-all flex items-center gap-1.5",
+                                        scheduleConfig.uniformDuration
+                                          ? "bg-[#F8F7F4] border-[#EBE8E0] text-slate-400 hover:border-slate-300"
+                                          : "bg-primary/10 border-primary/20 text-primary")}>
+                                      <span className="material-symbols-outlined text-[14px]">
+                                        {scheduleConfig.uniformDuration ? "linear_scale" : "ssid_chart"}
+                                      </span>
+                                      {scheduleConfig.uniformDuration ? "Uniform" : "Variable"}
+                                    </button>
+                                  </div>
+                                  {!scheduleConfig.uniformDuration && (
+                                    <div className="flex flex-wrap gap-2 pt-3 border-t border-[#F0EDE8]">
+                                      {periods.map(p => (
+                                        <div key={p} className="flex flex-col items-center gap-0.5">
+                                          <span className="text-[9px] text-slate-400 font-semibold">P{p}</span>
+                                          <input type="number" min={5} max={180}
+                                            value={periodDurations[p] || scheduleConfig.defaultDuration}
+                                            onChange={(e) => setPeriodDurations(prev => ({ ...prev, [p]: parseInt(e.target.value) || scheduleConfig.defaultDuration }))}
+                                            className="h-8 w-12 text-center rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/40 bg-[#F8F7F4]" />
+                                          <span className="text-[8px] text-slate-300">m</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Periods card */}
+                                <div className="bg-white rounded-[20px] border border-[#EBE8E0] p-5 shadow-sm flex flex-col gap-4">
+                                  <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[15px] text-primary/50">grid_view</span>
+                                    <span className="text-[12px] font-semibold text-secondary tracking-tight">Periods</span>
+                                  </div>
+                                  <div className="flex flex-col gap-1.5">
+                                    <span className="text-[10px] font-medium text-slate-400">Count per day</span>
+                                    <div className="flex items-center gap-2.5">
+                                      <button onClick={() => setNumPeriods(p => Math.max(1, p - 1))}
+                                        className="size-9 rounded-xl border border-[#EBE8E0] text-slate-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center text-[18px] font-bold bg-[#F8F7F4]">−</button>
+                                      <div className="flex flex-col items-center w-10">
+                                        <span className="text-[26px] font-bold text-secondary leading-none">{numPeriods}</span>
+                                        <span className="text-[9px] text-slate-300 font-medium mt-0.5">periods</span>
+                                      </div>
+                                      <button onClick={() => setNumPeriods(p => Math.min(16, p + 1))}
+                                        className="size-9 rounded-xl border border-[#EBE8E0] text-slate-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center text-[18px] font-bold bg-[#F8F7F4]">+</button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Day Overrides card */}
+                                <div className="bg-white rounded-[20px] border border-[#EBE8E0] p-5 shadow-sm flex flex-col gap-4 min-w-[240px]">
+                                  <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[15px] text-primary/50">calendar_today</span>
+                                    <span className="text-[12px] font-semibold text-secondary tracking-tight">Day Overrides</span>
+                                  </div>
+                                  <div className="flex flex-col gap-2.5">
+                                    <p className="text-[10px] text-slate-400 leading-relaxed">Different period lengths for specific days.</p>
+                                    <div className="flex gap-1.5">
+                                      {days.map(d => {
+                                        const hasOverride = !!perDayDurations[d] && Object.keys(perDayDurations[d]).length > 0;
+                                        return (
+                                          <button key={d}
+                                            onClick={() => setPerDayDurations(prev => {
+                                              if (prev[d]) { const next = { ...prev }; delete next[d]; return next; }
+                                              return { ...prev, [d]: {} };
+                                            })}
+                                            className={cn("h-8 flex-1 rounded-xl text-[10px] font-semibold border transition-all",
+                                              hasOverride ? "bg-secondary text-white border-secondary shadow-sm" : "bg-[#F8F7F4] border-[#EBE8E0] text-slate-400 hover:border-slate-300 hover:text-secondary/60")}>
+                                            {d.slice(0, 3)}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                    {Object.keys(perDayDurations).map(day => (
+                                      <div key={day} className="bg-[#F8F7F4] rounded-xl border border-[#EBE8E0] px-3 py-2.5">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="text-[10px] font-semibold text-secondary">{day}</span>
+                                          <button onClick={() => setPerDayDurations(prev => { const n = { ...prev }; delete n[day]; return n; })} className="text-slate-300 hover:text-red-400 transition-colors">
+                                            <span className="material-symbols-outlined text-[13px]">close</span>
+                                          </button>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {periods.map(p => {
+                                            const baseDur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
+                                            const val = perDayDurations[day]?.[p] ?? baseDur;
+                                            const isDiff = perDayDurations[day]?.[p] !== undefined && perDayDurations[day][p] !== baseDur;
+                                            return (
+                                              <div key={p} className="flex flex-col items-center gap-0.5">
+                                                <span className={cn("text-[8px] font-semibold", isDiff ? "text-primary" : "text-slate-400")}>P{p}</span>
+                                                <input type="number" min={5} max={180} value={val}
+                                                  onChange={(e) => {
+                                                    const v = parseInt(e.target.value) || baseDur;
+                                                    setPerDayDurations(prev => ({ ...prev, [day]: { ...(prev[day] || {}), [p]: v } }));
+                                                  }}
+                                                  className={cn("h-7 w-10 text-center rounded-lg border text-[10px] font-semibold outline-none bg-white", isDiff ? "border-primary/40 text-primary" : "border-[#EBE8E0] text-secondary")} />
+                                                <span className="text-[7px] text-slate-300">m</span>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Breaks card */}
+                                <div className="bg-white rounded-[20px] border border-[#EBE8E0] p-5 shadow-sm flex flex-col gap-4 flex-1 min-w-[340px]">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="material-symbols-outlined text-[15px] text-primary/50">coffee</span>
+                                      <span className="text-[12px] font-semibold text-secondary tracking-tight">Breaks</span>
+                                    </div>
+                                    <button
+                                      onClick={() => setBreakConfig(prev => [
+                                        ...prev,
+                                        { id: `b${Date.now()}`, period: periods[Math.floor(periods.length / 2)], placement: 'after', duration: 15, type: 'short', label: 'Short Break', days: [] }
+                                      ])}
+                                      className="h-8 px-3 rounded-xl bg-primary/10 text-primary text-[11px] font-semibold flex items-center gap-1.5 hover:bg-primary/15 active:scale-[0.97] transition-all">
+                                      <span className="material-symbols-outlined text-[14px]">add</span>
+                                      Add break
+                                    </button>
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                    {breakConfig.map(brk => {
+                                      const isOther = brk.type === 'other';
+                                      const isLunch = brk.type === 'lunch';
+                                      const iconName = isOther ? 'timer' : isLunch ? 'restaurant' : 'free_breakfast';
+                                      const iconCls = isOther ? "text-violet-400" : isLunch ? "text-amber-400" : "text-slate-400";
+                                      const stripCls = isOther ? "bg-violet-50/60 border-violet-100" : isLunch ? "bg-amber-50/60 border-amber-100" : "bg-[#F8F7F4] border-[#EBE8E0]";
+                                      const activeDayCls = isOther ? "bg-violet-100 text-violet-700" : isLunch ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600";
+                                      const appliesToAllDays = brk.days.length === 0;
+                                      return (
+                                        <div key={brk.id} className={cn("rounded-[16px] border p-4 flex flex-col gap-3", stripCls)}>
+                                          <div className="flex items-start gap-3">
+                                            <div className="size-8 rounded-xl bg-white border border-[#EBE8E0] flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                                              <span className={cn("material-symbols-outlined text-[16px]", iconCls)}>{iconName}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-2.5 flex-1 min-w-0">
+                                              <div className="flex items-center gap-2 flex-wrap">
+                                                {/* Before / After toggle */}
+                                                <div className="flex flex-col gap-1">
+                                                  <span className="text-[9px] font-medium text-slate-400">Timing</span>
+                                                  <div className="flex rounded-xl border border-[#EBE8E0] overflow-hidden bg-white h-8">
+                                                    <button
+                                                      onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, placement: 'before' } : b))}
+                                                      className={cn("flex-1 px-3 text-[10px] font-semibold transition-all",
+                                                        brk.placement === 'before' ? "bg-secondary text-white" : "text-slate-400 hover:text-secondary/70")}>
+                                                      Before
+                                                    </button>
+                                                    <div className="w-px bg-[#EBE8E0]" />
+                                                    <button
+                                                      onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, placement: 'after' } : b))}
+                                                      className={cn("flex-1 px-3 text-[10px] font-semibold transition-all",
+                                                        brk.placement === 'after' ? "bg-secondary text-white" : "text-slate-400 hover:text-secondary/70")}>
+                                                      After
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                                {/* Period select */}
+                                                <div className="flex flex-col gap-1">
+                                                  <span className="text-[9px] font-medium text-slate-400">Period</span>
+                                                  <select value={brk.period}
+                                                    onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, period: parseInt(e.target.value) } : b))}
+                                                    className="h-8 px-2 rounded-xl border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/40 bg-white">
+                                                    {periods.map(p => <option key={p} value={p}>P{p}</option>)}
+                                                  </select>
+                                                </div>
+                                                {/* Duration */}
+                                                <div className="flex flex-col gap-1">
+                                                  <span className="text-[9px] font-medium text-slate-400">Duration</span>
+                                                  <div className="flex items-center gap-1.5">
+                                                    <input type="number" min={5} max={120} value={brk.duration}
+                                                      onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, duration: parseInt(e.target.value) || 15 } : b))}
+                                                      className="h-8 w-14 text-center rounded-xl border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/40 bg-white" />
+                                                    <span className="text-[10px] text-slate-400 font-medium">min</span>
+                                                  </div>
+                                                </div>
+                                                {/* Type */}
+                                                <div className="flex flex-col gap-1">
+                                                  <span className="text-[9px] font-medium text-slate-400">Type</span>
+                                                  <select value={brk.type}
+                                                    onChange={(e) => {
+                                                      const t = e.target.value as BreakDef['type'];
+                                                      const defaultLabel = t === 'lunch' ? 'Lunch Break' : t === 'other' ? 'Other Break' : 'Short Break';
+                                                      setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: t, label: b.label || defaultLabel } : b));
+                                                    }}
+                                                    className="h-8 px-2 rounded-xl border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/40 bg-white">
+                                                    <option value="short">Short</option>
+                                                    <option value="lunch">Lunch</option>
+                                                    <option value="other">Other</option>
+                                                  </select>
+                                                </div>
+                                                {/* Label */}
+                                                <div className="flex flex-col gap-1">
+                                                  <span className="text-[9px] font-medium text-slate-400">Label</span>
+                                                  <input type="text" value={brk.label}
+                                                    onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, label: e.target.value } : b))}
+                                                    className="h-8 w-28 px-2.5 rounded-xl border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/40 bg-white" />
+                                                </div>
+                                                <button onClick={() => setBreakConfig(prev => prev.filter(b => b.id !== brk.id))}
+                                                  className="size-8 flex items-center justify-center text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 transition-all shrink-0 mt-4">
+                                                  <span className="material-symbols-outlined text-[15px]">delete</span>
+                                                </button>
+                                              </div>
+                                              {/* Day row */}
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[9px] font-medium text-slate-400 shrink-0">Days</span>
+                                                <div className="flex items-center gap-1">
+                                                  {days.map(d => {
+                                                    const active = appliesToAllDays || brk.days.includes(d);
+                                                    return (
+                                                      <button key={d}
+                                                        onClick={() => {
+                                                          setBreakConfig(prev => prev.map(b => {
+                                                            if (b.id !== brk.id) return b;
+                                                            if (appliesToAllDays) return { ...b, days: [d] };
+                                                            const newDays = b.days.includes(d) ? b.days.filter(x => x !== d) : [...b.days, d];
+                                                            return { ...b, days: newDays };
+                                                          }));
+                                                        }}
+                                                        className={cn("h-6 w-9 rounded-lg text-[9px] font-bold transition-all",
+                                                          active ? activeDayCls : "bg-white border border-[#EBE8E0] text-slate-300 hover:text-slate-500 hover:border-slate-300")}>
+                                                        {d.slice(0, 3)}
+                                                      </button>
+                                                    );
+                                                  })}
+                                                  <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, days: [] } : b))}
+                                                    className={cn("h-6 px-2.5 rounded-lg text-[9px] font-bold transition-all ml-0.5",
+                                                      appliesToAllDays ? "bg-secondary text-white" : "bg-white border border-[#EBE8E0] text-slate-300 hover:text-slate-500 hover:border-slate-300")}>
+                                                    All
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                    {breakConfig.length === 0 && (
+                                      <div className="text-[11px] text-slate-300 font-medium text-center py-6 border border-dashed border-[#EBE8E0] rounded-[16px]">No breaks configured</div>
+                                    )}
+                                  </div>
+                                </div>
+
+                              </div>
+
+                              {/* Save bar */}
+                              <div className="flex items-center justify-end pt-5 mt-1">
+                                <button
+                                  onClick={() => { setConfigSaved(true); setShowSchedulePanel(false); }}
+                                  className="h-10 px-7 rounded-xl bg-secondary text-white text-[12px] font-bold flex items-center gap-2 shadow-md shadow-secondary/15 hover:bg-secondary/90 active:scale-[0.98] transition-all">
+                                  <span className="material-symbols-outlined text-[16px]">check</span>
+                                  Apply changes
+                                </button>
                               </div>
                             </div>
-
-                          </div>
-                        </div>
-                      )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
                       {!selectedTimetableSection ? (
                         <div className="flex-1 flex flex-col items-center justify-center p-20 text-center relative overflow-hidden">
@@ -1176,8 +1223,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                       ) : (
                         <div className="flex-1 overflow-auto bg-transparent">
                           <div className="max-w-[1200px] mx-auto select-none"
-                               onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
-                               onMouseLeave={() => extendingSlot && setExtensionTarget(null)}>
+                            onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
+                            onMouseLeave={() => extendingSlot && setExtensionTarget(null)}>
 
                             {/* Day headers */}
                             <div className="flex border-b border-[#EBE8E0] bg-[#FDFCFB]/90 sticky top-0 z-20 backdrop-blur-sm">
@@ -1200,7 +1247,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                   <div className="w-[100px] shrink-0 relative border-r border-[#EBE8E0]">
                                     {timeTicks.map(t => (
                                       <div key={t} style={{ top: `${(t - schoolStartMins) * SCALE}px` }}
-                                           className="absolute right-2 flex items-center pointer-events-none">
+                                        className="absolute right-2 flex items-center pointer-events-none">
                                         <span className="text-[8px] text-slate-400 font-medium">{minsToTime(t)}</span>
                                       </div>
                                     ))}
@@ -1212,19 +1259,19 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                       const dur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
                                       return (
                                         <div key={`lbl-${p}`} style={{ top, height }}
-                                             className="absolute left-0 right-0 flex flex-col items-center justify-center border-b border-[#EBE8E0] px-1 overflow-hidden">
+                                          className="absolute left-0 right-0 flex flex-col items-center justify-center border-b border-[#EBE8E0] px-1 overflow-hidden">
                                           <span className="text-[20px] font-bold text-secondary/70 leading-none">{p}</span>
                                           {editingPeriod === p ? (
                                             <div className="flex flex-col items-center gap-1 mt-1"
-                                                 onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setEditingPeriod(null); }}>
+                                              onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setEditingPeriod(null); }}>
                                               <div className="flex items-center gap-1">
                                                 <input autoFocus type="number" min={5} max={180} value={dur}
-                                                       onChange={(e) => {
-                                                         const v = parseInt(e.target.value) || scheduleConfig.defaultDuration;
-                                                         setPeriodDurations(prev => ({ ...prev, [p]: v }));
-                                                         if (scheduleConfig.uniformDuration) setScheduleConfig(prev => ({ ...prev, uniformDuration: false }));
-                                                       }}
-                                                       className="w-10 text-center text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-1 py-1 outline-none focus:border-primary shadow-sm" />
+                                                  onChange={(e) => {
+                                                    const v = parseInt(e.target.value) || scheduleConfig.defaultDuration;
+                                                    setPeriodDurations(prev => ({ ...prev, [p]: v }));
+                                                    if (scheduleConfig.uniformDuration) setScheduleConfig(prev => ({ ...prev, uniformDuration: false }));
+                                                  }}
+                                                  className="w-10 text-center text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-1 py-1 outline-none focus:border-primary shadow-sm" />
                                                 <span className="text-[9px] text-slate-400">m</span>
                                               </div>
                                               <div className="text-[8px] text-slate-300 text-center leading-tight">{mon.start}<br />{mon.end}</div>
@@ -1250,48 +1297,48 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                       .forEach(e => { for (let i = 1; i < (e.spanPeriods || 1); i++) coveredPeriods.add(e.period + i); });
                                     return (
                                       <div key={day}
-                                           className={cn("flex-1 relative", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}
-                                           onMouseMove={(e) => {
-                                             if (!extendingSlot || extendingSlot.direction !== 'vertical' || extendingSlot.day !== day) return;
-                                             const rect = e.currentTarget.getBoundingClientRect();
-                                             const absMin = schoolStartMins + Math.max(0, e.clientY - rect.top) / SCALE;
-                                             let found: number | null = null;
-                                             for (const p of periods) {
-                                               const cfg = periodConfigByDay[day]?.[p];
-                                               if (cfg && timeToMins(cfg.start) <= absMin && absMin <= timeToMins(cfg.end)) { found = p; break; }
-                                             }
-                                             if (found !== null && found >= extendingSlot.period && (extensionTarget?.period !== found || extensionTarget?.day !== day)) {
-                                               setExtensionTarget({ day, period: found });
-                                             }
-                                           }}>
+                                        className={cn("flex-1 relative", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}
+                                        onMouseMove={(e) => {
+                                          if (!extendingSlot || extendingSlot.direction !== 'vertical' || extendingSlot.day !== day) return;
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          const absMin = schoolStartMins + Math.max(0, e.clientY - rect.top) / SCALE;
+                                          let found: number | null = null;
+                                          for (const p of periods) {
+                                            const cfg = periodConfigByDay[day]?.[p];
+                                            if (cfg && timeToMins(cfg.start) <= absMin && absMin <= timeToMins(cfg.end)) { found = p; break; }
+                                          }
+                                          if (found !== null && found >= extendingSlot.period && (extensionTarget?.period !== found || extensionTarget?.day !== day)) {
+                                            setExtensionTarget({ day, period: found });
+                                          }
+                                        }}>
 
                                         {/* 30-min horizontal guide lines */}
                                         {timeTicks.map(t => (
                                           <div key={t} style={{ top: `${(t - schoolStartMins) * SCALE}px` }}
-                                               className="absolute left-0 right-0 border-t border-[#F0EDE8]/80 pointer-events-none" />
+                                            className="absolute left-0 right-0 border-t border-[#F0EDE8]/80 pointer-events-none" />
                                         ))}
 
                                         {/* Break cells for this day */}
                                         {breakConfig
                                           .filter(b => b.days.length === 0 || b.days.includes(day))
                                           .map(brk => {
-                                            const afterEnd = periodConfigByDay[day]?.[brk.afterPeriod]?.end;
-                                            if (!afterEnd) return null;
-                                            const brkTop = (timeToMins(afterEnd) - schoolStartMins) * SCALE;
+                                            const brkStartTime = breakStartByDay[day]?.[brk.id];
+                                            if (!brkStartTime) return null;
+                                            const brkTop = (timeToMins(brkStartTime) - schoolStartMins) * SCALE;
                                             const brkHeight = Math.max(20, brk.duration * SCALE);
-                                            const bIsPrayer = brk.type === 'prayer';
                                             const bIsLunch = brk.type === 'lunch';
+                                            const bIsOther = brk.type === 'other';
                                             return (
                                               <div key={`brk-${brk.id}`}
-                                                   style={{ top: brkTop, height: brkHeight, left: 0, right: 0, position: 'absolute', zIndex: 5 }}
-                                                   className={cn("flex items-center justify-center gap-1.5 border-b border-[#EBE8E0]",
-                                                     bIsPrayer ? "bg-emerald-50/70" : bIsLunch ? "bg-amber-50/50" : "bg-slate-50/70")}>
-                                                <span className={cn("material-symbols-outlined text-[12px]", bIsPrayer ? "text-emerald-500" : bIsLunch ? "text-amber-400" : "text-slate-400")}>
-                                                  {bIsPrayer ? 'mosque' : bIsLunch ? 'restaurant' : 'free_breakfast'}
+                                                style={{ top: brkTop, height: brkHeight, left: 0, right: 0, position: 'absolute', zIndex: 5 }}
+                                                className={cn("flex items-center justify-center gap-1.5 border-b border-[#EBE8E0]",
+                                                  bIsLunch ? "bg-amber-50/50" : bIsOther ? "bg-violet-50/50" : "bg-slate-50/70")}>
+                                                <span className={cn("material-symbols-outlined text-[12px]", bIsLunch ? "text-amber-400" : bIsOther ? "text-violet-400" : "text-slate-400")}>
+                                                  {bIsLunch ? 'restaurant' : bIsOther ? 'timer' : 'free_breakfast'}
                                                 </span>
                                                 <div className="flex flex-col leading-tight">
-                                                  <span className={cn("text-[10px] font-semibold", bIsPrayer ? "text-emerald-600/70" : bIsLunch ? "text-amber-600/70" : "text-slate-400")}>{brk.label}</span>
-                                                  <span className="text-[8px] text-slate-300">{afterEnd} – {minsToTime(timeToMins(afterEnd) + brk.duration)}</span>
+                                                  <span className={cn("text-[10px] font-semibold", bIsLunch ? "text-amber-600/70" : bIsOther ? "text-violet-600/70" : "text-slate-400")}>{brk.label}</span>
+                                                  <span className="text-[8px] text-slate-300">{brkStartTime} – {minsToTime(timeToMins(brkStartTime) + brk.duration)}</span>
                                                 </div>
                                               </div>
                                             );
@@ -1309,7 +1356,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                           if (tgtEndY <= curEndY) return null;
                                           return (
                                             <div className="absolute left-0 right-0 bg-primary/5 border-2 border-dashed border-primary/20 pointer-events-none z-10"
-                                                 style={{ top: curEndY, height: tgtEndY - curEndY }} />
+                                              style={{ top: curEndY, height: tgtEndY - curEndY }} />
                                           );
                                         })()}
 
@@ -1401,22 +1448,22 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                     )}
                                                   </div>
                                                   <button onClick={(e) => { e.stopPropagation(); setTimetableEntries(prev => prev.filter(ent => ent !== entry)); }}
-                                                          className="absolute top-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10">
+                                                    className="absolute top-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10">
                                                     <span className="material-symbols-outlined text-[15px]">close</span>
                                                   </button>
                                                   {spanP > 1 && (
                                                     <button onClick={(e) => { e.stopPropagation(); setTimetableEntries(prev => prev.map(ent => ent === entry ? { ...ent, spanPeriods: (ent.spanPeriods || 1) - 1 } : ent)); }}
-                                                            className="absolute bottom-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10"
-                                                            title="Remove one period">
+                                                      className="absolute bottom-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10"
+                                                      title="Remove one period">
                                                       <span className="material-symbols-outlined text-[15px]">unfold_less</span>
                                                     </button>
                                                   )}
                                                   <div onMouseDown={(e) => { e.stopPropagation(); setExtendingSlot({ day, period: p, entry, direction: 'vertical' }); }}
-                                                       className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize group/handle flex items-center justify-center z-20">
+                                                    className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize group/handle flex items-center justify-center z-20">
                                                     <div className="w-8 h-1 rounded-full bg-slate-200 group-hover/handle:bg-primary/40 opacity-0 group-hover:opacity-100 transition-all" />
                                                   </div>
                                                   <div onMouseDown={(e) => { e.stopPropagation(); setExtendingSlot({ day, period: p, entry, direction: 'horizontal' }); }}
-                                                       className="absolute top-0 right-0 bottom-0 w-5 cursor-ew-resize group/rhandle flex items-center justify-center z-20">
+                                                    className="absolute top-0 right-0 bottom-0 w-5 cursor-ew-resize group/rhandle flex items-center justify-center z-20">
                                                     <div className="h-10 w-[3px] rounded-full bg-slate-200 group-hover/rhandle:bg-primary/50 opacity-0 group-hover:opacity-100 transition-all duration-200" />
                                                   </div>
                                                 </>
@@ -1448,7 +1495,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                           const aHeight = Math.max(160, aCfg.dur * SCALE);
                                           return (
                                             <div style={{ top: aTop, height: aHeight, left: 0, right: 0, position: 'absolute', zIndex: 50 }}
-                                                 className="p-2">
+                                              className="p-2">
                                               <div className="relative h-full bg-[#FDFCFB] shadow-[0_20px_60px_rgba(200,180,150,0.3)] rounded-xl border border-[#EBE8E0] p-4 animate-in fade-in zoom-in-95 duration-200">
                                                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none rounded-xl" style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '12px 12px' }} />
                                                 <div className="relative flex flex-col gap-3">
@@ -1461,13 +1508,13 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                   <div className="relative group/search">
                                                     <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-primary/40 group-focus-within/search:text-primary transition-colors">search</span>
                                                     <input autoFocus type="text" placeholder="Subject name..."
-                                                           value={subjectSearch}
-                                                           onChange={(e) => setSubjectSearch(e.target.value)}
-                                                           onClick={(e) => e.stopPropagation()}
-                                                           className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all" />
+                                                      value={subjectSearch}
+                                                      onChange={(e) => setSubjectSearch(e.target.value)}
+                                                      onClick={(e) => e.stopPropagation()}
+                                                      className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all" />
                                                     {subjectSearch.length > 0 && (
                                                       <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#EBE8E0] rounded-lg shadow-[0_20px_50px_rgba(200,180,150,0.35)] max-h-[220px] overflow-y-auto no-scrollbar py-1 animate-in fade-in slide-in-from-top-1 duration-200"
-                                                           style={{ zIndex: 10 }}>
+                                                        style={{ zIndex: 10 }}>
                                                         {mappings
                                                           .filter(m => `${m.grade}-${m.section}` === selectedTimetableSection)
                                                           .filter(m => { const sub = subjects.find(s => s.id === m.subjectId); return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()); })
@@ -1476,12 +1523,12 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                             const teacher = teachers.find(t => t.id === m.teacherId);
                                                             return (
                                                               <button key={m.id}
-                                                                      onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setTimetableEntries(prev => [...prev, { section: selectedTimetableSection, day, period: ap, subjectId: m.subjectId, subjectName: sub?.name || "", teacherId: m.teacherId, teacherName: teacher?.name || m.teacherId }]);
-                                                                        setAssigningSlot(null); setSubjectSearch("");
-                                                                      }}
-                                                                      className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt">
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  setTimetableEntries(prev => [...prev, { section: selectedTimetableSection, day, period: ap, subjectId: m.subjectId, subjectName: sub?.name || "", teacherId: m.teacherId, teacherName: teacher?.name || m.teacherId }]);
+                                                                  setAssigningSlot(null); setSubjectSearch("");
+                                                                }}
+                                                                className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt">
                                                                 <div className="space-y-0.5">
                                                                   <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">{sub?.name}</p>
                                                                   <p className="text-[10px] font-medium text-slate-400">{teacher?.name || m.teacherId}</p>
