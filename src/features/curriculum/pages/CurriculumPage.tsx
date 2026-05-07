@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, memo, Component, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
@@ -53,11 +53,25 @@ interface BreakDef {
   id: string;
   period: number;
   placement: 'before' | 'after';
-  duration: number;       // minutes
+  duration: number;
   type: 'short' | 'lunch' | 'other';
   label: string;
-  days: string[];         // empty = all days; otherwise specific days only
+  days: string[];
 }
+
+interface TimetableEntry {
+  section: string;
+  day: string;
+  period: number;
+  subjectId: string;
+  subjectName: string;
+  teacherId: string;
+  teacherName: string;
+  spanPeriods?: number;
+}
+
+// px per minute — module-level so TimetableGrid and CurriculumPage share it
+const SCALE = 2.5;
 
 // ─── Module-level pure utilities (stable references, never recreated) ───────
 const timeToMins = (t: string) => {
@@ -122,19 +136,369 @@ const SlotSearchInput = ({ selectedSection, mappings, subjects, teachers, onAssi
   );
 };
 
+// ─── Error boundary ──────────────────────────────────────────────────────────
+class CurriculumErrorBoundary extends Component<{ children: ReactNode }, { err: boolean }> {
+  state = { err: false };
+  static getDerivedStateFromError() { return { err: true }; }
+  componentDidCatch(e: Error) { console.error('[CurriculumPage]', e); }
+  render() {
+    if (this.state.err) return (
+      <div className="flex-1 flex items-center justify-center p-20 text-center">
+        <div className="space-y-4 max-w-xs">
+          <span className="material-symbols-outlined text-[48px] text-slate-200 block">error</span>
+          <h3 className="text-[18px] font-semibold text-secondary">Something went wrong</h3>
+          <p className="text-[13px] text-slate-400">Try refreshing the page. If the issue persists, contact support.</p>
+          <button onClick={() => this.setState({ err: false })} className="btn-primary">Retry</button>
+        </div>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
+// ─── TimetableGrid ────────────────────────────────────────────────────────────
+// Owns all drag / assign / edit-period state so mouse-move events during drag
+// never trigger a CurriculumPage re-render.
+interface TimetableGridProps {
+  days: string[];
+  periods: number[];
+  periodConfigByDay: Record<string, Record<number, { start: string; end: string; dur: number }>>;
+  breaksByDay: Record<string, BreakDef[]>;
+  breakStartByDay: Record<string, Record<string, string>>;
+  entriesBySlot: Map<string, TimetableEntry>;
+  coveredByDay: Record<string, Set<number>>;
+  timeTicks: number[];
+  totalDayMinutes: number;
+  selectedTimetableSection: string;
+  scheduleConfig: { schoolStart: string; uniformDuration: boolean; defaultDuration: number };
+  periodDurations: Record<number, number>;
+  stickyDayHeaders: boolean;
+  mappings: Mapping[];
+  subjects: Subject[];
+  teachers: Teacher[];
+  onEntriesChange: React.Dispatch<React.SetStateAction<TimetableEntry[]>>;
+  onPeriodDurationChange: (period: number, duration: number, wasUniform: boolean) => void;
+  timetableRef: React.RefObject<HTMLDivElement | null>;
+}
+
+const TimetableGrid = memo(({
+  days, periods, periodConfigByDay, breaksByDay, breakStartByDay,
+  entriesBySlot, coveredByDay, timeTicks, totalDayMinutes,
+  selectedTimetableSection, scheduleConfig, periodDurations, stickyDayHeaders,
+  mappings, subjects, teachers, onEntriesChange, onPeriodDurationChange, timetableRef,
+}: TimetableGridProps) => {
+  const [extendingSlot, setExtendingSlot] = useState<{
+    day: string; period: number; entry: TimetableEntry; direction: 'vertical' | 'horizontal';
+  } | null>(null);
+  const [extensionTarget, setExtensionTarget] = useState<{ day: string; period: number } | null>(null);
+  const [editingPeriod, setEditingPeriod] = useState<number | null>(null);
+  const [assigningSlot, setAssigningSlot] = useState<{ day: string; period: number } | null>(null);
+  const schoolStartMins = timeToMins(scheduleConfig.schoolStart);
+
+  if (!selectedTimetableSection) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-20 text-center relative overflow-hidden rounded-b-[23px]">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[400px] font-black text-slate-50/50 select-none pointer-events-none">Schedule</div>
+        <div className="relative z-10 space-y-8 max-w-md animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          <div className="size-24 rounded-[40px] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center text-primary mx-auto">
+            <span className="material-symbols-outlined text-[48px] animate-pulse">calendar_view_day</span>
+          </div>
+          <div className="space-y-3">
+            <h3 className="text-[32px] font-semibold text-secondary tracking-tight">Academic rhythm</h3>
+            <p className="text-[15px] font-medium text-slate-400 leading-relaxed">Select an institutional roster above to visualize and manage the weekly academic flow for your students.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={timetableRef} className="flex-1 bg-transparent">
+      <div className="max-w-[1200px] mx-auto select-none"
+        onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
+        onMouseLeave={() => extendingSlot && setExtensionTarget(null)}>
+
+        {/* Day headers */}
+        <div className={cn("flex border-b border-[#EBE8E0] bg-[#FDFCFB] z-20", stickyDayHeaders ? "sticky top-[64px]" : "relative")}>
+          <div className="w-[100px] shrink-0 border-r border-[#EBE8E0]" />
+          {days.map((day, dIdx) => (
+            <div key={day} className={cn("flex-1 py-5 px-6 bg-[#FDFCFB]/80", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}>
+              <span className="text-[14px] font-semibold text-secondary tracking-tight block">{day}</span>
+              <span className="text-[10px] font-medium text-slate-400 tracking-tight">Class day</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Time-based body */}
+        <div className="flex" style={{ height: `${totalDayMinutes * SCALE}px` }}>
+
+          {/* Sidebar: time ticks + period labels */}
+          <div className="w-[100px] shrink-0 relative border-r border-[#EBE8E0]">
+            {timeTicks.map(t => (
+              <div key={t} style={{ top: `${(t - schoolStartMins) * SCALE}px` }} className="absolute right-2 flex items-center pointer-events-none">
+                <span className="text-[8px] text-slate-400 font-medium">{minsToTime(t)}</span>
+              </div>
+            ))}
+            {periods.map(p => {
+              const mon = periodConfigByDay["Monday"]?.[p];
+              if (!mon) return null;
+              const top = (timeToMins(mon.start) - schoolStartMins) * SCALE;
+              const height = mon.dur * SCALE;
+              const dur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
+              return (
+                <div key={`lbl-${p}`} style={{ top, height }} className="absolute left-0 right-0 flex flex-col items-center justify-center border-b border-[#EBE8E0] px-1 overflow-hidden">
+                  <span className="text-[20px] font-bold text-secondary/70 leading-none">{p}</span>
+                  {editingPeriod === p ? (
+                    <div className="flex flex-col items-center gap-1 mt-1"
+                      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setEditingPeriod(null); }}>
+                      <div className="flex items-center gap-1">
+                        <input autoFocus type="number" min={5} max={180} value={dur}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value) || scheduleConfig.defaultDuration;
+                            onPeriodDurationChange(p, v, scheduleConfig.uniformDuration);
+                          }}
+                          className="w-10 text-center text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-1 py-1 outline-none focus:border-primary" />
+                        <span className="text-[9px] text-slate-400">m</span>
+                      </div>
+                      <div className="text-[8px] text-slate-300 text-center leading-tight">{mon.start}<br />{mon.end}</div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setEditingPeriod(p)} className="flex flex-col items-center gap-0.5 group/time">
+                      <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">{mon.start}</span>
+                      <span className="text-[8px] font-medium text-slate-300">—</span>
+                      <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">{mon.end}</span>
+                      <span className="text-[8px] text-slate-300 mt-0.5">{dur}m</span>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Day columns */}
+          {days.map((day, dIdx) => {
+            const coveredPeriods = coveredByDay[day] ?? new Set<number>();
+            return (
+              <div key={day}
+                className={cn("flex-1 relative", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}
+                onMouseMove={(e) => {
+                  if (!extendingSlot || extendingSlot.direction !== 'vertical' || extendingSlot.day !== day) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const absMin = schoolStartMins + Math.max(0, e.clientY - rect.top) / SCALE;
+                  let found: number | null = null;
+                  for (const p of periods) {
+                    const cfg = periodConfigByDay[day]?.[p];
+                    if (cfg && timeToMins(cfg.start) <= absMin && absMin <= timeToMins(cfg.end)) { found = p; break; }
+                  }
+                  if (found !== null && found >= extendingSlot.period && (extensionTarget?.period !== found || extensionTarget?.day !== day)) {
+                    setExtensionTarget({ day, period: found });
+                  }
+                }}>
+
+                {/* 30-min guide lines */}
+                {timeTicks.map(t => (
+                  <div key={t} style={{ top: `${(t - schoolStartMins) * SCALE}px` }} className="absolute left-0 right-0 border-t border-[#F0EDE8]/80 pointer-events-none" />
+                ))}
+
+                {/* Break cells */}
+                {(breaksByDay[day] ?? []).map(brk => {
+                  const brkStartTime = breakStartByDay[day]?.[brk.id];
+                  if (!brkStartTime) return null;
+                  const brkTop = (timeToMins(brkStartTime) - schoolStartMins) * SCALE;
+                  const brkHeight = Math.max(20, brk.duration * SCALE);
+                  const bIsLunch = brk.type === 'lunch';
+                  const bIsOther = brk.type === 'other';
+                  return (
+                    <div key={`brk-${brk.id}`}
+                      style={{ top: brkTop, height: brkHeight, left: 0, right: 0, position: 'absolute', zIndex: 5 }}
+                      className={cn("flex items-center justify-center gap-1.5 border-b border-[#EBE8E0]",
+                        bIsLunch ? "bg-amber-50/50" : bIsOther ? "bg-violet-50/50" : "bg-slate-50/70")}>
+                      <span className={cn("material-symbols-outlined text-[12px]", bIsLunch ? "text-amber-400" : bIsOther ? "text-violet-400" : "text-slate-400")}>
+                        {bIsLunch ? 'restaurant' : bIsOther ? 'timer' : 'free_breakfast'}
+                      </span>
+                      <div className="flex flex-col leading-tight">
+                        <span className={cn("text-[10px] font-semibold", bIsLunch ? "text-amber-600/70" : bIsOther ? "text-violet-600/70" : "text-slate-400")}>{brk.label}</span>
+                        <span className="text-[8px] text-slate-300">{brkStartTime} – {minsToTime(timeToMins(brkStartTime) + brk.duration)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Ghost vertical extension preview */}
+                {extendingSlot?.direction === 'vertical' && extendingSlot.day === day && extensionTarget && (() => {
+                  const se = extendingSlot.entry;
+                  const curEndP = Math.min(se.period + (se.spanPeriods || 1) - 1, periods[periods.length - 1]);
+                  const curEndCfg = periodConfigByDay[day]?.[curEndP];
+                  const tgtCfg = periodConfigByDay[day]?.[extensionTarget.period];
+                  if (!curEndCfg || !tgtCfg) return null;
+                  const curEndY = (timeToMins(curEndCfg.end) - schoolStartMins) * SCALE;
+                  const tgtEndY = (timeToMins(tgtCfg.end) - schoolStartMins) * SCALE;
+                  if (tgtEndY <= curEndY) return null;
+                  return <div className="absolute left-0 right-0 bg-primary/5 border-2 border-dashed border-primary/20 pointer-events-none z-10" style={{ top: curEndY, height: tgtEndY - curEndY }} />;
+                })()}
+
+                {/* Period cells */}
+                {periods.map(p => {
+                  if (coveredPeriods.has(p)) return null;
+                  const dayCfg = periodConfigByDay[day]?.[p];
+                  if (!dayCfg) return null;
+                  const entry = entriesBySlot.get(`${day}-${p}`);
+                  const spanP = entry?.spanPeriods || 1;
+                  const endP = Math.min(p + spanP - 1, periods[periods.length - 1]);
+                  const endCfg = periodConfigByDay[day]?.[endP];
+                  const cellTop = (timeToMins(dayCfg.start) - schoolStartMins) * SCALE;
+                  const cellHeight = endCfg ? (timeToMins(endCfg.end) - timeToMins(dayCfg.start)) * SCALE : dayCfg.dur * SCALE;
+                  const srcIdx = extendingSlot?.direction === 'horizontal' ? days.indexOf(extendingSlot.day) : -1;
+                  const tgtIdx = extensionTarget && extendingSlot?.direction === 'horizontal' ? days.indexOf(extensionTarget.day) : -1;
+                  const isInHRange = extendingSlot?.direction === 'horizontal' && !!extensionTarget && p === extendingSlot.period && dIdx > srcIdx && dIdx <= tgtIdx;
+                  const isDiffTime = dayCfg.start !== periodConfigByDay["Monday"]?.[p]?.start;
+                  return (
+                    <div key={`${day}-${p}`}
+                      style={{ top: cellTop, height: cellHeight, left: 0, right: 0, position: 'absolute', zIndex: entry ? 2 : 1 }}
+                      className={cn(
+                        "group border-b border-[#EBE8E0] transition-colors duration-200 py-4 px-4 animate-in fade-in duration-300",
+                        !entry && !isInHRange && "cursor-pointer hover:bg-white/90 hover:z-[15]",
+                        isInHRange && "bg-primary/[0.04]",
+                        entry && spanP > 1 && "border-l-[3px] border-l-slate-300"
+                      )}
+                      onClick={() => !entry && !extendingSlot && setAssigningSlot({ day, period: p })}
+                      onMouseEnter={() => {
+                        if (!extendingSlot || extendingSlot.direction !== 'horizontal') return;
+                        const src = days.indexOf(extendingSlot.day);
+                        if (p === extendingSlot.period && dIdx > src) setExtensionTarget({ day, period: p });
+                        else setExtensionTarget(null);
+                      }}
+                      onMouseUp={() => {
+                        if (extendingSlot && extensionTarget) {
+                          if (extendingSlot.direction === 'horizontal' && day === extensionTarget.day && p === extensionTarget.period) {
+                            const src = days.indexOf(extendingSlot.day);
+                            const tgt = days.indexOf(extensionTarget.day);
+                            const newEntries = Array.from({ length: tgt - src }, (_, i) => ({ ...extendingSlot.entry, day: days[src + 1 + i], period: extendingSlot.period }));
+                            onEntriesChange(prev => [...prev.filter(e => !(e.section === selectedTimetableSection && e.period === extendingSlot.period && days.indexOf(e.day) > src && days.indexOf(e.day) <= tgt)), ...newEntries]);
+                          } else if (extendingSlot.direction === 'vertical' && extendingSlot.day === day) {
+                            const newSpan = Math.max(1, extensionTarget.period - extendingSlot.period + 1);
+                            onEntriesChange(prev => prev.map(e => e === extendingSlot.entry ? { ...e, spanPeriods: newSpan } : e));
+                          }
+                        }
+                        setExtendingSlot(null); setExtensionTarget(null);
+                      }}>
+                      {spanP === 1 && (
+                        <div className={cn("absolute top-1.5 left-3 flex items-center gap-1 pointer-events-none z-[5]", isDiffTime ? "opacity-70" : "opacity-30")}>
+                          <span className="text-[8px] font-semibold text-secondary tracking-wide">{dayCfg.start}</span>
+                          <span className="text-[7px] text-slate-400">–</span>
+                          <span className="text-[8px] font-semibold text-secondary tracking-wide">{dayCfg.end}</span>
+                          {isDiffTime && <span className="text-[7px] text-primary font-bold ml-0.5">*</span>}
+                        </div>
+                      )}
+                      {entry ? (
+                        <>
+                          {extendingSlot?.direction === 'vertical' && extendingSlot.entry === entry && extensionTarget && spanP > 1 && (() => {
+                            const tgtEndCfg = periodConfigByDay[day]?.[extensionTarget.period];
+                            if (!tgtEndCfg || !endCfg) return null;
+                            const pct = Math.min(100, Math.max(0, (timeToMins(tgtEndCfg.end) - timeToMins(dayCfg.start)) / (timeToMins(endCfg.end) - timeToMins(dayCfg.start)) * 100));
+                            return <div className="absolute left-3 right-3 border-t-2 border-dashed border-slate-400/60 z-20 pointer-events-none" style={{ top: `${pct}%` }} />;
+                          })()}
+                          {spanP > 1 && (
+                            <div className="absolute top-3 left-3 flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full z-10">
+                              <span className="material-symbols-outlined text-[11px]">unfold_more</span>
+                              <span className="text-[9px] font-semibold tracking-wide">×{spanP} periods</span>
+                            </div>
+                          )}
+                          <div className="flex flex-col items-start text-left gap-0.5 animate-in fade-in duration-500 h-full justify-center">
+                            <h4 className="text-[14px] font-semibold text-secondary leading-tight group-hover:text-primary transition-colors">{entry.subjectName}</h4>
+                            <p className="text-[11px] font-medium text-slate-400 tracking-tight">{entry.teacherName}</p>
+                            {spanP > 1 && endCfg && <p className="text-[10px] font-medium text-slate-400 mt-1.5">{dayCfg.start} — {endCfg.end}</p>}
+                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); onEntriesChange(prev => prev.filter(ent => ent !== entry)); }}
+                            className="absolute top-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-slate-300 bg-white z-10">
+                            <span className="material-symbols-outlined text-[15px]">close</span>
+                          </button>
+                          {spanP > 1 && (
+                            <button onClick={(e) => { e.stopPropagation(); onEntriesChange(prev => prev.map(ent => ent === entry ? { ...ent, spanPeriods: (ent.spanPeriods || 1) - 1 } : ent)); }}
+                              className="absolute bottom-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all flex items-center justify-center text-slate-300 bg-white z-10"
+                              title="Remove one period">
+                              <span className="material-symbols-outlined text-[15px]">unfold_less</span>
+                            </button>
+                          )}
+                          <div onMouseDown={(e) => { e.stopPropagation(); setExtendingSlot({ day, period: p, entry, direction: 'vertical' }); }}
+                            className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize group/handle flex items-center justify-center z-20">
+                            <div className="w-8 h-1 rounded-full bg-slate-200 group-hover/handle:bg-primary/40 opacity-0 group-hover:opacity-100 transition-all" />
+                          </div>
+                          <div onMouseDown={(e) => { e.stopPropagation(); setExtendingSlot({ day, period: p, entry, direction: 'horizontal' }); }}
+                            className="absolute top-0 right-0 bottom-0 w-5 cursor-ew-resize group/rhandle flex items-center justify-center z-20">
+                            <div className="h-10 w-[3px] rounded-full bg-slate-200 group-hover/rhandle:bg-primary/50 opacity-0 group-hover:opacity-100 transition-all duration-200" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 duration-300">
+                          <div className="size-6 rounded-full text-secondary/30 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[18px]">add</span>
+                          </div>
+                          <span className="text-[11px] font-semibold text-secondary/30">Assign</span>
+                        </div>
+                      )}
+                      {isInHRange && extendingSlot && (
+                        <div className="absolute inset-0 pointer-events-none flex flex-col justify-center px-4 gap-0.5 z-10">
+                          <div className="absolute inset-[3px] border border-dashed border-primary/30 rounded-sm" />
+                          <p className="text-[13px] font-semibold text-secondary/30 leading-tight">{extendingSlot.entry.subjectName}</p>
+                          <p className="text-[11px] text-slate-300">{extendingSlot.entry.teacherName}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Assignment popover */}
+                {assigningSlot?.day === day && (() => {
+                  const ap = assigningSlot.period;
+                  const aCfg = periodConfigByDay[day]?.[ap];
+                  if (!aCfg) return null;
+                  const aTop = (timeToMins(aCfg.start) - schoolStartMins) * SCALE;
+                  const aHeight = Math.max(160, aCfg.dur * SCALE);
+                  return (
+                    <div style={{ top: aTop, height: aHeight, left: 0, right: 0, position: 'absolute', zIndex: 50 }} className="p-2">
+                      <div className="relative h-full bg-[#FDFCFB] shadow-[0_20px_60px_rgba(200,180,150,0.3)] rounded-xl border border-[#EBE8E0] p-4 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="relative flex flex-col gap-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[11px] font-semibold text-slate-400 tracking-tight">Assign subject</span>
+                            <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); }} className="text-slate-300 hover:text-secondary transition-colors">
+                              <span className="material-symbols-outlined text-[14px]">close</span>
+                            </button>
+                          </div>
+                          <SlotSearchInput
+                            selectedSection={selectedTimetableSection}
+                            mappings={mappings}
+                            subjects={subjects}
+                            teachers={teachers}
+                            onAssign={({ subjectId, subjectName, teacherId, teacherName }) => {
+                              onEntriesChange(prev => [...prev, { section: selectedTimetableSection, day, period: ap, subjectId, subjectName, teacherId, teacherName }]);
+                              setAssigningSlot(null);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
   const { tab } = useParams();
   const activeTab = (tab as "master" | "grades" | "mapping" | "timetable") || "master";
   const [selectedTimetableSection, setSelectedTimetableSection] = useState("");
-  const [timetableEntries, setTimetableEntries] = useState<any[]>([]);
-  const [assigningSlot, setAssigningSlot] = useState<{ day: string, period: number } | null>(null);
+  const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>([]);
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [pendingTab, setPendingTab] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [extendingSlot, setExtendingSlot] = useState<{ day: string, period: number, entry: any, direction: 'vertical' | 'horizontal' } | null>(null);
-  const [extensionTarget, setExtensionTarget] = useState<{ day: string, period: number } | null>(null);
 
   const handleTabChange = (newTab: string) => {
     if (hasUnsavedChanges) {
@@ -196,7 +560,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       return () => clearTimeout(t);
     }
   }, [showSchedulePanel]);
-  const [editingPeriod, setEditingPeriod] = useState<number | null>(null);
   // Per-day period config + break start times (handles before/after placement)
   const { periodConfigByDay, breakStartByDay } = useMemo(() => {
     const allDays = days;
@@ -228,8 +591,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   }, [scheduleConfig, periodDurations, perDayDurations, breakConfig, periods, days]);
 
 
-
-  const SCALE = 2.5; // px per minute
 
   const totalDayMinutes = useMemo(() => {
     const schoolStart = timeToMins(scheduleConfig.schoolStart);
@@ -277,6 +638,12 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     for (const day of days) out[day] = breakConfig.filter(b => b.days.length === 0 || b.days.includes(day));
     return out;
   }, [breakConfig, days]);
+
+  const handlePeriodDurationChange = useCallback((period: number, duration: number, wasUniform: boolean) => {
+    setPeriodDurations(prev => ({ ...prev, [period]: duration }));
+    if (wasUniform) setScheduleConfig(prev => ({ ...prev, uniformDuration: false }));
+  }, []);
+
   // State Data
 
   const [subjects, setSubjects] = useState<Subject[]>([
@@ -426,7 +793,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     setShowMappingDrawer(true);
   };
 
-  const onAddSubject = (subjectData: any) => {
+  const onAddSubject = (subjectData: Omit<Subject, 'id'>) => {
     if (editingSubject) {
       setSubjects(prev => prev.map(s => s.id === editingSubject.id ? { ...s, ...subjectData } : s));
     } else {
@@ -436,13 +803,13 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     setEditingSubject(null);
   };
 
-  const onAddGradeConfig = (newConfig: any) => {
+  const onAddGradeConfig = (newConfig: GradeConfig) => {
     setGradeConfigs([newConfig, ...gradeConfigs.filter(g => g.grade !== newConfig.grade)]); // Update or add
     setShowGradeDrawer(false);
     setEditingGrade(null);
   };
 
-  const onAddMapping = (newMapping: any) => {
+  const onAddMapping = (newMapping: Omit<Mapping, 'id'>) => {
     if (editingMapping && editingMapping.id) {
       setMappings(prev => prev.map(m => m.id === editingMapping.id ? { ...m, ...newMapping } : m));
     } else {
@@ -458,6 +825,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   };
 
   return (
+    <CurriculumErrorBoundary>
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB]">
       {!isHubChild && (
         <>
@@ -847,7 +1215,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 <div className="flex items-center pt-1">
                                   <button
                                     onClick={() => {
-                                      setEditingMapping({ grade: s.grade, section: s.id, isAdditional: true } as any);
+                                      setEditingMapping({ id: "", grade: s.grade, section: s.id, subjectId: "", teacherId: "", hoursPerWeek: 4, isAdditional: true });
                                       setIsAddingAdditional(true);
                                       setShowMappingDrawer(true);
                                     }}
@@ -1331,328 +1699,27 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                         )}
                       </AnimatePresence>
 
-                      {!selectedTimetableSection ? (
-                        <div className="flex-1 flex flex-col items-center justify-center p-20 text-center relative overflow-hidden rounded-b-[23px]">
-                          {/* Editorial Background Element */}
-                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[400px] font-black text-slate-50/50 select-none pointer-events-none">
-                            Schedule
-                          </div>
-                          <div className="relative z-10 space-y-8 max-w-md animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                            <div className="size-24 rounded-[40px] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center text-primary mx-auto">
-                              <span className="material-symbols-outlined text-[48px] animate-pulse">calendar_view_day</span>
-                            </div>
-                            <div className="space-y-3">
-                              <h3 className="text-[32px] font-semibold text-secondary tracking-tight">Academic rhythm</h3>
-                              <p className="text-[15px] font-medium text-slate-400 leading-relaxed">
-                                Select an institutional roster above to visualize and manage the weekly academic flow for your students.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div ref={timetableRef} className="flex-1 bg-transparent">
-                          <div className="max-w-[1200px] mx-auto select-none"
-                            onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
-                            onMouseLeave={() => extendingSlot && setExtensionTarget(null)}>
-
-                            {/* Day headers */}
-                            <div className={cn(
-                              "flex border-b border-[#EBE8E0] bg-[#FDFCFB] z-20",
-                              stickyDayHeaders ? "sticky top-[64px]" : "relative"
-                            )}>
-                              <div className="w-[100px] shrink-0 border-r border-[#EBE8E0]" />
-                              {days.map((day, dIdx) => (
-                                <div key={day} className={cn("flex-1 py-5 px-6 bg-[#FDFCFB]/80", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}>
-                                  <span className="text-[14px] font-semibold text-secondary tracking-tight block">{day}</span>
-                                  <span className="text-[10px] font-medium text-slate-400 tracking-tight">Class day</span>
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Time-based body */}
-                            {(() => {
-                              const schoolStartMins = timeToMins(scheduleConfig.schoolStart);
-                              return (
-                                <div className="flex" style={{ height: `${totalDayMinutes * SCALE}px` }}>
-
-                                  {/* Sidebar: time ticks + period labels */}
-                                  <div className="w-[100px] shrink-0 relative border-r border-[#EBE8E0]">
-                                    {timeTicks.map(t => (
-                                      <div key={t} style={{ top: `${(t - schoolStartMins) * SCALE}px` }}
-                                        className="absolute right-2 flex items-center pointer-events-none">
-                                        <span className="text-[8px] text-slate-400 font-medium">{minsToTime(t)}</span>
-                                      </div>
-                                    ))}
-                                    {periods.map(p => {
-                                      const mon = periodConfigByDay["Monday"]?.[p];
-                                      if (!mon) return null;
-                                      const top = (timeToMins(mon.start) - schoolStartMins) * SCALE;
-                                      const height = mon.dur * SCALE;
-                                      const dur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
-                                      return (
-                                        <div key={`lbl-${p}`} style={{ top, height }}
-                                          className="absolute left-0 right-0 flex flex-col items-center justify-center border-b border-[#EBE8E0] px-1 overflow-hidden">
-                                          <span className="text-[20px] font-bold text-secondary/70 leading-none">{p}</span>
-                                          {editingPeriod === p ? (
-                                            <div className="flex flex-col items-center gap-1 mt-1"
-                                              onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setEditingPeriod(null); }}>
-                                              <div className="flex items-center gap-1">
-                                                <input autoFocus type="number" min={5} max={180} value={dur}
-                                                  onChange={(e) => {
-                                                    const v = parseInt(e.target.value) || scheduleConfig.defaultDuration;
-                                                    setPeriodDurations(prev => ({ ...prev, [p]: v }));
-                                                    if (scheduleConfig.uniformDuration) setScheduleConfig(prev => ({ ...prev, uniformDuration: false }));
-                                                  }}
-                                                  className="w-10 text-center text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-1 py-1 outline-none focus:border-primary shadow-sm" />
-                                                <span className="text-[9px] text-slate-400">m</span>
-                                              </div>
-                                              <div className="text-[8px] text-slate-300 text-center leading-tight">{mon.start}<br />{mon.end}</div>
-                                            </div>
-                                          ) : (
-                                            <button onClick={() => setEditingPeriod(p)} className="flex flex-col items-center gap-0.5 group/time">
-                                              <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">{mon.start}</span>
-                                              <span className="text-[8px] font-medium text-slate-300">—</span>
-                                              <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">{mon.end}</span>
-                                              <span className="text-[8px] text-slate-300 mt-0.5">{dur}m</span>
-                                            </button>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-
-                                  {/* Day columns */}
-                                  {days.map((day, dIdx) => {
-                                    const coveredPeriods = coveredByDay[day] ?? new Set<number>();
-                                    return (
-                                      <div key={day}
-                                        className={cn("flex-1 relative", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}
-                                        onMouseMove={(e) => {
-                                          if (!extendingSlot || extendingSlot.direction !== 'vertical' || extendingSlot.day !== day) return;
-                                          const rect = e.currentTarget.getBoundingClientRect();
-                                          const absMin = schoolStartMins + Math.max(0, e.clientY - rect.top) / SCALE;
-                                          let found: number | null = null;
-                                          for (const p of periods) {
-                                            const cfg = periodConfigByDay[day]?.[p];
-                                            if (cfg && timeToMins(cfg.start) <= absMin && absMin <= timeToMins(cfg.end)) { found = p; break; }
-                                          }
-                                          if (found !== null && found >= extendingSlot.period && (extensionTarget?.period !== found || extensionTarget?.day !== day)) {
-                                            setExtensionTarget({ day, period: found });
-                                          }
-                                        }}>
-
-                                        {/* 30-min horizontal guide lines */}
-                                        {timeTicks.map(t => (
-                                          <div key={t} style={{ top: `${(t - schoolStartMins) * SCALE}px` }}
-                                            className="absolute left-0 right-0 border-t border-[#F0EDE8]/80 pointer-events-none" />
-                                        ))}
-
-                                        {/* Break cells for this day */}
-                                        {(breaksByDay[day] ?? []).map(brk => {
-                                            const brkStartTime = breakStartByDay[day]?.[brk.id];
-                                            if (!brkStartTime) return null;
-                                            const brkTop = (timeToMins(brkStartTime) - schoolStartMins) * SCALE;
-                                            const brkHeight = Math.max(20, brk.duration * SCALE);
-                                            const bIsLunch = brk.type === 'lunch';
-                                            const bIsOther = brk.type === 'other';
-                                            return (
-                                              <div key={`brk-${brk.id}`}
-                                                style={{ top: brkTop, height: brkHeight, left: 0, right: 0, position: 'absolute', zIndex: 5 }}
-                                                className={cn("flex items-center justify-center gap-1.5 border-b border-[#EBE8E0]",
-                                                  bIsLunch ? "bg-amber-50/50" : bIsOther ? "bg-violet-50/50" : "bg-slate-50/70")}>
-                                                <span className={cn("material-symbols-outlined text-[12px]", bIsLunch ? "text-amber-400" : bIsOther ? "text-violet-400" : "text-slate-400")}>
-                                                  {bIsLunch ? 'restaurant' : bIsOther ? 'timer' : 'free_breakfast'}
-                                                </span>
-                                                <div className="flex flex-col leading-tight">
-                                                  <span className={cn("text-[10px] font-semibold", bIsLunch ? "text-amber-600/70" : bIsOther ? "text-violet-600/70" : "text-slate-400")}>{brk.label}</span>
-                                                  <span className="text-[8px] text-slate-300">{brkStartTime} – {minsToTime(timeToMins(brkStartTime) + brk.duration)}</span>
-                                                </div>
-                                              </div>
-                                            );
-                                          })}
-
-                                        {/* Ghost vertical extension preview */}
-                                        {extendingSlot?.direction === 'vertical' && extendingSlot.day === day && extensionTarget && (() => {
-                                          const se = extendingSlot.entry;
-                                          const curEndP = Math.min(se.period + (se.spanPeriods || 1) - 1, periods[periods.length - 1]);
-                                          const curEndCfg = periodConfigByDay[day]?.[curEndP];
-                                          const tgtCfg = periodConfigByDay[day]?.[extensionTarget.period];
-                                          if (!curEndCfg || !tgtCfg) return null;
-                                          const curEndY = (timeToMins(curEndCfg.end) - schoolStartMins) * SCALE;
-                                          const tgtEndY = (timeToMins(tgtCfg.end) - schoolStartMins) * SCALE;
-                                          if (tgtEndY <= curEndY) return null;
-                                          return (
-                                            <div className="absolute left-0 right-0 bg-primary/5 border-2 border-dashed border-primary/20 pointer-events-none z-10"
-                                              style={{ top: curEndY, height: tgtEndY - curEndY }} />
-                                          );
-                                        })()}
-
-                                        {/* Period cells */}
-                                        {periods.map(p => {
-                                          if (coveredPeriods.has(p)) return null;
-                                          const dayCfg = periodConfigByDay[day]?.[p];
-                                          if (!dayCfg) return null;
-                                          const entry = entriesBySlot.get(`${day}-${p}`);
-                                          const spanP = entry?.spanPeriods || 1;
-                                          const endP = Math.min(p + spanP - 1, periods[periods.length - 1]);
-                                          const endCfg = periodConfigByDay[day]?.[endP];
-                                          const cellTop = (timeToMins(dayCfg.start) - schoolStartMins) * SCALE;
-                                          const cellHeight = endCfg
-                                            ? (timeToMins(endCfg.end) - timeToMins(dayCfg.start)) * SCALE
-                                            : dayCfg.dur * SCALE;
-                                          const srcIdx = extendingSlot?.direction === 'horizontal' ? days.indexOf(extendingSlot.day) : -1;
-                                          const tgtIdx = extensionTarget && extendingSlot?.direction === 'horizontal' ? days.indexOf(extensionTarget.day) : -1;
-                                          const isInHRange = extendingSlot?.direction === 'horizontal' && !!extensionTarget && p === extendingSlot.period && dIdx > srcIdx && dIdx <= tgtIdx;
-                                          const isDiffTime = dayCfg.start !== periodConfigByDay["Monday"]?.[p]?.start;
-                                          return (
-                                            <div
-                                              key={`${day}-${p}`}
-                                              style={{ top: cellTop, height: cellHeight, left: 0, right: 0, position: 'absolute', zIndex: entry ? 2 : 1 }}
-                                              className={cn(
-                                                "group border-b border-[#EBE8E0] transition-colors duration-200 py-4 px-4 animate-in fade-in duration-300",
-                                                !entry && !isInHRange && "cursor-pointer hover:bg-white/90 hover:shadow-[0_4px_20px_rgba(230,220,200,0.4)] hover:z-[15]",
-                                                isInHRange && "bg-primary/[0.04]",
-                                                entry && spanP > 1 && "border-l-[3px] border-l-slate-300"
-                                              )}
-                                              onClick={() => !entry && !extendingSlot && setAssigningSlot({ day, period: p })}
-                                              onMouseEnter={() => {
-                                                if (!extendingSlot || extendingSlot.direction !== 'horizontal') return;
-                                                const src = days.indexOf(extendingSlot.day);
-                                                if (p === extendingSlot.period && dIdx > src) setExtensionTarget({ day, period: p });
-                                                else setExtensionTarget(null);
-                                              }}
-                                              onMouseUp={() => {
-                                                if (extendingSlot && extensionTarget) {
-                                                  if (extendingSlot.direction === 'horizontal' && day === extensionTarget.day && p === extensionTarget.period) {
-                                                    const src = days.indexOf(extendingSlot.day);
-                                                    const tgt = days.indexOf(extensionTarget.day);
-                                                    const newEntries = Array.from({ length: tgt - src }, (_, i) => ({ ...extendingSlot.entry, day: days[src + 1 + i], period: extendingSlot.period }));
-                                                    setTimetableEntries(prev => [
-                                                      ...prev.filter(e => !(e.section === selectedTimetableSection && e.period === extendingSlot.period && days.indexOf(e.day) > src && days.indexOf(e.day) <= tgt)),
-                                                      ...newEntries
-                                                    ]);
-                                                  } else if (extendingSlot.direction === 'vertical' && extendingSlot.day === day) {
-                                                    const newSpan = Math.max(1, extensionTarget.period - extendingSlot.period + 1);
-                                                    setTimetableEntries(prev => prev.map(e => e === extendingSlot.entry ? { ...e, spanPeriods: newSpan } : e));
-                                                  }
-                                                }
-                                                setExtendingSlot(null); setExtensionTarget(null);
-                                              }}
-                                            >
-                                              {/* Per-day time label */}
-                                              {spanP === 1 && (
-                                                <div className={cn("absolute top-1.5 left-3 flex items-center gap-1 pointer-events-none z-[5]", isDiffTime ? "opacity-70" : "opacity-30")}>
-                                                  <span className="text-[8px] font-semibold text-secondary tracking-wide">{dayCfg.start}</span>
-                                                  <span className="text-[7px] text-slate-400">–</span>
-                                                  <span className="text-[8px] font-semibold text-secondary tracking-wide">{dayCfg.end}</span>
-                                                  {isDiffTime && <span className="text-[7px] text-primary font-bold ml-0.5">*</span>}
-                                                </div>
-                                              )}
-                                              {entry ? (
-                                                <>
-                                                  {extendingSlot?.direction === 'vertical' && extendingSlot.entry === entry && extensionTarget && spanP > 1 && (() => {
-                                                    const tgtEndCfg = periodConfigByDay[day]?.[extensionTarget.period];
-                                                    if (!tgtEndCfg || !endCfg) return null;
-                                                    const cellStartMin = timeToMins(dayCfg.start);
-                                                    const cellEndMin = timeToMins(endCfg.end);
-                                                    const pct = Math.min(100, Math.max(0, (timeToMins(tgtEndCfg.end) - cellStartMin) / (cellEndMin - cellStartMin) * 100));
-                                                    return <div className="absolute left-3 right-3 border-t-2 border-dashed border-slate-400/60 z-20 pointer-events-none" style={{ top: `${pct}%` }} />;
-                                                  })()}
-                                                  {spanP > 1 && (
-                                                    <div className="absolute top-3 left-3 flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full z-10">
-                                                      <span className="material-symbols-outlined text-[11px]">unfold_more</span>
-                                                      <span className="text-[9px] font-semibold tracking-wide">×{spanP} periods</span>
-                                                    </div>
-                                                  )}
-                                                  <div className="flex flex-col items-start text-left gap-0.5 animate-in fade-in duration-500 h-full justify-center">
-                                                    <h4 className="text-[14px] font-semibold text-secondary leading-tight group-hover:text-primary transition-colors">{entry.subjectName}</h4>
-                                                    <p className="text-[11px] font-medium text-slate-400 tracking-tight">{entry.teacherName}</p>
-                                                    {spanP > 1 && endCfg && (
-                                                      <p className="text-[10px] font-medium text-slate-400 mt-1.5">{dayCfg.start} — {endCfg.end}</p>
-                                                    )}
-                                                  </div>
-                                                  <button onClick={(e) => { e.stopPropagation(); setTimetableEntries(prev => prev.filter(ent => ent !== entry)); }}
-                                                    className="absolute top-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10">
-                                                    <span className="material-symbols-outlined text-[15px]">close</span>
-                                                  </button>
-                                                  {spanP > 1 && (
-                                                    <button onClick={(e) => { e.stopPropagation(); setTimetableEntries(prev => prev.map(ent => ent === entry ? { ...ent, spanPeriods: (ent.spanPeriods || 1) - 1 } : ent)); }}
-                                                      className="absolute bottom-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10"
-                                                      title="Remove one period">
-                                                      <span className="material-symbols-outlined text-[15px]">unfold_less</span>
-                                                    </button>
-                                                  )}
-                                                  <div onMouseDown={(e) => { e.stopPropagation(); setExtendingSlot({ day, period: p, entry, direction: 'vertical' }); }}
-                                                    className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize group/handle flex items-center justify-center z-20">
-                                                    <div className="w-8 h-1 rounded-full bg-slate-200 group-hover/handle:bg-primary/40 opacity-0 group-hover:opacity-100 transition-all" />
-                                                  </div>
-                                                  <div onMouseDown={(e) => { e.stopPropagation(); setExtendingSlot({ day, period: p, entry, direction: 'horizontal' }); }}
-                                                    className="absolute top-0 right-0 bottom-0 w-5 cursor-ew-resize group/rhandle flex items-center justify-center z-20">
-                                                    <div className="h-10 w-[3px] rounded-full bg-slate-200 group-hover/rhandle:bg-primary/50 opacity-0 group-hover:opacity-100 transition-all duration-200" />
-                                                  </div>
-                                                </>
-                                              ) : (
-                                                <div className="h-full flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 duration-300">
-                                                  <div className="size-6 rounded-full text-secondary/30 flex items-center justify-center">
-                                                    <span className="material-symbols-outlined text-[18px]">add</span>
-                                                  </div>
-                                                  <span className="text-[11px] font-semibold text-secondary/30">Assign</span>
-                                                </div>
-                                              )}
-                                              {isInHRange && extendingSlot && (
-                                                <div className="absolute inset-0 pointer-events-none flex flex-col justify-center px-4 gap-0.5 z-10">
-                                                  <div className="absolute inset-[3px] border border-dashed border-primary/30 rounded-sm" />
-                                                  <p className="text-[13px] font-semibold text-secondary/30 leading-tight">{extendingSlot.entry.subjectName}</p>
-                                                  <p className="text-[11px] text-slate-300">{extendingSlot.entry.teacherName}</p>
-                                                </div>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
-
-                                        {/* Assignment popover — rendered at day-column level so it sits above break cells */}
-                                        {assigningSlot?.day === day && (() => {
-                                          const ap = assigningSlot.period;
-                                          const aCfg = periodConfigByDay[day]?.[ap];
-                                          if (!aCfg) return null;
-                                          const aTop = (timeToMins(aCfg.start) - schoolStartMins) * SCALE;
-                                          const aHeight = Math.max(160, aCfg.dur * SCALE);
-                                          return (
-                                            <div style={{ top: aTop, height: aHeight, left: 0, right: 0, position: 'absolute', zIndex: 50 }}
-                                              className="p-2">
-                                              <div className="relative h-full bg-[#FDFCFB] shadow-[0_20px_60px_rgba(200,180,150,0.3)] rounded-xl border border-[#EBE8E0] p-4 animate-in fade-in zoom-in-95 duration-200">
-                                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none rounded-xl" style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '12px 12px' }} />
-                                                <div className="relative flex flex-col gap-3">
-                                                  <div className="flex justify-between items-center">
-                                                    <span className="text-[11px] font-semibold text-slate-400 tracking-tight">Assign subject</span>
-                                                    <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); }} className="text-slate-300 hover:text-secondary transition-colors">
-                                                      <span className="material-symbols-outlined text-[14px]">close</span>
-                                                    </button>
-                                                  </div>
-                                                  <SlotSearchInput
-                                                    selectedSection={selectedTimetableSection}
-                                                    mappings={mappings}
-                                                    subjects={subjects}
-                                                    teachers={teachers}
-                                                    onAssign={({ subjectId, subjectName, teacherId, teacherName }) => {
-                                                      setTimetableEntries(prev => [...prev, { section: selectedTimetableSection, day, period: ap, subjectId, subjectName, teacherId, teacherName }]);
-                                                      setAssigningSlot(null);
-                                                    }}
-                                                  />
-                                                </div>
-                                              </div>
-                                            </div>
-                                          );
-                                        })()}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </div>
-                      )}
+                      <TimetableGrid
+                        days={days}
+                        periods={periods}
+                        periodConfigByDay={periodConfigByDay}
+                        breaksByDay={breaksByDay}
+                        breakStartByDay={breakStartByDay}
+                        entriesBySlot={entriesBySlot}
+                        coveredByDay={coveredByDay}
+                        timeTicks={timeTicks}
+                        totalDayMinutes={totalDayMinutes}
+                        selectedTimetableSection={selectedTimetableSection}
+                        scheduleConfig={scheduleConfig}
+                        periodDurations={periodDurations}
+                        stickyDayHeaders={stickyDayHeaders}
+                        mappings={mappings}
+                        subjects={subjects}
+                        teachers={teachers}
+                        onEntriesChange={setTimetableEntries}
+                        onPeriodDurationChange={handlePeriodDurationChange}
+                        timetableRef={timetableRef}
+                      />
                     </div>
                   )}
                 </motion.div>
@@ -1826,12 +1893,17 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         onConfirm={onConfirmDeleteGrade}
       />
     </div>
+    </CurriculumErrorBoundary>
   );
 };
 
 // --- Functional Components (Drawers & Forms) ---
 
-const SubjectForm = ({ onClose, onSubmit, initialData }: any) => {
+const SubjectForm = ({ onClose, onSubmit, initialData }: {
+  onClose: () => void;
+  onSubmit: (data: Omit<Subject, 'id'>) => void;
+  initialData: Subject | null;
+}) => {
   const ACADEMIC_AREAS = ["Mathematics", "Science", "Humanities", "Languages", "Arts", "Technology", "Administration", "Sports"];
   const [name, setName] = useState(initialData?.name || "");
   const [code, setCode] = useState(initialData?.code || "");
@@ -1878,7 +1950,7 @@ const SubjectForm = ({ onClose, onSubmit, initialData }: any) => {
           <AppDropdown
             options={["Core (Mandatory)", "Elective (Optional)", "Language", "Co-Scholastic (Arts/Sports)"]}
             value={category === "Core" ? "Core (Mandatory)" : category === "Elective" ? "Elective (Optional)" : category}
-            onChange={(val) => setCategory(val.split(" ")[0])}
+            onChange={(val) => setCategory(val.split(" ")[0] as Subject["category"])}
             placeholder="Select category"
           />
         </div>
@@ -1898,7 +1970,12 @@ const SubjectForm = ({ onClose, onSubmit, initialData }: any) => {
 
 
 
-const DeleteConfirmationModal = ({ isOpen, onClose, name, onConfirm }: any) => {
+const DeleteConfirmationModal = ({ isOpen, onClose, name, onConfirm }: {
+  isOpen: boolean;
+  onClose: () => void;
+  name: string;
+  onConfirm: () => void;
+}) => {
   const [confirmText, setConfirmText] = useState("");
   const isMatched = confirmText.toLowerCase() === name.toLowerCase();
 
@@ -1964,7 +2041,12 @@ const DeleteConfirmationModal = ({ isOpen, onClose, name, onConfirm }: any) => {
   );
 };
 
-const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: any) => {
+const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: {
+  subjects: Subject[];
+  onClose: () => void;
+  onSubmit: (data: GradeConfig) => void;
+  initialData: GradeConfig | null;
+}) => {
   const [grade, setGrade] = useState(initialData?.grade || "");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(initialData?.subjects || []);
   const [formSearch, setFormSearch] = useState("");
@@ -1998,8 +2080,8 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: any) => {
 
           {["Core", "Elective", "Language", "Co-Scholastic"].map(cat => {
             const catSubjects = subjects
-              .filter((s: any) => s.category === cat)
-              .filter((s: any) =>
+              .filter(s => s.category === cat)
+              .filter(s =>
                 s.name.toLowerCase().includes(formSearch.toLowerCase()) ||
                 s.code.toLowerCase().includes(formSearch.toLowerCase())
               );
@@ -2018,7 +2100,7 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: any) => {
                   <span className="text-[10px] font-medium text-[#B0AFA8]">{cat}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {catSubjects.map((s: any) => (
+                  {catSubjects.map(s => (
                     <label
                       key={s.id}
                       className={cn(
@@ -2081,7 +2163,16 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: any) => {
   );
 };
 
-const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, onClose, onSubmit, gradeConfigs }: any) => {
+const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, onClose, onSubmit, gradeConfigs }: {
+  subjects: Subject[];
+  teachers: Teacher[];
+  mappings: Mapping[];
+  initialData: Mapping | null;
+  isAdditional: boolean;
+  onClose: () => void;
+  onSubmit: (data: Omit<Mapping, 'id'>) => void;
+  gradeConfigs: GradeConfig[];
+}) => {
   const [grade, setGrade] = useState(initialData?.grade || "");
   const [section, setSection] = useState(initialData?.section || "");
   const [subjectId, setSubjectId] = useState(initialData?.subjectId || "");
@@ -2100,13 +2191,13 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
   const isFormValid = grade && section && subjectId && teacherId;
 
   // Derived warning intelligence
-  const selectedTeacher = teachers.find((t: any) => t.id === teacherId);
-  const selectedSubject = subjects.find((s: any) => s.id === subjectId);
+  const selectedTeacher = teachers.find(t => t.id === teacherId);
+  const selectedSubject = subjects.find(s => s.id === subjectId);
   const scopeMismatch = selectedTeacher && !selectedTeacher.teachingScope.includes(grade);
   const specMismatch = selectedTeacher && !selectedTeacher.specializations.includes(subjectId);
 
   // Teacher workload calculation
-  const teacherMappings = (mappings || []).filter((m: any) => m.teacherId === teacherId);
+  const teacherMappings = (mappings || []).filter(m => m.teacherId === teacherId);
 
   return (
     <div className="flex flex-col h-full">
@@ -2114,7 +2205,7 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
         <div className="grid grid-cols-2 gap-4">
           <FormGroup
             label="Grade" type="select"
-            options={gradeConfigs.map((g: any) => g.grade)}
+            options={gradeConfigs.map(g => g.grade)}
             value={grade} onChange={setGrade}
           />
           <FormGroup label="Section" placeholder="e.g. A" value={section} onChange={setSection} />
@@ -2124,7 +2215,7 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
           label="Select Subject" type="select"
           options={[
             { val: "", label: "Choose a Subject", disabled: true },
-            ...subjects.map((s: any) => ({ val: s.id, label: s.name }))
+            ...subjects.map(s => ({ val: s.id, label: s.name }))
           ]}
           value={subjectId} onChange={setSubjectId}
           icon="subject"
@@ -2134,7 +2225,7 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
           label="Assign Teacher" type="select"
           options={[
             { val: "", label: "Choose a Teacher", disabled: true },
-            ...teachers.map((t: any) => ({ val: t.id, label: t.name }))
+            ...teachers.map(t => ({ val: t.id, label: t.name }))
           ]}
           value={teacherId} onChange={setTeacherId}
           icon="person"
@@ -2166,7 +2257,7 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
                   <p className="text-[12px] font-bold text-blue-800 mb-1">Subject Specialization Advisory</p>
                   <p className="text-[11px] text-blue-700 leading-relaxed">
                     <span className="font-bold">{selectedSubject.name}</span> is not listed in <span className="font-bold">{selectedTeacher.name}</span>&apos;s specializations.
-                    Their trained subjects: {selectedTeacher.specializations.map((sid: string) => subjects.find((s: any) => s.id === sid)?.name || sid).join(", ")}.
+                    Their trained subjects: {selectedTeacher.specializations.map(sid => subjects.find(s => s.id === sid)?.name || sid).join(", ")}.
                     <span className="block mt-1 text-[10px] text-blue-600 italic">Cross-discipline assignments are allowed at admin discretion.</span>
                   </p>
                 </div>
@@ -2195,8 +2286,8 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
               {teacherMappings.length > 0 && (
                 <div className="space-y-1.5 pt-1">
                   <p className="text-[10px] font-medium text-[#B0AFA8]">Current Assignments</p>
-                  {teacherMappings.map((m: any) => {
-                    const sub = subjects.find((s: any) => s.id === m.subjectId);
+                  {teacherMappings.map(m => {
+                    const sub = subjects.find(s => s.id === m.subjectId);
                     return (
                       <div key={m.id} className="flex items-center justify-between text-[11px] py-1.5 px-2 rounded-lg hover:bg-white transition-colors">
                         <span className="font-semibold text-[#444441]">{sub?.name || m.subjectId}</span>
@@ -2214,7 +2305,7 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
       <div className="p-8 border-t border-slate-50 bg-[#FBFBFA] flex gap-3">
         <button onClick={onClose} className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors">Cancel</button>
         <button
-          onClick={() => isFormValid && onSubmit({ grade, section, subjectId, teacherId, isAdditional })}
+          onClick={() => isFormValid && onSubmit({ grade, section, subjectId, teacherId, hoursPerWeek: 4, isAdditional })}
           disabled={!isFormValid}
           className="flex-[2] btn-primary h-12 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
         >
@@ -2225,12 +2316,17 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
   );
 };
 
-const TierManagementForm = ({ groups, setGroups }: any) => {
+const TierManagementForm = ({ groups, setGroups }: {
+  groups: GradeGroup[];
+  setGroups: React.Dispatch<React.SetStateAction<GradeGroup[]>>;
+  gradeConfigs: GradeConfig[];
+  onClose: () => void;
+}) => {
   // Derive all possible grades from configs
 
 
   const removeGrade = (groupId: string, grade: string) => {
-    const newGroups = groups.map((g: any) => {
+    const newGroups = groups.map(g => {
       if (g.id === groupId) {
         return { ...g, grades: g.grades.filter((gr: string) => gr !== grade) };
       }
@@ -2240,7 +2336,7 @@ const TierManagementForm = ({ groups, setGroups }: any) => {
   };
 
   const addGrade = (groupId: string, grade: string) => {
-    const newGroups = groups.map((g: any) => {
+    const newGroups = groups.map(g => {
       if (g.id === groupId) {
         return {
           ...g, grades: [...g.grades, grade].sort((a: string, b: string) => {
@@ -2261,7 +2357,7 @@ const TierManagementForm = ({ groups, setGroups }: any) => {
   };
 
   const removeTier = (groupId: string) => {
-    setGroups(groups.filter((g: any) => g.id !== groupId));
+    setGroups(groups.filter(g => g.id !== groupId));
   };
 
   return (
@@ -2270,7 +2366,7 @@ const TierManagementForm = ({ groups, setGroups }: any) => {
 
         {/* Tier List */}
         <div className="space-y-8">
-          {groups.map((group: any) => (
+          {groups.map(group => (
             <div key={group.id} className="p-6 rounded-[32px] border border-slate-100 bg-white hover:border-slate-200 transition-all group/tier relative">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4 flex-1">
@@ -2283,7 +2379,7 @@ const TierManagementForm = ({ groups, setGroups }: any) => {
                       value={group.label}
                       placeholder="Name this tier..."
                       onChange={(e) => {
-                        const newGroups = groups.map((g: any) => g.id === group.id ? { ...g, label: e.target.value } : g);
+                        const newGroups = groups.map(g => g.id === group.id ? { ...g, label: e.target.value } : g);
                         setGroups(newGroups);
                       }}
                     />
@@ -2331,7 +2427,7 @@ const TierManagementForm = ({ groups, setGroups }: any) => {
                   <div className="flex flex-wrap gap-2 px-1">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
                       .map(n => `Grade ${n}`)
-                      .filter(g => !groups.some((tg: any) => tg.grades.includes(g))) // ONLY unassigned
+                      .filter(g => !groups.some(tg => tg.grades.includes(g))) // ONLY unassigned
                       .length === 0 ? (
                       <div className="flex items-center gap-2 text-slate-400 py-2">
                         <span className="material-symbols-outlined text-[16px]">check_circle</span>
@@ -2340,7 +2436,7 @@ const TierManagementForm = ({ groups, setGroups }: any) => {
                     ) : (
                       [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
                         .map(n => `Grade ${n}`)
-                        .filter(g => !groups.some((tg: any) => tg.grades.includes(g)))
+                        .filter(g => !groups.some(tg => tg.grades.includes(g)))
                         .map(g => (
                           <button
                             key={g}
@@ -2371,7 +2467,15 @@ const TierManagementForm = ({ groups, setGroups }: any) => {
   );
 };
 
-const FormGroup = ({ label, type = "text", placeholder, options, value, onChange, icon }: any) => (
+const FormGroup = ({ label, type = "text", placeholder, options, value, onChange, icon }: {
+  label: string;
+  type?: string;
+  placeholder?: string;
+  options?: (string | { val: string; label: string; disabled?: boolean })[];
+  value?: string;
+  onChange?: (val: string) => void;
+  icon?: string;
+}) => (
   <div className="space-y-2.5 group">
     <label className="text-[13px] font-bold text-[#B0AFA8] px-1 group-focus-within:text-foreground transition-colors">
       {label}
@@ -2379,11 +2483,12 @@ const FormGroup = ({ label, type = "text", placeholder, options, value, onChange
     <div className="relative">
       {type === "select" ? (
         <AppDropdown
-          options={options.map((o: any) => typeof o === 'string' ? o : o.label)}
-          value={typeof value === 'string' ? value : options.find((o: any) => o.val === value)?.label || ""}
+          options={(options ?? []).map(o => typeof o === 'string' ? o : o.label)}
+          value={typeof value === 'string' ? value : (options ?? []).find((o): o is { val: string; label: string; disabled?: boolean } => typeof o !== 'string' && o.val === value)?.label || ""}
           onChange={(val: string) => {
-            const selected = options.find((o: any) => (typeof o === 'string' ? o : o.label) === val);
-            onChange && onChange(typeof selected === 'string' ? selected : selected.val);
+            const opts = options ?? [];
+            const selected = opts.find(o => (typeof o === 'string' ? o : o.label) === val);
+            onChange && onChange(typeof selected === 'string' ? selected : (selected as { val: string } | undefined)?.val ?? "");
           }}
           placeholder={placeholder}
           icon={icon}

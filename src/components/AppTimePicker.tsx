@@ -48,18 +48,16 @@ export const AppTimePicker = ({
 
   useEffect(() => {
     if (isOpen) {
-      const scrollToSelected = (ref: React.RefObject<HTMLDivElement>, val: string) => {
-        if (!ref.current) return;
-        const selectedBtn = ref.current.querySelector(`[data-value="${val}"]`) as HTMLElement;
-        if (selectedBtn) {
-          ref.current.scrollTop = selectedBtn.offsetTop - 80;
-        }
+      const scrollToSelected = (el: HTMLDivElement | null, val: string) => {
+        if (!el) return;
+        const selectedBtn = el.querySelector(`[data-value="${val}"]`) as HTMLElement;
+        if (selectedBtn) el.scrollTop = selectedBtn.offsetTop - 80;
       };
 
       setTimeout(() => {
-        scrollToSelected(hourListRef, h12);
-        scrollToSelected(minListRef, m);
-        scrollToSelected(periodListRef, period);
+        scrollToSelected(hourListRef.current, h12);
+        scrollToSelected(minListRef.current, m);
+        scrollToSelected(periodListRef.current, period);
       }, 50);
     }
   }, [isOpen, h12, m, period]);
