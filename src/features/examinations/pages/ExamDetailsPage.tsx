@@ -49,7 +49,7 @@ export const ExamDetailsPage = () => {
         history: 88,
         english: 82,
         gpa: 3.8,
-        img: "https://images.unsplash.com/photo-1542343633-ce3256525ee3?w=400&h=400&fit=crop",
+        img: "/Avatar/Male Avatar Age15.png",
       },
       {
         name: "Isha K.",
@@ -59,7 +59,7 @@ export const ExamDetailsPage = () => {
         history: 68,
         english: 70,
         gpa: 2.9,
-        img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop",
+        img: "/Avatar/Female Avatar Age14.png",
       },
       {
         name: "Kabir M.",
@@ -69,7 +69,7 @@ export const ExamDetailsPage = () => {
         history: 94,
         english: 90,
         gpa: 4.0,
-        img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+        img: "/Avatar/Male Avatar Age16.png",
       },
       {
         name: "Sneha R.",
@@ -79,7 +79,7 @@ export const ExamDetailsPage = () => {
         history: 48,
         english: 50,
         gpa: 2.1,
-        img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
+        img: "/Avatar/Female Avatar Age13.png",
       },
     ],
   };

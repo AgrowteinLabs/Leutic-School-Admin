@@ -36,7 +36,7 @@ export const StudentProfilePage = () => {
       guardianName: "Ramesh S.",
       phone: "+91 98472-11002",
       status: "Active",
-      img: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=400&h=400&fit=crop",
+      img: "/Avatar/Female Avatar Age17.png",
     },
     {
         name: "Ishaan K.",
@@ -52,7 +52,7 @@ export const StudentProfilePage = () => {
         guardianName: "Kishore K.",
         phone: "+91 98765-43211",
         status: "At Risk",
-        img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+        img: "/Avatar/Male Avatar Age16.png",
       },
       {
         name: "Meera V.",
@@ -68,7 +68,7 @@ export const StudentProfilePage = () => {
         guardianName: "Vinay V.",
         phone: "+91 99887-76655",
         status: "Active",
-        img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
+        img: "/Avatar/Female Avatar Age16.png",
       },
   ];
 

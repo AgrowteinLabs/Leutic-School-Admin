@@ -11,12 +11,12 @@ export const KnowYourStudentPage = () => {
     const [selectedSection, setSelectedSection] = useState("All Sections");
 
     const students = [
-        { id: "OA-2024-001", name: "Aavya S.", grade: "12", section: "A", aura: 98.4, attendance: 98, status: "Active", img: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=400&h=400&fit=crop" },
-        { id: "OA-2024-042", name: "Ishaan K.", grade: "10", section: "B", aura: 64.2, attendance: 72, status: "At Risk", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop" },
-        { id: "OA-2024-118", name: "Meera V.", grade: "11", section: "C", aura: 91.5, attendance: 94, status: "Active", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop" },
-        { id: "OA-2024-156", name: "Arjun T.", grade: "11", section: "B", aura: 88.5, attendance: 91, status: "Active", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" },
-        { id: "OA-2024-092", name: "Diya M.", grade: "10", section: "A", aura: 72.1, attendance: 85, status: "Active", img: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=100" },
-        { id: "OA-2024-305", name: "Rohan P.", grade: "9", section: "D", aura: 61.8, attendance: 78, status: "At Risk", img: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100" },
+        { id: "OA-2024-001", name: "Aavya S.", grade: "12", section: "A", aura: 98.4, attendance: 98, status: "Active", img: "/Avatar/Female Avatar Age17.png" },
+        { id: "OA-2024-042", name: "Ishaan K.", grade: "10", section: "B", aura: 64.2, attendance: 72, status: "At Risk", img: "/Avatar/Male Avatar Age16.png" },
+        { id: "OA-2024-118", name: "Meera V.", grade: "11", section: "C", aura: 91.5, attendance: 94, status: "Active", img: "/Avatar/Female Avatar Age16.png" },
+        { id: "OA-2024-156", name: "Arjun T.", grade: "11", section: "B", aura: 88.5, attendance: 91, status: "Active", img: "/Avatar/Male Avatar Age17.png" },
+        { id: "OA-2024-092", name: "Diya M.", grade: "10", section: "A", aura: 72.1, attendance: 85, status: "Active", img: "/Avatar/Female Avatar Age15.png" },
+        { id: "OA-2024-305", name: "Rohan P.", grade: "9", section: "D", aura: 61.8, attendance: 78, status: "At Risk", img: "/Avatar/Male Avatar Age14.png" },
     ];
 
     const filteredStudents = useMemo(() => {

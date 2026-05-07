@@ -38,7 +38,7 @@ export const DashboardPage = () => {
             attendanceRate: 98,
             gpa: 3.9,
             status: "Active",
-            img: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=400&h=400&fit=crop",
+            img: "/Avatar/Female Avatar Age17.png",
             phone: "+91 98472-11002"
         },
         {
@@ -51,7 +51,7 @@ export const DashboardPage = () => {
             attendanceRate: 72,
             gpa: 2.8,
             status: "At Risk",
-            img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+            img: "/Avatar/Male Avatar Age16.png",
             phone: "+91 91234-56789"
         }
     ];

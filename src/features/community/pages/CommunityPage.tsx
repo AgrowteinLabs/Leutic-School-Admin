@@ -11,7 +11,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             id: 1,
             author: "Principal",
             role: "Prabhath Residential Public School",
-            avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop",
+            avatar: "/Avatar/Male Avatar Age40.png",
             content: "Nurturing the scientists of tomorrow. 🧪✨\n\nAt Prabhath Residential Public School, we believe that education goes beyond textbooks. By providing our students with modern laboratory equipment and a hands-on learning environment, we empower them to explore, analyze, and develop a true scientific temper.\n\nPrabhath Residential Public School\nBrahmapuram P.O, Karimugal, Kochi, Kerala 682303",
             image: "/banner4.jpg",
             time: "Just now",
@@ -71,8 +71,8 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 <p className="text-[11px] text-white/60 font-medium mb-4">Top contributors this week</p>
                                 <div className="space-y-4">
                                     {[
-                                        { name: "Meera V.", points: 2450, img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
-                                        { name: "Arjun T.", points: 2120, img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" },
+                                        { name: "Meera V.", points: 2450, img: "/Avatar/Female Avatar Age22.png" },
+                                        { name: "Arjun T.", points: 2120, img: "/Avatar/Male Avatar Age22.png" },
                                     ].map((u, i) => (
                                         <div key={u.name} className="flex items-center gap-3">
                                             <div className="relative">

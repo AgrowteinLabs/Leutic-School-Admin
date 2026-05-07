@@ -766,7 +766,16 @@ export const ClassDetailsPage = () => {
                         <div className="absolute inset-0 rounded-2xl bg-primary/10 group-hover:scale-110 transition-transform duration-500" />
                         <div
                           className="absolute inset-0 rounded-2xl bg-cover bg-center border-2 border-white shadow-sm z-10"
-                          style={{ backgroundImage: `url("https://images.unsplash.com/photo-${i % 2 === 0 ? '1531123897727-8f129e16fd3c' : '1507003211169-0a1dd7228f2d'}?w=200&h=200&fit=crop")` }}
+                          style={{ 
+                            backgroundImage: `url("${
+                              [
+                                '/Avatar/Female Avatar Age15.png',
+                                '/Avatar/Male Avatar Age15.png',
+                                '/Avatar/Female Avatar Age14.png',
+                                '/Avatar/Male Avatar Age14.png'
+                              ][i % 4]
+                            }")` 
+                          }}
                         />
                       </div>
                       <div className="flex flex-col gap-0.5">

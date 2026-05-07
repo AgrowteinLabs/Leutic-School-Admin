@@ -147,7 +147,7 @@ export const DriversPage = ({
       regNo: "KL01PC4456",
       joiningDate: "Aug 15, 2016",
       experience: "8 Years",
-      img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age45.png",
     },
     {
       name: "Sajeev K.",
@@ -161,7 +161,7 @@ export const DriversPage = ({
       regNo: "KL07BB9982",
       joiningDate: "July 20, 2019",
       experience: "5 Years",
-      img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age42.png",
     },
   ]);
 

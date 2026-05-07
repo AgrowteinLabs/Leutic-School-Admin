@@ -32,35 +32,37 @@ export const TransportationHubPage = () => {
           }
         />
 
-        <div className="px-8 border-b border-slate-100 bg-white">
-          <div className="flex gap-8">
-            {[
-              { id: "tracking", label: "Bus Map", icon: "location_on" },
-              {
-                id: "drivers",
-                label: "Drivers",
-                icon: "person_pin_circle",
-              },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={cn(
-                  "flex items-center gap-2 pb-4 text-[13px] font-semibold tracking-tight transition-all relative mt-4",
-                  activeTab === tab.id
-                    ? "text-foreground"
-                    : "text-[#B0AFA8] hover:text-foreground",
-                )}
-              >
-                <span className="material-symbols-outlined text-lg">
-                  {tab.icon}
-                </span>
-                {tab.label}
-                {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full" />
-                )}
-              </button>
-            ))}
+        <div className="border-b border-slate-100 bg-white">
+          <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+            <div className="flex gap-8">
+              {[
+                { id: "tracking", label: "Bus Map", icon: "location_on" },
+                {
+                  id: "drivers",
+                  label: "Drivers",
+                  icon: "person_pin_circle",
+                },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={cn(
+                    "flex items-center gap-2 pb-4 text-[13px] font-semibold tracking-tight transition-all relative mt-4",
+                    activeTab === tab.id
+                      ? "text-foreground"
+                      : "text-[#B0AFA8] hover:text-foreground",
+                  )}
+                >
+                  <span className="material-symbols-outlined text-lg">
+                    {tab.icon}
+                  </span>
+                  {tab.label}
+                  {activeTab === tab.id && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

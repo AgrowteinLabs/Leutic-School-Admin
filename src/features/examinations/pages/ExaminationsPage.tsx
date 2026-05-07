@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
@@ -7,7 +8,7 @@ import { StatCard } from "../../../components/StatCard";
 export const ExaminationsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
 
-  const [exams, setExams] = useState([
+  const [exams] = useState([
     {
       id: "EX-2024-001",
       title: "Mid-Term Examination 2024",
@@ -50,59 +51,33 @@ export const ExaminationsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     },
   ]);
 
-  const handleAddExam = () => {
-    const newExam = {
-      id: `EX-2024-${Math.floor(Math.random() * 900) + 100}`,
-      title: "New Assessment Cycle",
-      type: "Assessment",
-      status: "Upcoming",
-      date: "TBD",
-      classes: ["Grade 10", "Grade 11"],
-      subjects: 1,
-      avgScore: null,
-    };
-    setExams((prev) => [newExam, ...prev]);
-  };
-
-  const getStatusColor = (status: string) => {
+  const getStatusStyles = (status: string) => {
     switch (status.toLowerCase()) {
       case "completed":
-        return "bg-[#EAF2D7]0/10 text-[#2E7D32] border border-[#D9EA85]";
+        return "bg-emerald-50 text-emerald-700 border-emerald-100";
       case "in progress":
-        return "bg-[#FEF3C7]0/10 text-[#B45309] border border-[#FDE68A]";
+        return "bg-amber-50 text-amber-700 border-amber-100";
       case "upcoming":
-        return "bg-[#EAF2D7]0/10 text-[#3D6B2C] border border-violet-500";
+        return "bg-indigo-50 text-indigo-700 border-indigo-100";
       default:
-        return "bg-[#F7F8F4]0/10 text-slate-700 border border-slate-500";
+        return "bg-slate-50 text-slate-700 border-slate-100";
     }
   };
 
   return (
-    <div
-      className={cn(
-        "flex-1 flex flex-col overflow-hidden bg-white",
-        !isHubChild && "h-screen",
-      )}
-    >
+    <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#FDFCFB] relative", !isHubChild && "h-screen")}>
       {!isHubChild && (
         <TopBar
           title="Exams & Tests"
           subtitle="Manage school examinations, quizzes, and competitions."
           actions={
             <div className="flex items-center gap-3">
-              <button className="bg-white border border-slate-100 text-foreground px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-[#F7F8F4] transition-all">
-                <span className="material-symbols-outlined text-lg">
-                  upload_file
-                </span>
+              <button className="btn-secondary h-11 px-6 rounded-[14px] text-[13px] font-bold flex items-center gap-2 transition-all">
+                <span className="material-symbols-outlined text-[20px]">upload_file</span>
                 Bulk Marks Upload
               </button>
-              <button
-                onClick={handleAddExam}
-                className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30 "
-              >
-                <span className="material-symbols-outlined text-sm">
-                  add_circle
-                </span>
+              <button className="btn-primary h-11 px-6 rounded-[14px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/10">
+                <span className="material-symbols-outlined text-[20px]">add_circle</span>
                 New Examination
               </button>
             </div>
@@ -110,163 +85,147 @@ export const ExaminationsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         />
       )}
 
-      <div className="flex-1 overflow-y-auto mx-auto px-6 lg:px-10 py-6 max-w-[1400px] space-y-8">
-        {/* Performance Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              label: "Overall Academic Progress",
-              value: "84.2%",
-              trend: "+2.4% from last term",
-              trendType: "up" as const,
-              icon: "trending_up",
-            },
-            {
-              label: "Ongoing Assessments",
-              value: "03",
-              trend: "Next: Science Mock Test",
-              trendType: "stable" as const,
-              icon: "pending_actions",
-            },
-            {
-              label: "Average Attendance (Exams)",
-              value: "98.8%",
-              trend: "Target: 95%+",
-              trendType: "up" as const,
-              icon: "event_available",
-            },
-          ].map((stat, i) => (
-            <StatCard key={i} {...stat} />
-          ))}
-        </div>
-
-        {/* Examinations List */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-            <h3 className="text-foreground text-[16px] font-semibold tracking-tight">
-              Exam Schedule
-            </h3>
-            <div className="flex gap-2">
-              <button className="px-3 py-1.5 rounded-xl bg-secondary text-white text-xs font-medium capitalize">
-                All
-              </button>
-              <button className="px-3 py-1.5 rounded-xl hover:bg-[#F7F8F4] text-[#B0AFA8] text-xs font-medium capitalize">
-                Major Exams
-              </button>
-              <button className="px-3 py-1.5 rounded-xl hover:bg-[#F7F8F4] text-[#B0AFA8] text-xs font-medium capitalize">
-                Mock Tests
-              </button>
-            </div>
+      <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 py-8">
+        <div className="max-w-[1400px] mx-auto space-y-8">
+          {/* Performance Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 [&>*]:shadow-none">
+            {[
+              {
+                label: "Overall Academic Progress",
+                value: "84.2%",
+                trend: "+2.4% from last term",
+                trendType: "up" as const,
+                icon: "trending_up",
+                iconBg: "bg-emerald-50",
+              },
+              {
+                label: "Ongoing Assessments",
+                value: "03",
+                trend: "Next: Science Mock Test",
+                trendType: "stable" as const,
+                icon: "pending_actions",
+                iconBg: "bg-blue-50",
+              },
+              {
+                label: "Average Attendance (Exams)",
+                value: "98.8%",
+                trend: "Target: 95%+",
+                trendType: "up" as const,
+                icon: "event_available",
+                iconBg: "bg-amber-50",
+              },
+            ].map((stat, i) => (
+              <StatCard key={i} {...stat} />
+            ))}
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-[#F7F8F4] border-b border-slate-100">
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441]">
-                    Title & Type
-                  </th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441]">
-                    Schedule
-                  </th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441]">
-                    Classes
-                  </th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441]">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441] text-center">
-                    Average Mark
-                  </th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#444441] text-right">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {exams.map((exam) => (
-                  <tr
-                    key={exam.id}
-                    className="hover:bg-[#F7F8F4] transition-colors group cursor-pointer"
-                    onClick={() => navigate(`/examinations/${exam.id}`)}
+
+          {/* Examinations List */}
+          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 overflow-hidden">
+            <div className="p-6 border-b border-slate-100/50 flex justify-between items-center bg-white rounded-t-[24px]">
+              <div className="flex flex-col">
+                <h3 className="text-foreground text-[16px] font-bold tracking-tight">Exam Schedule</h3>
+                <p className="text-[11px] font-bold text-[#B0AFA8] mt-0.5">Manage and track assessment cycles</p>
+              </div>
+              <div className="flex gap-2 p-1 bg-[#F7F8F4] rounded-xl border border-slate-100">
+                {["All", "Major Exams", "Mock Tests"].map((f) => (
+                  <button
+                    key={f}
+                    className={cn(
+                      "px-4 py-1.5 rounded-lg text-[11px] font-black transition-all",
+                      f === "All" ? "bg-white text-secondary shadow-sm" : "text-[#B0AFA8] hover:text-foreground"
+                    )}
                   >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="size-10 rounded-2xl bg-[#F7F8F4] flex items-center justify-center text-[#B0AFA8] group-hover:bg-primary group-hover:text-foreground transition-all">
-                          <span className="material-symbols-outlined">
-                            {exam.type === "Quiz"
-                              ? "quiz"
-                              : exam.type === "Competition"
-                                ? "trophy"
-                                : "description"}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-[13px] font-semibold text-foreground group-hover:underline decoration-primary underline-offset-4">
-                            {exam.title}
-                          </p>
-                          <p className="text-xs font-medium capitalize text-[#B0AFA8]">
-                            {exam.type}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-[#444441]">
-                        <span className="material-symbols-outlined text-sm">
-                          calendar_today
-                        </span>
-                        <span className="text-[11px] font-medium">{exam.date}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {exam.classes.slice(0, 2).map((c, i) => (
-                          <span
-                            key={i}
-                            className="text-xs font-medium px-2 py-0.5 rounded bg-[#F7F8F4]0/10 text-slate-700 border border-slate-500"
-                          >
-                            {c}
-                          </span>
-                        ))}
-                        {exam.classes.length > 2 && (
-                          <span className="text-xs font-medium px-2 py-0.5 rounded bg-[#F7F8F4] text-[#B0AFA8]">
-                            +{exam.classes.length - 2}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={cn(
-                          "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize border",
-                          getStatusColor(exam.status),
-                        )}
-                      >
-                        {exam.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {exam.avgScore ? (
-                        <span className="text-sm font-black text-foreground">
-                          {exam.avgScore}%
-                        </span>
-                      ) : (
-                        <span className="text-xs font-medium text-foreground/20 capitalize">
-                          N/A
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-[#B0AFA8] hover:text-foreground transition-colors">
-                        <span className="material-symbols-outlined text-xl">
-                          more_vert
-                        </span>
-                      </button>
-                    </td>
-                  </tr>
+                    {f}
+                  </button>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto no-scrollbar">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-[#F7F8F4]/30 border-b border-slate-100">
+                    <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Title & Type</th>
+                    <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Schedule</th>
+                    <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Classes</th>
+                    <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest text-center">Avg Mark</th>
+                    <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {exams.map((exam) => (
+                    <tr
+                      key={exam.id}
+                      className="hover:bg-[#F7F8F4]/50 transition-colors group cursor-pointer"
+                      onClick={() => navigate(`/examinations/${exam.id}`)}
+                    >
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="size-10 rounded-[14px] bg-[#F7F8F4] border border-slate-100 flex items-center justify-center text-[#B0AFA8] group-hover:bg-primary/10 group-hover:text-primary transition-all group-hover:border-primary/20">
+                            <span className="material-symbols-outlined text-[20px]">
+                              {exam.type === "Quiz" ? "quiz" : exam.type === "Competition" ? "trophy" : "description"}
+                            </span>
+                          </div>
+                          <div className="flex flex-col leading-tight">
+                            <p className="text-[13px] font-bold text-foreground group-hover:text-primary transition-colors">{exam.title}</p>
+                            <p className="text-[11px] font-bold text-[#B0AFA8]">{exam.type}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-2.5 text-secondary/70">
+                          <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                          <span className="text-[12px] font-bold">{exam.date}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-wrap gap-1.5">
+                          {exam.classes.slice(0, 2).map((c, i) => (
+                            <span
+                              key={i}
+                              className="text-[10px] font-black px-2.5 py-1 rounded-lg bg-white border border-slate-100 text-secondary"
+                            >
+                              {c}
+                            </span>
+                          ))}
+                          {exam.classes.length > 2 && (
+                            <span className="text-[10px] font-black px-2 py-1 rounded-lg bg-[#F7F8F4] text-[#B0AFA8]">
+                              +{exam.classes.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className={cn(
+                          "inline-flex items-center px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tight border",
+                          getStatusStyles(exam.status)
+                        )}>
+                          {exam.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-center">
+                        {exam.avgScore ? (
+                          <div className="flex flex-col items-center">
+                            <span className="text-[14px] font-black text-secondary">{exam.avgScore}%</span>
+                            <div className="w-12 h-1 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+                              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${exam.avgScore}%` }} />
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] font-bold text-slate-200 italic">N/A</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <button className="size-8 rounded-lg hover:bg-slate-50 text-[#B0AFA8] hover:text-secondary transition-all">
+                          <span className="material-symbols-outlined text-xl">more_vert</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

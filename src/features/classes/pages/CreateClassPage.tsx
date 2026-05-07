@@ -13,10 +13,10 @@ export const CreateClassPage = () => {
     const [showSuccess, setShowSuccess] = useState(false);
 
     const mockStudents = [
-        { id: 1, name: "Aavya S.",  grade: "Grade 10", img: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=100" },
-        { id: 2, name: "Ishaan K.", grade: "Grade 10", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" },
-        { id: 3, name: "Meera V.",  grade: "Grade 10", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" },
-        { id: 4, name: "Arjun T.",  grade: "Grade 10", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100" },
+        { id: 1, name: "Aavya S.",  grade: "Grade 10", img: "/Avatar/Female Avatar Age10.png" },
+        { id: 2, name: "Ishaan K.", grade: "Grade 10", img: "/Avatar/Male Avatar Age10.png" },
+        { id: 3, name: "Meera V.",  grade: "Grade 10", img: "/Avatar/Female Avatar Age11.png" },
+        { id: 4, name: "Arjun T.",  grade: "Grade 10", img: "/Avatar/Male Avatar Age11.png" },
     ];
 
     const toggleStudent = (student: any) => {

@@ -21,7 +21,7 @@ export const DirectoryPage = () => {
       performance: 96,
       auraScore: 98.4,
       status: "Active",
-      img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
+      img: "/Avatar/Female Avatar Age35.png",
       joiningDate: "12 Oct 2022",
       uid: "ananya-i",
     },
@@ -33,7 +33,7 @@ export const DirectoryPage = () => {
       performance: 88,
       auraScore: 91.2,
       status: "Remote",
-      img: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age35.png",
       joiningDate: "05 Jan 2023",
       uid: "rishi-d",
     },
@@ -45,7 +45,7 @@ export const DirectoryPage = () => {
       performance: 92,
       auraScore: 94.5,
       status: "Active",
-      img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop",
+      img: "/Avatar/Female Avatar Age38.png",
       joiningDate: "20 Mar 2021",
       uid: "pooja-t",
     },
@@ -57,7 +57,7 @@ export const DirectoryPage = () => {
       performance: 79,
       auraScore: 82.2,
       status: "On Leave",
-      img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age38.png",
       joiningDate: "15 Jul 2020",
       uid: "arvind-s",
     },
@@ -78,7 +78,7 @@ export const DirectoryPage = () => {
       phone: "+91 98472-11002",
       section: "A",
       status: "Active",
-      img: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=400&h=400&fit=crop",
+      img: "/Avatar/Female Avatar Age17.png",
       uid: "aavya-s",
     },
     {
@@ -95,7 +95,7 @@ export const DirectoryPage = () => {
       phone: "+91 98765-43211",
       section: "B",
       status: "At Risk",
-      img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age16.png",
       uid: "ishaan-i",
     },
     {
@@ -112,7 +112,7 @@ export const DirectoryPage = () => {
       phone: "+91 99887-76655",
       section: "A",
       status: "Active",
-      img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
+      img: "/Avatar/Female Avatar Age16.png",
       uid: "mira-patel",
     },
     {
@@ -129,7 +129,7 @@ export const DirectoryPage = () => {
       phone: "+91 91234-56788",
       section: "C",
       status: "Graduated",
-      img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age15.png",
       uid: "vedant-kulkarni",
     },
     {
@@ -146,7 +146,7 @@ export const DirectoryPage = () => {
       phone: "+91 99887-76644",
       section: "A",
       status: "Active",
-      img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
+      img: "/Avatar/Female Avatar Age18.png",
       uid: "sanya-g",
     },
     {
@@ -163,7 +163,7 @@ export const DirectoryPage = () => {
       phone: "+91 94455-66778",
       section: "B",
       status: "Active",
-      img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age17.png",
       uid: "arjun-rao",
     },
     {
@@ -180,7 +180,7 @@ export const DirectoryPage = () => {
       phone: "+91 98888-77777",
       section: "C",
       status: "Active",
-      img: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&h=400&fit=crop",
+      img: "/Avatar/Female Avatar Age15.png",
       uid: "diya-m",
     },
     {
@@ -197,7 +197,7 @@ export const DirectoryPage = () => {
       phone: "+91 97777-66666",
       section: "B",
       status: "At Risk",
-      img: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age14.png",
       uid: "rohan-das",
     },
   ]);
@@ -216,7 +216,7 @@ export const DirectoryPage = () => {
       route: "North Corridor",
       experience: "8 Years",
       joiningDate: "Aug 15, 2016",
-      img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age45.png",
       uid: "driver-1",
     },
     {
@@ -233,7 +233,7 @@ export const DirectoryPage = () => {
       route: "East Extension",
       experience: "5 Years",
       joiningDate: "July 20, 2019",
-      img: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age42.png",
       uid: "driver-2",
     },
     {
@@ -250,7 +250,7 @@ export const DirectoryPage = () => {
       route: "West Hub",
       experience: "12 Years",
       joiningDate: "Aug 10, 2012",
-      img: "https://images.unsplash.com/photo-1463453091185-61582044d556?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age47.png",
       uid: "driver-3",
     },
     {
@@ -267,7 +267,7 @@ export const DirectoryPage = () => {
       route: "Central Loop",
       experience: "4 Years",
       joiningDate: "Sept 12, 2020",
-      img: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age41.png",
       uid: "driver-4",
     },
     {
@@ -284,7 +284,7 @@ export const DirectoryPage = () => {
       route: "South Sector",
       experience: "3 Years",
       joiningDate: "June 05, 2021",
-      img: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age43.png",
       uid: "driver-5",
     },
     {
@@ -301,7 +301,7 @@ export const DirectoryPage = () => {
       route: "Highland Route",
       experience: "10 Years",
       joiningDate: "Jan 15, 2014",
-      img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age44.png",
       uid: "driver-6",
     },
     {
@@ -318,7 +318,7 @@ export const DirectoryPage = () => {
       route: "Coastal Road",
       experience: "7 Years",
       joiningDate: "May 20, 2017",
-      img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
+      img: "/Avatar/Male Avatar Age46.png",
       uid: "driver-7",
     },
   ]);
@@ -354,13 +354,13 @@ export const DirectoryPage = () => {
           subtitle="Manage students, teachers and institutional profiles"
           actions={
             <div className="flex gap-3">
-                <button
-                  onClick={() => setShowBulkModal(true)}
-                  className="btn-outline gap-2"
-                >
-                  <span className="material-symbols-outlined text-sm">upload_file</span>
-                  Import List
-                </button>
+              <button
+                onClick={() => setShowBulkModal(true)}
+                className="btn-outline gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">upload_file</span>
+                Import List
+              </button>
             </div>
           }
         />
@@ -478,40 +478,42 @@ export const DirectoryPage = () => {
           </div>
         )}
 
-        <div className="px-8 border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30">
-          <div className="flex gap-10 overflow-x-auto no-scrollbar">
-            {[
-              { id: "staff", label: "Staff", icon: "badge" },
-              { id: "students", label: "Students", icon: "group" },
-              { id: "drivers", label: "Drivers", icon: "local_shipping" },
-            ].map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => navigate(`/directory/${tab.id}`)}
-                  className={cn(
-                    "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
-                    isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
-                  )}
-                >
-                  <span className={cn(
-                    "material-symbols-outlined text-[20px] transition-all",
-                    isActive ? "text-primary" : ""
-                  )} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
-                    {tab.icon}
-                  </span>
-                  {tab.label}
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full shadow-[0_-2px_8px_rgba(217,234,133,0.4)]"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                </button>
-              );
-            })}
+        <div className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+          <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+            <div className="flex gap-10 overflow-x-auto no-scrollbar">
+              {[
+                { id: "staff", label: "Staff", icon: "badge" },
+                { id: "students", label: "Students", icon: "group" },
+                { id: "drivers", label: "Drivers", icon: "local_shipping" },
+              ].map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => navigate(`/directory/${tab.id}`)}
+                    className={cn(
+                      "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
+                      isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
+                    )}
+                  >
+                    <span className={cn(
+                      "material-symbols-outlined text-[20px] transition-all",
+                      isActive ? "text-primary" : ""
+                    )} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
+                      {tab.icon}
+                    </span>
+                    {tab.label}
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full shadow-[0_-2px_8px_rgba(217,234,133,0.4)]"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { TopBar } from "../../../components/Header";
 import { ProgramCard } from "../components/ProgramCard";
 import { cn } from "../../../lib/utils";
 import { StatCard } from "../../../components/StatCard";
 
 export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+
   const programs = [
     {
       name: "Regional Science Fair 2024",
@@ -68,97 +71,66 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   ];
 
   return (
-    <div
-      className={cn(
-        "flex-1 flex flex-col overflow-hidden bg-white",
-        !isHubChild && "h-screen",
-      )}
-    >
+    <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#FDFCFB] relative", !isHubChild && "h-screen")}>
       {!isHubChild && (
         <TopBar
           title="Programs"
           subtitle="Explore student enrichment and school initiatives"
           actions={
-            <>
-              <button className="px-4 py-2 bg-white border border-slate-100 rounded-xl flex items-center gap-2 text-[13px] font-semibold text-[#444441] hover:bg-[#F7F8F4] transition-colors">
-                <span className="material-symbols-outlined text-lg">
-                  auto_graph
-                </span>
+            <div className="flex gap-3">
+              <button className="btn-secondary h-11 px-6 rounded-[14px] text-[13px] font-bold flex items-center gap-2 transition-all">
+                <span className="material-symbols-outlined text-[20px]">auto_graph</span>
                 View Reports
               </button>
-              <button className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30">
-                <span className="material-symbols-outlined text-sm">
-                  add_circle
-                </span>
+              <button className="btn-primary h-11 px-6 rounded-[14px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/10">
+                <span className="material-symbols-outlined text-[20px]">add_circle</span>
                 Create Program
               </button>
-            </>
+            </div>
           }
         />
       )}
 
-      <div className="flex-1 overflow-y-auto mx-auto px-6 lg:px-10 py-6 max-w-[1400px] space-y-8">
-        {/* Filters and Stats Summary */}
-        <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              label="Total Programs"
-              value="12"
-              icon="folder"
-            />
-            <StatCard
-              label="Active Now"
-              value="8"
-              icon="bolt"
-            />
-            <StatCard
-              label="Total Participants"
-              value="540"
-              icon="group"
-            />
-            <StatCard
-              label="Avg. Completion"
-              value="64%"
-              icon="donut_large"
-            />
-          </div>
+      <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 py-8">
+        <div className="max-w-[1400px] mx-auto space-y-8">
+          {/* Filters and Stats Summary */}
+          <div className="flex flex-col gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 [&>*]:shadow-none">
+              <StatCard label="Total Programs" value="12" icon="folder" iconBg="bg-blue-50" />
+              <StatCard label="Active Now" value="8" icon="bolt" iconBg="bg-amber-50" />
+              <StatCard label="Total Participants" value="540" icon="group" iconBg="bg-emerald-50" />
+              <StatCard label="Next Milestone" value="In 2 Days" icon="event_upcoming" iconBg="bg-indigo-50" />
+            </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-wrap gap-4 items-center">
-            <div className="flex-1 min-w-[250px]">
-              <div className="relative group">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-foreground transition-colors">
-                  search
-                </span>
+            <div className="flex items-center justify-between gap-4">
+              <div className="relative flex-1 max-w-md group">
+                <div className="absolute inset-0 bg-white border border-slate-100 rounded-[14px] transition-all group-focus-within:border-primary/50 group-focus-within:ring-4 group-focus-within:ring-primary/5" />
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-primary transition-colors text-[20px] z-10">search</span>
                 <input
-                  className="w-full bg-[#F7F8F4] border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary text-foreground placeholder-[#B0AFA8]"
-                  placeholder="Search programs..."
                   type="text"
+                  placeholder="Search programs or categories..."
+                  className="w-full h-11 bg-transparent pl-12 pr-4 text-[13px] font-semibold text-foreground outline-none relative z-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <select className="bg-white border border-slate-100 rounded-xl text-sm px-3 py-2 text-foreground font-bold focus:ring-primary outline-none">
-                <option>All Categories</option>
-                <option>Academic</option>
-                <option>Sports</option>
-                <option>Creative Arts</option>
-                <option>Technology</option>
-              </select>
-              <select className="bg-white border border-slate-100 rounded-xl text-sm px-3 py-2 text-foreground font-bold focus:ring-primary outline-none">
-                <option>Status</option>
-                <option>Active</option>
-                <option>Planning</option>
-                <option>Completed</option>
-              </select>
+              <div className="flex items-center gap-2">
+                <button className="h-11 px-5 rounded-[14px] bg-white border border-slate-100 text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-all flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">tune</span>
+                  Categories
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Programs Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8">
-          {programs.map((program, i) => (
-            <ProgramCard key={i} {...program} onClick={() => { }} />
-          ))}
+          {/* Programs Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {programs
+              .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.category.toLowerCase().includes(searchTerm.toLowerCase()))
+              .map((program, i) => (
+                <ProgramCard key={i} {...program} />
+              ))}
+          </div>
         </div>
       </div>
     </div>

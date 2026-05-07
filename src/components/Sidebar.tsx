@@ -164,7 +164,7 @@ export const Sidebar = () => {
                     <div
                         className="size-10 rounded-full bg-slate-200 bg-cover bg-center ring-2 ring-white shadow-sm"
                         style={{
-                            backgroundImage: "url('https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop')",
+                            backgroundImage: "url('/Avatar/Male Avatar Age40.png')",
                         }}
                     ></div>
                     <div className="flex flex-col overflow-hidden">

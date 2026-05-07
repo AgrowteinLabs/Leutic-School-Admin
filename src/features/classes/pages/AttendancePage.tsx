@@ -24,32 +24,32 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
   // --- Student Data ---
   const allStudents = [
-    { id: "STU-001", rollNo: "01", name: "Aavya Sharma", status: "Present", img: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-002", rollNo: "02", name: "Isha Kapoor", status: "Absent", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-003", rollNo: "03", name: "Kabir Mehra", status: "Present", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-004", rollNo: "04", name: "Sneha Reddy", status: "Present", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-005", rollNo: "05", name: "Ishaan Khatri", status: "Present", img: "https://images.unsplash.com/photo-1542343633-ce3256525ee3?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-006", rollNo: "06", name: "Meera Varma", status: "Present", img: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-007", rollNo: "07", name: "Sanya Gupta", status: "Present", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-008", rollNo: "08", name: "Arjun Talwar", status: "Present", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-009", rollNo: "09", name: "Diya Malhotra", status: "Present", img: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-010", rollNo: "10", name: "Rohan Prasad", status: "Present", img: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-011", rollNo: "11", name: "Ananya Iyer", status: "Present", img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-012", rollNo: "12", name: "Vikram Seth", status: "Absent", img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-013", rollNo: "13", name: "Pooja Hegde", status: "Present", img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-014", rollNo: "14", name: "Rahul Bose", status: "Present", img: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=400&fit=crop", class: "Grade 10-A" },
-    { id: "STU-015", rollNo: "15", name: "Zoya Akhtar", status: "Present", img: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=400&h=400&fit=crop", class: "Grade 10-A" },
+    { id: "STU-001", rollNo: "01", name: "Aavya Sharma", status: "Present", img: "/Avatar/Female Avatar Age15.png", class: "Grade 10-A" },
+    { id: "STU-002", rollNo: "02", name: "Isha Kapoor", status: "Absent", img: "/Avatar/Female Avatar Age16.png", class: "Grade 10-A" },
+    { id: "STU-003", rollNo: "03", name: "Kabir Mehra", status: "Present", img: "/Avatar/Male Avatar Age15.png", class: "Grade 10-A" },
+    { id: "STU-004", rollNo: "04", name: "Sneha Reddy", status: "Present", img: "/Avatar/Female Avatar Age14.png", class: "Grade 10-A" },
+    { id: "STU-005", rollNo: "05", name: "Ishaan Khatri", status: "Present", img: "/Avatar/Male Avatar Age16.png", class: "Grade 10-A" },
+    { id: "STU-006", rollNo: "06", name: "Meera Varma", status: "Present", img: "/Avatar/Female Avatar Age15.png", class: "Grade 10-A" },
+    { id: "STU-007", rollNo: "07", name: "Sanya Gupta", status: "Present", img: "/Avatar/Female Avatar Age14.png", class: "Grade 10-A" },
+    { id: "STU-008", rollNo: "08", name: "Arjun Talwar", status: "Present", img: "/Avatar/Male Avatar Age17.png", class: "Grade 10-A" },
+    { id: "STU-009", rollNo: "09", name: "Diya Malhotra", status: "Present", img: "/Avatar/Female Avatar Age15.png", class: "Grade 10-A" },
+    { id: "STU-010", rollNo: "10", name: "Rohan Prasad", status: "Present", img: "/Avatar/Male Avatar Age14.png", class: "Grade 10-A" },
+    { id: "STU-011", rollNo: "11", name: "Ananya Iyer", status: "Present", img: "/Avatar/Female Avatar Age16.png", class: "Grade 10-A" },
+    { id: "STU-012", rollNo: "12", name: "Vikram Seth", status: "Absent", img: "/Avatar/Male Avatar Age15.png", class: "Grade 10-A" },
+    { id: "STU-013", rollNo: "13", name: "Pooja Hegde", status: "Present", img: "/Avatar/Female Avatar Age15.png", class: "Grade 10-A" },
+    { id: "STU-014", rollNo: "14", name: "Rahul Bose", status: "Present", img: "/Avatar/Male Avatar Age16.png", class: "Grade 10-A" },
+    { id: "STU-015", rollNo: "15", name: "Zoya Akhtar", status: "Present", img: "/Avatar/Female Avatar Age14.png", class: "Grade 10-A" },
   ];
 
   const [students, setStudents] = useState(allStudents);
 
   // --- Staff Data ---
   const allStaff = [
-    { id: "TCH-001", name: "Dr. Lakshmi K.", status: "On leave", role: "Math Lead", substitution: "Ms. Saritha", reason: "Medical", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop" },
-    { id: "TCH-002", name: "Mr. Marcus R.", status: "Present", role: "Science Head", img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop" },
-    { id: "TCH-003", name: "Ms. Elena R.", status: "Present", role: "English Dept", img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop" },
-    { id: "TCH-004", name: "Prof. Alan T.", status: "Half day", role: "Tech Lead", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop" },
-    { id: "TCH-005", name: "Dr. Sarah J.", status: "Late", role: "Arts Head", img: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&h=400&fit=crop" },
+    { id: "TCH-001", name: "Dr. Lakshmi K.", status: "On leave", role: "Math Lead", substitution: "Ms. Saritha", reason: "Medical", img: "/Avatar/Female Avatar Age35.png" },
+    { id: "TCH-002", name: "Mr. Marcus R.", status: "Present", role: "Science Head", img: "/Avatar/Male Avatar Age38.png" },
+    { id: "TCH-003", name: "Ms. Elena R.", status: "Present", role: "English Dept", img: "/Avatar/Female Avatar Age32.png" },
+    { id: "TCH-004", name: "Prof. Alan T.", status: "Half day", role: "Tech Lead", img: "/Avatar/Male Avatar Age42.png" },
+    { id: "TCH-005", name: "Dr. Sarah J.", status: "Late", role: "Arts Head", img: "/Avatar/Female Avatar Age34.png" },
   ];
 
   const [staff, setStaff] = useState(allStaff);
@@ -129,41 +129,43 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
       )}
 
       {/* Tabs Navigation */}
-      <div className="px-8 border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
-        <div className="flex gap-8 overflow-x-auto no-scrollbar">
-          {[
-            { id: "students", label: "Students", icon: "group" },
-            { id: "staff", label: "Staff", icon: "badge" },
-          ].map((t) => {
-            const isActive = activeTab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => navigate(`/attendance/${t.id}`)}
-                className={cn(
-                  "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
-                  isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
-                )}
-              >
-                <span className={cn("material-symbols-outlined text-[20px] transition-all", isActive ? "text-primary" : "")} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
-                  {t.icon}
-                </span>
-                {t.label}
-                {isActive && (
-                  <motion.div
-                    layoutId="attendanceTab"
-                    className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </button>
-            );
-          })}
+      <div className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+          <div className="flex gap-8 overflow-x-auto no-scrollbar">
+            {[
+              { id: "students", label: "Students", icon: "group" },
+              { id: "staff", label: "Staff", icon: "badge" },
+            ].map((t) => {
+              const isActive = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => navigate(`/attendance/${t.id}`)}
+                  className={cn(
+                    "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
+                    isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
+                  )}
+                >
+                  <span className={cn("material-symbols-outlined text-[20px] transition-all", isActive ? "text-primary" : "")} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
+                    {t.icon}
+                  </span>
+                  {t.label}
+                  {isActive && (
+                    <motion.div
+                      layoutId="attendanceTab"
+                      className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pb-10">
-        <div className="max-w-[1400px] mx-auto space-y-6 pt-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 py-8">
+        <div className="max-w-[1400px] mx-auto space-y-8">
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 [&>*]:shadow-none [&>*]:hover:shadow-none">
             <StatCard
