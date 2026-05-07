@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
@@ -8,6 +8,7 @@ import { TablePagination } from "../../../components/TablePagination";
 import { SideDrawer } from "../../../components/SideDrawer";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { AppDatePicker } from "../../../components/AppDatePicker";
+import { AppTimePicker } from "../../../components/AppTimePicker";
 
 // Types
 interface Subject {
@@ -122,6 +123,15 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   ]);
   const [showSchedulePanel, setShowSchedulePanel] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
+  const configPanelRef = useRef<HTMLDivElement>(null);
+  const timetableRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (showSchedulePanel) {
+      // Wait for the peak of the weighted spring before scrolling
+      const t = setTimeout(() => configPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 300);
+      return () => clearTimeout(t);
+    }
+  }, [showSchedulePanel]);
   const [editingPeriod, setEditingPeriod] = useState<number | null>(null);
   const timeToMins = (t: string) => {
     const [h, m] = t.split(':').map(Number);
@@ -434,7 +444,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pt-4 pb-10">
         <div className="max-w-[1400px] mx-auto space-y-6">
 
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px] overflow-hidden">
+          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px]">
 
             {/* Header / Search Area (Hidden for Timetable to maximize space) */}
             {activeTab !== "timetable" && (
@@ -778,10 +788,9 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
 
                   {activeTab === "timetable" && (
-                    <div className="flex flex-col h-full bg-[#FDFCFB]/50 backdrop-blur-sm">
+                    <div className="flex flex-col bg-[#FDFCFB]/50 backdrop-blur-sm">
                       {/* Hierarchical Section Selector (Sleek Typographic Index) */}
-                      <div className="px-10 py-8 bg-white border-b border-slate-100 flex flex-col gap-10 sticky top-0 z-10">
-                        <div className="flex flex-col gap-12">
+                      <div className="px-10 py-8 bg-white border-b border-slate-100 flex flex-col gap-12">
                           {/* 1. Academic Index (Grades) */}
                           <div className="flex flex-col gap-4">
                             <div className="flex items-center gap-3">
@@ -800,7 +809,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                     "text-[15px] transition-all relative py-1",
                                     selectedTimetableGrade === config.grade
                                       ? "font-semibold text-secondary"
-                                      : "font-normal text-slate-400 hover:text-secondary"
+                                      : "font-medium text-slate-400 hover:text-secondary"
                                   )}
                                 >
                                   {config.grade}
@@ -835,170 +844,193 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                     {s.id}
                                   </button>
                                 ))}
-                            </div>
                           </div>
                         </div>
+                      </div>
 
-                        {/* 3. Selection Summary Overlay */}
-                        {selectedTimetableSection && (
-                          <div className="flex items-center justify-between pt-6 border-t border-slate-50 animate-in fade-in slide-in-from-top-2 duration-500">
-                            <div className="flex items-center gap-4">
-                              <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                                <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-[11px] font-bold text-[#B0AFA8] tracking-tight">Active View</span>
-                                <span className="text-[14px] font-bold text-secondary">
-                                  {selectedTimetableGrade} — Section {selectedTimetableSection.split("-")[1]}
-                                </span>
-                              </div>
+                      {/* 3. Selection Summary Overlay (Independent Sticky Bar) */}
+                      {selectedTimetableSection && (
+                        <div className="bg-white border-b border-slate-100 px-10 py-4 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+                          <div className="flex items-center gap-4">
+                            <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                              <span className="material-symbols-outlined text-[20px]">check_circle</span>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => { setShowSchedulePanel(prev => !prev); setConfigSaved(false); }}
-                                className={cn(
-                                  "h-10 px-5 rounded-xl text-[12px] font-bold flex items-center gap-2 border transition-all",
-                                  showSchedulePanel
-                                    ? "bg-secondary text-white border-secondary"
-                                    : configSaved
-                                      ? "bg-primary/10 text-primary border-primary/20"
-                                      : "bg-white text-secondary border-[#EBE8E0] hover:border-secondary/30"
-                                )}
-                              >
-                                <span className="material-symbols-outlined text-[18px]"
-                                  style={{ fontVariationSettings: configSaved && !showSchedulePanel ? "'FILL' 1" : "'FILL' 0" }}>
-                                  {configSaved && !showSchedulePanel ? 'check_circle' : 'tune'}
-                                </span>
-                                <span>{configSaved && !showSchedulePanel ? 'Configured' : 'Configure'}</span>
-                              </button>
-                              <button className="h-10 px-6 rounded-xl bg-primary text-white text-[12px] font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                                <span className="material-symbols-outlined text-[18px]">save</span>
-                                <span>Save Schedule</span>
-                              </button>
+                            <div className="flex flex-col text-left">
+                              <span className="text-[11px] font-bold text-[#B0AFA8] tracking-tight">Active View</span>
+                              <span className="text-[14px] font-bold text-secondary">
+                                {selectedTimetableGrade} — Section {selectedTimetableSection.split("-")[1]}
+                              </span>
                             </div>
                           </div>
-                        )}
-                      </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => setShowSchedulePanel(!showSchedulePanel)}
+                              className={cn(
+                                "h-10 px-6 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all",
+                                showSchedulePanel
+                                  ? "bg-secondary text-white shadow-inner"
+                                  : "bg-white border border-slate-100 text-[#B0AFA8] hover:bg-[#F7F8F4] hover:text-foreground hover:shadow-sm"
+                              )}
+                            >
+                              <span className="material-symbols-outlined text-[18px]">
+                                {showSchedulePanel ? 'expand_less' : 'settings_input_component'}
+                              </span>
+                              <span>{configSaved && !showSchedulePanel ? 'Configured' : 'Configure'}</span>
+                            </button>
+                            <button className="btn-primary gap-2">
+                              <span className="material-symbols-outlined text-[18px]">save</span>
+                              <span>Save Schedule</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Schedule Config Panel */}
                       <AnimatePresence>
                         {showSchedulePanel && (
                           <motion.div
+                            ref={configPanelRef}
                             key="cfg-panel"
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+                            initial={{ height: 0, opacity: 0, y: -15 }}
+                            animate={{
+                              height: 'auto',
+                              opacity: 1,
+                              y: 0,
+                              transition: {
+                                height: { type: 'spring', stiffness: 90, damping: 24, mass: 1.2 },
+                                opacity: { duration: 0.4, ease: 'easeOut' },
+                                y: { type: 'spring', stiffness: 90, damping: 24, mass: 1.2 }
+                              }
+                            }}
+                            exit={{
+                              height: 0,
+                              opacity: 0,
+                              y: -10,
+                              transition: {
+                                height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+                                opacity: { duration: 0.2 },
+                                y: { duration: 0.25 }
+                              }
+                            }}
                             style={{ overflow: 'hidden' }}
+                            className="bg-[#FDFCFB]/50 border-b border-slate-100/50"
                           >
-                            <div className="px-8 py-6 border-b border-[#EBE8E0] bg-[#F8F7F4]">
-                              <div className="flex flex-wrap gap-3 items-start">
-
-                                {/* Schedule card */}
-                                <div className="bg-white rounded-[20px] border border-[#EBE8E0] p-5 shadow-sm flex flex-col gap-4">
-                                  <div className="flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[15px] text-primary/50">schedule</span>
-                                    <span className="text-[12px] font-semibold text-secondary tracking-tight">Schedule</span>
-                                  </div>
-                                  {/* Working days */}
-                                  <div className="flex flex-col gap-1.5">
-                                    <span className="text-[10px] font-medium text-slate-400">Working days</span>
-                                    <div className="flex gap-1.5">
-                                      {ALL_WEEK.map(d => {
-                                        const isActive = activeDays.includes(d);
-                                        const isSun = d === "Sunday";
-                                        return (
-                                          <button key={d}
-                                            onClick={() => setActiveDays(prev =>
-                                              prev.includes(d)
-                                                ? prev.length > 1 ? prev.filter(x => x !== d) : prev
-                                                : [...ALL_WEEK.filter(w => [...prev, d].includes(w))]
-                                            )}
-                                            className={cn(
-                                              "h-8 px-2.5 rounded-xl text-[10px] font-semibold border transition-all",
-                                              isActive
-                                                ? isSun ? "bg-rose-500 text-white border-rose-500 shadow-sm" : "bg-secondary text-white border-secondary shadow-sm"
-                                                : "bg-[#F8F7F4] border-[#EBE8E0] text-slate-400 hover:border-slate-300 hover:text-secondary/60"
-                                            )}>
-                                            {d.slice(0, 3)}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-end gap-3 flex-wrap">
-                                    <div className="flex flex-col gap-1.5">
-                                      <span className="text-[10px] font-medium text-slate-400">School starts</span>
-                                      <input type="time" value={scheduleConfig.schoolStart}
-                                        onChange={(e) => setScheduleConfig(prev => ({ ...prev, schoolStart: e.target.value }))}
-                                        className="h-9 px-3 rounded-xl border border-[#EBE8E0] text-[12px] font-semibold text-secondary outline-none focus:border-primary/40 bg-[#F8F7F4] w-[128px] transition-colors" />
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                      <span className="text-[10px] font-medium text-slate-400">Period duration</span>
-                                      <div className="flex items-center gap-2">
-                                        <input type="number" min={5} max={180} value={scheduleConfig.defaultDuration}
-                                          onChange={(e) => setScheduleConfig(prev => ({ ...prev, defaultDuration: parseInt(e.target.value) || 60 }))}
-                                          disabled={!scheduleConfig.uniformDuration}
-                                          className="h-9 w-16 px-2 text-center rounded-xl border border-[#EBE8E0] text-[12px] font-semibold text-secondary outline-none focus:border-primary/40 bg-[#F8F7F4] disabled:opacity-40 transition-colors" />
-                                        <span className="text-[11px] text-slate-400 font-medium">min</span>
-                                      </div>
-                                    </div>
-                                    <button onClick={() => setScheduleConfig(prev => ({ ...prev, uniformDuration: !prev.uniformDuration }))}
-                                      className={cn("h-9 px-4 rounded-xl text-[11px] font-semibold border transition-all flex items-center gap-1.5",
-                                        scheduleConfig.uniformDuration
-                                          ? "bg-[#F8F7F4] border-[#EBE8E0] text-slate-400 hover:border-slate-300"
-                                          : "bg-primary/10 border-primary/20 text-primary")}>
-                                      <span className="material-symbols-outlined text-[14px]">
-                                        {scheduleConfig.uniformDuration ? "linear_scale" : "ssid_chart"}
-                                      </span>
-                                      {scheduleConfig.uniformDuration ? "Uniform" : "Variable"}
-                                    </button>
-                                  </div>
-                                  {!scheduleConfig.uniformDuration && (
-                                    <div className="flex flex-wrap gap-2 pt-3 border-t border-[#F0EDE8]">
-                                      {periods.map(p => (
-                                        <div key={p} className="flex flex-col items-center gap-0.5">
-                                          <span className="text-[9px] text-slate-400 font-semibold">P{p}</span>
-                                          <input type="number" min={5} max={180}
-                                            value={periodDurations[p] || scheduleConfig.defaultDuration}
-                                            onChange={(e) => setPeriodDurations(prev => ({ ...prev, [p]: parseInt(e.target.value) || scheduleConfig.defaultDuration }))}
-                                            className="h-8 w-12 text-center rounded-lg border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/40 bg-[#F8F7F4]" />
-                                          <span className="text-[8px] text-slate-300">m</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
+                            <div className="px-8 py-12">
+                              <div className="flex flex-col gap-12">
+                                {/* Curriculum Configuration Section */}
+                                <div className="flex items-center gap-2.5">
+                                  <span className="material-symbols-outlined text-[18px] text-primary">calendar_view_day</span>
+                                  <span className="text-[16px] font-bold text-foreground tracking-tight">Curriculum Configuration</span>
                                 </div>
-
-                                {/* Periods card */}
-                                <div className="bg-white rounded-[20px] border border-[#EBE8E0] p-5 shadow-sm flex flex-col gap-4">
-                                  <div className="flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[15px] text-primary/50">grid_view</span>
-                                    <span className="text-[12px] font-semibold text-secondary tracking-tight">Periods</span>
-                                  </div>
-                                  <div className="flex flex-col gap-1.5">
-                                    <span className="text-[10px] font-medium text-slate-400">Count per day</span>
-                                    <div className="flex items-center gap-2.5">
-                                      <button onClick={() => setNumPeriods(p => Math.max(1, p - 1))}
-                                        className="size-9 rounded-xl border border-[#EBE8E0] text-slate-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center text-[18px] font-bold bg-[#F8F7F4]">−</button>
-                                      <div className="flex flex-col items-center w-10">
-                                        <span className="text-[26px] font-bold text-secondary leading-none">{numPeriods}</span>
-                                        <span className="text-[9px] text-slate-300 font-medium mt-0.5">periods</span>
-                                      </div>
-                                      <button onClick={() => setNumPeriods(p => Math.min(16, p + 1))}
-                                        className="size-9 rounded-xl border border-[#EBE8E0] text-slate-400 hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all flex items-center justify-center text-[18px] font-bold bg-[#F8F7F4]">+</button>
-                                    </div>
+                                {/* Working days */}
+                                <div className="flex flex-col gap-2.5">
+                                  <span className="text-[12px] font-semibold text-[#B0AFA8]">Operational days</span>
+                                  <div className="flex flex-wrap gap-2">
+                                    {ALL_WEEK.map(d => {
+                                      const isActive = activeDays.includes(d);
+                                      const isSun = d === "Sunday";
+                                      return (
+                                        <button key={d}
+                                          onClick={() => setActiveDays(prev =>
+                                            prev.includes(d)
+                                              ? prev.length > 1 ? prev.filter(x => x !== d) : prev
+                                              : [...ALL_WEEK.filter(w => [...prev, d].includes(w))]
+                                          )}
+                                          className={cn(
+                                            "h-9 px-4 rounded-lg text-[11px] font-bold border transition-all",
+                                            isActive
+                                              ? isSun ? "bg-rose-500 text-white border-rose-500" : "bg-secondary text-white border-secondary"
+                                              : "bg-[#F7F8F4] border-slate-100 text-[#B0AFA8] hover:border-slate-200"
+                                          )}>
+                                          {d.slice(0, 3)}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
                                 </div>
 
-                                {/* Day Overrides card */}
-                                <div className="bg-white rounded-[20px] border border-[#EBE8E0] p-5 shadow-sm flex flex-col gap-4 min-w-[240px]">
-                                  <div className="flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[15px] text-primary/50">calendar_today</span>
-                                    <span className="text-[12px] font-semibold text-secondary tracking-tight">Day Overrides</span>
+                                <div className="flex items-end gap-14 flex-wrap">
+                                  <div className="flex flex-col gap-2.5">
+                                    <span className="text-[12px] font-semibold text-[#B0AFA8]">School starts</span>
+                                    <AppTimePicker
+                                      value={scheduleConfig.schoolStart}
+                                      onChange={(time) => setScheduleConfig(prev => ({ ...prev, schoolStart: time }))}
+                                      width="w-[130px]"
+                                    />
                                   </div>
                                   <div className="flex flex-col gap-2.5">
-                                    <p className="text-[10px] text-slate-400 leading-relaxed">Different period lengths for specific days.</p>
+                                    <span className="text-[12px] font-semibold text-[#B0AFA8]">Session duration</span>
+                                    <div className="flex items-center gap-2.5">
+                                      <input type="number" min={5} max={180} value={scheduleConfig.defaultDuration}
+                                        onChange={(e) => setScheduleConfig(prev => ({ ...prev, defaultDuration: parseInt(e.target.value) || 60 }))}
+                                        disabled={!scheduleConfig.uniformDuration}
+                                        className="h-10 w-16 px-3 text-center rounded-lg border border-slate-100 text-[13px] font-semibold text-foreground outline-none focus:border-primary/40 focus:bg-white bg-[#F7F8F4] disabled:opacity-40 transition-all" />
+                                      <span className="text-[12px] text-[#B0AFA8] font-bold">min</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-2.5">
+                                    <span className="text-[12px] font-semibold text-[#B0AFA8]">Daily periods</span>
+                                    <div className="flex items-center gap-1 h-10">
+                                      <button onClick={() => setNumPeriods(p => Math.max(1, p - 1))}
+                                        className="size-8 rounded-lg text-secondary hover:text-primary transition-all flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[20px]">remove</span>
+                                      </button>
+                                      <div className="flex items-center justify-center min-w-[28px]">
+                                        <span className="text-[16px] font-bold text-foreground leading-none">{numPeriods}</span>
+                                      </div>
+                                      <button onClick={() => setNumPeriods(p => Math.min(16, p + 1))}
+                                        className="size-8 rounded-lg text-secondary hover:text-primary transition-all flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[20px]">add</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-2.5">
+                                    <span className="text-[12px] font-semibold text-[#B0AFA8]">Duration type</span>
+                                    <div className="flex bg-[#F7F8F4] border border-slate-100 rounded-xl p-1 h-10 w-fit items-center">
+                                      <button
+                                        onClick={() => setScheduleConfig(prev => ({ ...prev, uniformDuration: true }))}
+                                        className={cn(
+                                          "h-full px-4 rounded-lg text-[12px] font-semibold transition-all flex items-center gap-2",
+                                          scheduleConfig.uniformDuration ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary"
+                                        )}
+                                      >
+                                        <span className="material-symbols-outlined text-[16px]">linear_scale</span>
+                                        Uniform
+                                      </button>
+                                      <button
+                                        onClick={() => setScheduleConfig(prev => ({ ...prev, uniformDuration: false }))}
+                                        className={cn(
+                                          "h-full px-4 rounded-lg text-[12px] font-semibold transition-all flex items-center gap-2",
+                                          !scheduleConfig.uniformDuration ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary"
+                                        )}
+                                      >
+                                        <span className="material-symbols-outlined text-[16px]">ssid_chart</span>
+                                        Variable
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                                {!scheduleConfig.uniformDuration && (
+                                  <div className="grid grid-cols-[repeat(auto-fill,minmax(60px,1fr))] gap-x-4 gap-y-3 pt-6 border-t border-slate-50">
+                                    {periods.map(p => (
+                                      <div key={p} className="flex flex-col items-center gap-1.5">
+                                        <span className="text-[11px] text-[#B0AFA8] font-semibold">P{p}</span>
+                                        <input type="number" min={5} max={180}
+                                          value={periodDurations[p] || scheduleConfig.defaultDuration}
+                                          onChange={(e) => setPeriodDurations(prev => ({ ...prev, [p]: parseInt(e.target.value) || scheduleConfig.defaultDuration }))}
+                                          className="h-10 w-14 text-center rounded-xl border border-slate-100 text-[13px] font-bold text-foreground outline-none focus:border-primary/40 bg-[#F7F8F4] focus:bg-white transition-all" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {/* Moved Day Overrides Here */}
+                                <div className="pt-6 border-t border-slate-50">
+                                  <div className="flex items-center gap-2.5 mb-4">
+                                    <span className="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
+                                    <span className="text-[13px] font-bold text-foreground">Day Overrides</span>
+                                  </div>
+                                  <div className="flex flex-col gap-3">
+                                    <p className="text-[11px] text-[#B0AFA8] font-medium leading-relaxed">Assign custom period lengths for specific operational days.</p>
                                     <div className="flex gap-1.5">
                                       {days.map(d => {
                                         const hasOverride = !!perDayDurations[d] && Object.keys(perDayDurations[d]).length > 0;
@@ -1008,36 +1040,40 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                               if (prev[d]) { const next = { ...prev }; delete next[d]; return next; }
                                               return { ...prev, [d]: {} };
                                             })}
-                                            className={cn("h-8 flex-1 rounded-xl text-[10px] font-semibold border transition-all",
-                                              hasOverride ? "bg-secondary text-white border-secondary shadow-sm" : "bg-[#F8F7F4] border-[#EBE8E0] text-slate-400 hover:border-slate-300 hover:text-secondary/60")}>
+                                            className={cn("h-8 flex-1 rounded-lg text-[10px] font-bold border transition-all",
+                                              hasOverride ? "bg-secondary text-white border-secondary" : "bg-[#F7F8F4] border-slate-100 text-[#B0AFA8] hover:border-slate-200")}>
                                             {d.slice(0, 3)}
                                           </button>
                                         );
                                       })}
                                     </div>
                                     {Object.keys(perDayDurations).map(day => (
-                                      <div key={day} className="bg-[#F8F7F4] rounded-xl border border-[#EBE8E0] px-3 py-2.5">
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className="text-[10px] font-semibold text-secondary">{day}</span>
-                                          <button onClick={() => setPerDayDurations(prev => { const n = { ...prev }; delete n[day]; return n; })} className="text-slate-300 hover:text-red-400 transition-colors">
-                                            <span className="material-symbols-outlined text-[13px]">close</span>
+                                      <div key={day} className="bg-white rounded-xl border border-slate-100/80 p-3 transition-colors">
+                                        <div className="flex items-center justify-between mb-3 px-0.5">
+                                          <div className="flex items-center gap-2">
+                                            <div className="size-1 rounded-full bg-primary/60" />
+                                            <span className="text-[12px] font-semibold text-foreground/80 tracking-tight">{day}</span>
+                                          </div>
+                                          <button onClick={() => setPerDayDurations(prev => { const n = { ...prev }; delete n[day]; return n; })}
+                                            className="text-[#B0AFA8] hover:text-rose-500 transition-all">
+                                            <span className="material-symbols-outlined text-[14px]">close</span>
                                           </button>
                                         </div>
-                                        <div className="flex flex-wrap gap-1.5">
+                                        <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-x-3 gap-y-2">
                                           {periods.map(p => {
                                             const baseDur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
                                             const val = perDayDurations[day]?.[p] ?? baseDur;
                                             const isDiff = perDayDurations[day]?.[p] !== undefined && perDayDurations[day][p] !== baseDur;
                                             return (
-                                              <div key={p} className="flex flex-col items-center gap-0.5">
-                                                <span className={cn("text-[8px] font-semibold", isDiff ? "text-primary" : "text-slate-400")}>P{p}</span>
+                                              <div key={p} className="flex flex-col items-center gap-1">
+                                                <span className={cn("text-[10px] font-semibold", isDiff ? "text-primary" : "text-[#B0AFA8]/60")}>P{p}</span>
                                                 <input type="number" min={5} max={180} value={val}
                                                   onChange={(e) => {
                                                     const v = parseInt(e.target.value) || baseDur;
                                                     setPerDayDurations(prev => ({ ...prev, [day]: { ...(prev[day] || {}), [p]: v } }));
                                                   }}
-                                                  className={cn("h-7 w-10 text-center rounded-lg border text-[10px] font-semibold outline-none bg-white", isDiff ? "border-primary/40 text-primary" : "border-[#EBE8E0] text-secondary")} />
-                                                <span className="text-[7px] text-slate-300">m</span>
+                                                  className={cn("h-10 w-14 text-center rounded-xl border text-[13px] font-bold outline-none transition-all",
+                                                    isDiff ? "border-primary/40 bg-primary/5 text-primary" : "border-slate-100 bg-[#F7F8F4] text-secondary focus:bg-white")} />
                                               </div>
                                             );
                                           })}
@@ -1047,157 +1083,161 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                   </div>
                                 </div>
 
-                                {/* Breaks card */}
-                                <div className="bg-white rounded-[20px] border border-[#EBE8E0] p-5 shadow-sm flex flex-col gap-4 flex-1 min-w-[340px]">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <span className="material-symbols-outlined text-[15px] text-primary/50">coffee</span>
-                                      <span className="text-[12px] font-semibold text-secondary tracking-tight">Breaks</span>
+                                {/* Breaks & Gaps Section */}
+                                <div className="pt-12 border-t border-slate-200/40">
+                                  <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center gap-2.5">
+                                      <span className="material-symbols-outlined text-[18px] text-primary">coffee</span>
+                                      <span className="text-[14px] font-bold text-foreground tracking-tight">Breaks & Gaps</span>
                                     </div>
                                     <button
                                       onClick={() => setBreakConfig(prev => [
                                         ...prev,
                                         { id: `b${Date.now()}`, period: periods[Math.floor(periods.length / 2)], placement: 'after', duration: 15, type: 'short', label: 'Short Break', days: [] }
                                       ])}
-                                      className="h-8 px-3 rounded-xl bg-primary/10 text-primary text-[11px] font-semibold flex items-center gap-1.5 hover:bg-primary/15 active:scale-[0.97] transition-all">
-                                      <span className="material-symbols-outlined text-[14px]">add</span>
-                                      Add break
+                                      className="h-9 px-4 rounded-xl text-secondary text-[12px] font-bold flex items-center gap-2 hover:bg-secondary/5 transition-all">
+                                      <span className="material-symbols-outlined text-[18px]">add</span>
+                                      Add New Break
                                     </button>
                                   </div>
+
                                   <div className="flex flex-col gap-2">
                                     {breakConfig.map(brk => {
-                                      const isOther = brk.type === 'other';
-                                      const isLunch = brk.type === 'lunch';
-                                      const iconName = isOther ? 'timer' : isLunch ? 'restaurant' : 'free_breakfast';
-                                      const iconCls = isOther ? "text-violet-400" : isLunch ? "text-amber-400" : "text-slate-400";
-                                      const stripCls = isOther ? "bg-violet-50/60 border-violet-100" : isLunch ? "bg-amber-50/60 border-amber-100" : "bg-[#F8F7F4] border-[#EBE8E0]";
-                                      const activeDayCls = isOther ? "bg-violet-100 text-violet-700" : isLunch ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600";
                                       const appliesToAllDays = brk.days.length === 0;
+
                                       return (
-                                        <div key={brk.id} className={cn("rounded-[16px] border p-4 flex flex-col gap-3", stripCls)}>
-                                          <div className="flex items-start gap-3">
-                                            <div className="size-8 rounded-xl bg-white border border-[#EBE8E0] flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-                                              <span className={cn("material-symbols-outlined text-[16px]", iconCls)}>{iconName}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-2.5 flex-1 min-w-0">
-                                              <div className="flex items-center gap-2 flex-wrap">
-                                                {/* Before / After toggle */}
-                                                <div className="flex flex-col gap-1">
-                                                  <span className="text-[9px] font-medium text-slate-400">Timing</span>
-                                                  <div className="flex rounded-xl border border-[#EBE8E0] overflow-hidden bg-white h-8">
-                                                    <button
-                                                      onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, placement: 'before' } : b))}
-                                                      className={cn("flex-1 px-3 text-[10px] font-semibold transition-all",
-                                                        brk.placement === 'before' ? "bg-secondary text-white" : "text-slate-400 hover:text-secondary/70")}>
-                                                      Before
-                                                    </button>
-                                                    <div className="w-px bg-[#EBE8E0]" />
-                                                    <button
-                                                      onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, placement: 'after' } : b))}
-                                                      className={cn("flex-1 px-3 text-[10px] font-semibold transition-all",
-                                                        brk.placement === 'after' ? "bg-secondary text-white" : "text-slate-400 hover:text-secondary/70")}>
-                                                      After
-                                                    </button>
-                                                  </div>
-                                                </div>
-                                                {/* Period select */}
-                                                <div className="flex flex-col gap-1">
-                                                  <span className="text-[9px] font-medium text-slate-400">Period</span>
-                                                  <select value={brk.period}
-                                                    onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, period: parseInt(e.target.value) } : b))}
-                                                    className="h-8 px-2 rounded-xl border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/40 bg-white">
-                                                    {periods.map(p => <option key={p} value={p}>P{p}</option>)}
-                                                  </select>
-                                                </div>
-                                                {/* Duration */}
-                                                <div className="flex flex-col gap-1">
-                                                  <span className="text-[9px] font-medium text-slate-400">Duration</span>
-                                                  <div className="flex items-center gap-1.5">
-                                                    <input type="number" min={5} max={120} value={brk.duration}
-                                                      onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, duration: parseInt(e.target.value) || 15 } : b))}
-                                                      className="h-8 w-14 text-center rounded-xl border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/40 bg-white" />
-                                                    <span className="text-[10px] text-slate-400 font-medium">min</span>
-                                                  </div>
-                                                </div>
-                                                {/* Type */}
-                                                <div className="flex flex-col gap-1">
-                                                  <span className="text-[9px] font-medium text-slate-400">Type</span>
-                                                  <select value={brk.type}
-                                                    onChange={(e) => {
-                                                      const t = e.target.value as BreakDef['type'];
-                                                      const defaultLabel = t === 'lunch' ? 'Lunch Break' : t === 'other' ? 'Other Break' : 'Short Break';
-                                                      setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: t, label: b.label || defaultLabel } : b));
-                                                    }}
-                                                    className="h-8 px-2 rounded-xl border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/40 bg-white">
-                                                    <option value="short">Short</option>
-                                                    <option value="lunch">Lunch</option>
-                                                    <option value="other">Other</option>
-                                                  </select>
-                                                </div>
-                                                {/* Label */}
-                                                <div className="flex flex-col gap-1">
-                                                  <span className="text-[9px] font-medium text-slate-400">Label</span>
-                                                  <input type="text" value={brk.label}
-                                                    onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, label: e.target.value } : b))}
-                                                    className="h-8 w-28 px-2.5 rounded-xl border border-[#EBE8E0] text-[11px] font-semibold text-secondary outline-none focus:border-primary/40 bg-white" />
-                                                </div>
-                                                <button onClick={() => setBreakConfig(prev => prev.filter(b => b.id !== brk.id))}
-                                                  className="size-8 flex items-center justify-center text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-xl border border-transparent hover:border-red-100 transition-all shrink-0 mt-4">
-                                                  <span className="material-symbols-outlined text-[15px]">delete</span>
+                                        <div key={brk.id} className="group bg-[#FDFCFB]/50 hover:bg-white rounded-xl border border-slate-100 p-3 transition-all flex flex-wrap items-start gap-x-6 gap-y-4">
+                                          {/* Category & Label */}
+                                          <div className="flex flex-col gap-1.5 min-w-[180px] flex-1 lg:flex-none">
+                                            <span className="text-[10.5px] font-semibold text-[#B0AFA8] ml-1">Type & Name</span>
+                                            <div className="flex items-center gap-3">
+                                              <div className="flex rounded-lg border border-slate-100 overflow-hidden bg-slate-50/50 h-8 p-0.5 shrink-0">
+                                                <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: 'short', label: b.label === 'Lunch Break' || b.label === 'Special Break' ? 'Short Break' : b.label } : b))}
+                                                  className={cn("px-2 rounded-md transition-all", brk.type === 'short' ? "bg-white text-slate-600 shadow-sm" : "text-slate-300 hover:text-slate-500")}>
+                                                  <span className="material-symbols-outlined text-[14px]">free_breakfast</span>
+                                                </button>
+                                                <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: 'lunch', label: b.label === 'Short Break' || b.label === 'Special Break' ? 'Lunch Break' : b.label } : b))}
+                                                  className={cn("px-2 rounded-md transition-all", brk.type === 'lunch' ? "bg-white text-amber-500 shadow-sm" : "text-slate-300 hover:text-slate-500")}>
+                                                  <span className="material-symbols-outlined text-[14px]">restaurant</span>
+                                                </button>
+                                                <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: 'other', label: b.label === 'Short Break' || b.label === 'Lunch Break' ? 'Special Break' : b.label } : b))}
+                                                  className={cn("px-2 rounded-md transition-all", brk.type === 'other' ? "bg-white text-violet-400 shadow-sm" : "text-slate-300 hover:text-slate-500")}>
+                                                  <span className="material-symbols-outlined text-[14px]">timer</span>
                                                 </button>
                                               </div>
-                                              {/* Day row */}
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-[9px] font-medium text-slate-400 shrink-0">Days</span>
-                                                <div className="flex items-center gap-1">
-                                                  {days.map(d => {
-                                                    const active = appliesToAllDays || brk.days.includes(d);
-                                                    return (
-                                                      <button key={d}
-                                                        onClick={() => {
-                                                          setBreakConfig(prev => prev.map(b => {
-                                                            if (b.id !== brk.id) return b;
-                                                            if (appliesToAllDays) return { ...b, days: [d] };
-                                                            const newDays = b.days.includes(d) ? b.days.filter(x => x !== d) : [...b.days, d];
-                                                            return { ...b, days: newDays };
-                                                          }));
-                                                        }}
-                                                        className={cn("h-6 w-9 rounded-lg text-[9px] font-bold transition-all",
-                                                          active ? activeDayCls : "bg-white border border-[#EBE8E0] text-slate-300 hover:text-slate-500 hover:border-slate-300")}>
-                                                        {d.slice(0, 3)}
-                                                      </button>
-                                                    );
-                                                  })}
-                                                  <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, days: [] } : b))}
-                                                    className={cn("h-6 px-2.5 rounded-lg text-[9px] font-bold transition-all ml-0.5",
-                                                      appliesToAllDays ? "bg-secondary text-white" : "bg-white border border-[#EBE8E0] text-slate-300 hover:text-slate-500 hover:border-slate-300")}>
-                                                    All
-                                                  </button>
+                                              <input type="text" value={brk.label}
+                                                onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, label: e.target.value } : b))}
+                                                className="bg-transparent border-none text-[12px] font-bold text-foreground outline-none w-full" placeholder="Break Label" />
+                                            </div>
+                                          </div>
+
+                                          {/* Timing Group (Placement + Period + Length) */}
+                                          <div className="flex items-start gap-4 flex-wrap lg:flex-nowrap">
+                                            {/* Placement */}
+                                            <div className="flex flex-col gap-1.5 shrink-0">
+                                              <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Placement</span>
+                                              <div className="flex rounded-lg border border-slate-100 overflow-hidden bg-white h-9 p-1">
+                                                <button
+                                                  onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, placement: 'before' } : b))}
+                                                  className={cn("px-3 rounded-md text-[10px] font-bold transition-all",
+                                                    brk.placement === 'before' ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary")}>
+                                                  Before
+                                                </button>
+                                                <button
+                                                  onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, placement: 'after' } : b))}
+                                                  className={cn("px-3 rounded-md text-[10px] font-bold transition-all",
+                                                    brk.placement === 'after' ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary")}>
+                                                  After
+                                                </button>
+                                              </div>
+                                            </div>
+
+                                            {/* Period & Length */}
+                                            <div className="flex items-center gap-3 shrink-0">
+                                              <div className="flex flex-col gap-1.5">
+                                                <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Period</span>
+                                                <select value={brk.period}
+                                                  onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, period: parseInt(e.target.value) } : b))}
+                                                  className="h-9 px-2 rounded-lg border border-slate-100 text-[11px] font-bold text-foreground outline-none bg-white">
+                                                  {periods.map(p => <option key={p} value={p}>P{p}</option>)}
+                                                </select>
+                                              </div>
+                                              <div className="flex flex-col gap-1.5">
+                                                <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Length</span>
+                                                <div className="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg h-9 px-2">
+                                                  <input type="number" min={5} max={120} value={brk.duration}
+                                                    onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, duration: parseInt(e.target.value) || 15 } : b))}
+                                                    className="w-8 text-center bg-transparent border-none text-[11px] font-bold text-foreground outline-none" />
+                                                  <span className="text-[9px] text-[#B0AFA8] font-bold">min</span>
                                                 </div>
                                               </div>
                                             </div>
                                           </div>
+
+                                          {/* Days Selector */}
+                                          <div className="flex flex-col gap-1.5 lg:border-l lg:border-slate-100 lg:pl-6">
+                                            <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Operational Days</span>
+                                            <div className="flex items-center gap-1">
+                                              {days.map(d => {
+                                                const active = appliesToAllDays || brk.days.includes(d);
+                                                return (
+                                                  <button key={d}
+                                                    onClick={() => {
+                                                      setBreakConfig(prev => prev.map(b => {
+                                                        if (b.id !== brk.id) return b;
+                                                        if (appliesToAllDays) return { ...b, days: [d] };
+                                                        const newDays = b.days.includes(d) ? b.days.filter(x => x !== d) : [...b.days, d];
+                                                        return { ...b, days: newDays };
+                                                      }));
+                                                    }}
+                                                    className={cn("h-8 px-3 rounded-lg text-[10px] font-bold transition-all",
+                                                      active ? "bg-secondary text-white shadow-sm" : "bg-white border border-slate-100 text-slate-300 hover:text-slate-400")}>
+                                                    {d.slice(0, 3)}
+                                                  </button>
+                                                );
+                                              })}
+                                              <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, days: [] } : b))}
+                                                className={cn("h-8 px-4 rounded-lg text-[10px] font-bold transition-all ml-1",
+                                                  appliesToAllDays ? "bg-primary text-foreground" : "bg-slate-50 text-slate-400")}>
+                                                All
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          {/* Delete */}
+                                          <div className="flex-1 flex justify-end pt-5">
+                                            <button onClick={() => setBreakConfig(prev => prev.filter(b => b.id !== brk.id))}
+                                              className="size-7 rounded-lg flex items-center justify-center text-slate-200 hover:text-rose-500 hover:bg-rose-50 transition-all">
+                                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                                            </button>
+                                          </div>
                                         </div>
                                       );
                                     })}
-                                    {breakConfig.length === 0 && (
-                                      <div className="text-[11px] text-slate-300 font-medium text-center py-6 border border-dashed border-[#EBE8E0] rounded-[16px]">No breaks configured</div>
-                                    )}
                                   </div>
+                                  {breakConfig.length === 0 && (
+                                    <div className="text-[11px] text-slate-300 font-medium text-center py-6 border border-dashed border-[#EBE8E0] rounded-[16px]">No breaks configured</div>
+                                  )}
                                 </div>
 
+                                {/* Action Bar */}
+                                <div className="flex items-center justify-end pt-12 border-t border-slate-200/40">
+                                  <button
+                                    onClick={() => {
+                                      setConfigSaved(true);
+                                      setShowSchedulePanel(false);
+                                      setTimeout(() => timetableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 260);
+                                    }}
+                                    className="btn-primary gap-2 shadow-lg shadow-secondary/10"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                    Apply Configuration
+                                  </button>
+                                </div>
                               </div>
 
-                              {/* Save bar */}
-                              <div className="flex items-center justify-end pt-5 mt-1">
-                                <button
-                                  onClick={() => { setConfigSaved(true); setShowSchedulePanel(false); }}
-                                  className="h-10 px-7 rounded-xl bg-secondary text-white text-[12px] font-bold flex items-center gap-2 shadow-md shadow-secondary/15 hover:bg-secondary/90 active:scale-[0.98] transition-all">
-                                  <span className="material-symbols-outlined text-[16px]">check</span>
-                                  Apply changes
-                                </button>
-                              </div>
                             </div>
+
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -1221,7 +1261,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex-1 overflow-auto bg-transparent">
+                        <div ref={timetableRef} className="flex-1 overflow-auto bg-transparent">
                           <div className="max-w-[1200px] mx-auto select-none"
                             onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
                             onMouseLeave={() => extendingSlot && setExtensionTarget(null)}>
