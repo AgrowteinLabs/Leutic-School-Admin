@@ -1,16 +1,13 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "../../../lib/utils";
+import type { Variants } from "framer-motion";
+
 import { 
   Trophy, 
   Calendar, 
   GraduationCap, 
-  Activity, 
   X,
   Phone,
-  ArrowUpRight,
   ShieldCheck,
-  Zap,
-  ChevronRight,
   FileText,
   MessageSquare
 } from "lucide-react";
@@ -33,7 +30,7 @@ interface StudentDrawerProps {
   } | null;
 }
 
-const containerVariants = {
+const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
         opacity: 1,
@@ -44,7 +41,7 @@ const containerVariants = {
     }
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 30 } }
 };

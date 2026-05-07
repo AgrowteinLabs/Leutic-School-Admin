@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
-import { AppDropdown } from "../../../components/AppDropdown";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
 
@@ -122,11 +121,9 @@ const DriverRow = ({
 export const DriversPage = ({
   isHubChild,
   externalDrivers,
-  onAddDriver
 }: {
   isHubChild?: boolean;
   externalDrivers?: any[];
-  onAddDriver?: () => void;
 }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");

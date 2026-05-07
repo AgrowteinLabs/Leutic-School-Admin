@@ -6,7 +6,6 @@ import { ProgramsTable } from "../components/ProgramsTable";
 import { AlertsSection } from "../components/Alerts";
 import { TopBar } from "../../../components/Header";
 import { StudentDrawer } from "../../students/components/StudentDrawer";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
 import {
     Users,
@@ -63,7 +62,7 @@ export const DashboardPage = () => {
         setIsDrawerOpen(true);
     };
 
-    const handleClassMonitorClick = (grade: string) => {
+    const handleClassMonitorClick = () => {
         setSelectedStudent(mockStudents[1]); // Mocking the "Critical" student
         setIsDrawerOpen(true);
     };
@@ -265,7 +264,7 @@ export const DashboardPage = () => {
                                 { grade: "9-D", teacher: "Ms. Dhanya S.", issue: "Grade Decline", detail: "Average Drop", score: 76, status: "warning" },
                                 { grade: "10-A", teacher: "Dr. Lakshmi K.", issue: "Absenteeism", detail: "Unusual spikes", score: 68, status: "warning" },
                             ].map((item, i) => (
-                                <div key={i} className="group relative" onClick={() => handleClassMonitorClick(item.grade)}>
+                                <div key={i} className="group relative" onClick={() => handleClassMonitorClick()}>
                                     <div className="flex items-center gap-4 p-5 rounded-[18px] bg-white border border-slate-100 hover:border-primary/20 transition-all duration-500 cursor-pointer h-full">
                                         {/* Circular Gauge */}
                                         <div className="relative size-12 shrink-0">

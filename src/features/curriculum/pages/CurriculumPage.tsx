@@ -152,35 +152,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     return result;
   }, [scheduleConfig, periodDurations, perDayDurations, breakConfig, periods]);
 
-  // Standard config derived from Monday's per-day config — correctly includes all breaks that apply to Mon
-  const periodConfig = useMemo(() => {
-    const mon = periodConfigByDay["Monday"];
-    if (!mon) return {} as { [n: number]: { start: string; end: string } };
-    return Object.fromEntries(Object.entries(mon).map(([k, v]) => [Number(k), { start: v.start, end: v.end }]));
-  }, [periodConfigByDay]);
 
-  const scheduleSlots = useMemo(() => {
-    // Each period-slot is followed by at most ONE breaks-slot (grouping ALL breaks after that period)
-    type Slot = { kind: 'period'; periodNum: number; rowIdx: number } | { kind: 'breaks'; brks: BreakDef[]; maxDuration: number; rowIdx: number };
-    const slots: Slot[] = [];
-    let rowIdx = 0;
-    for (const p of periods) {
-      slots.push({ kind: 'period', periodNum: p, rowIdx });
-      rowIdx++;
-      const brks = breakConfig.filter(b => b.afterPeriod === p);
-      if (brks.length > 0) {
-        const maxDuration = Math.max(...brks.map(b => b.duration));
-        slots.push({ kind: 'breaks', brks, maxDuration, rowIdx });
-        rowIdx++;
-      }
-    }
-    return slots;
-  }, [breakConfig, periods]);
-
-  const getPeriodRowIdx = (periodNum: number) => {
-    const slot = scheduleSlots.find(s => s.kind === 'period' && s.periodNum === periodNum);
-    return slot ? slot.rowIdx : 0;
-  };
 
   const SCALE = 2.5; // px per minute
 
@@ -203,7 +175,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     return ticks;
   }, [scheduleConfig.schoolStart, totalDayMinutes]);
   const [subjectSearch, setSubjectSearch] = useState("");
-  const ACADEMIC_AREAS = ["Mathematics", "Science", "Humanities", "Languages", "Arts", "Technology", "Administration", "Sports"];
 
   // State Data
 
@@ -315,12 +286,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       setMappings([...mappings, newMapping]);
     }
     setHasUnsavedChanges(true);
-  };
-
-  const handleEditMapping = (mapping: Mapping) => {
-    setEditingMapping(mapping);
-    setIsAddingAdditional(!!mapping.isAdditional);
-    setShowMappingDrawer(true);
   };
 
   const handleEditSubject = (sub: Subject) => {
@@ -2082,11 +2047,9 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
   );
 };
 
-const TierManagementForm = ({ groups, setGroups, gradeConfigs, onClose }: any) => {
+const TierManagementForm = ({ groups, setGroups }: any) => {
   // Derive all possible grades from configs
-  const allPossibleGrades = gradeConfigs.map((gc: any) => gc.grade);
-  const assignedGrades = groups.flatMap((g: any) => g.grades);
-  const unassignedGrades = allPossibleGrades.filter((g: string) => !assignedGrades.includes(g));
+
 
   const removeGrade = (groupId: string, grade: string) => {
     const newGroups = groups.map((g: any) => {

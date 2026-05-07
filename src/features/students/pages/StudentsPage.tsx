@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
-import { AppDropdown } from "../../../components/AppDropdown";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
 
@@ -17,7 +16,7 @@ const StudentRow = ({
   onClick: (student: any) => void;
   onDelete: (student: any) => void;
 }) => {
-  const { name, id, grade, section, participation, auraScore, status, img, enrollmentDate, bloodGroup, guardianName, phone } = student;
+  const { name, id, grade, section, auraScore, status, img, enrollmentDate, bloodGroup, guardianName, phone } = student;
 
   const getStatusStyles = (status: string) => {
     switch (status.toLowerCase()) {

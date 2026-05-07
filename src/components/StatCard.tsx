@@ -3,11 +3,13 @@ import { Info } from "lucide-react";
 
 interface StatCardProps {
     label: string;
-    value: string;
+    value: string | number;
     trend?: string;
     trendType?: "up" | "down" | "stable";
+    trendUp?: boolean;
     icon: string;
     iconBg?: string;
+    color?: string;
     tooltip?: string;
 }
 
@@ -16,13 +18,20 @@ export const StatCard = ({
     value,
     trend,
     trendType,
+    trendUp,
     icon,
     iconBg = "bg-[#EAF2D7]",
+    color,
     tooltip,
 }: StatCardProps) => {
+    const finalTrendType = trendType || (trendUp ? "up" : "stable");
+    
     return (
         <div className="flex items-center gap-4 rounded-2xl px-5 py-4 bg-white border border-slate-100 hover:shadow-sm transition-shadow group relative">
-            <div className={cn("size-11 rounded-2xl flex items-center justify-center shrink-0", iconBg)}>
+            <div className={cn(
+                "size-11 rounded-2xl flex items-center justify-center shrink-0", 
+                color === "primary" ? "bg-[#D9EA85]" : color === "secondary" ? "bg-[#E0F2FE]" : iconBg
+            )}>
                 <span className="material-symbols-outlined text-[22px] text-[#152328]">
                     {icon}
                 </span>
@@ -50,9 +59,9 @@ export const StatCard = ({
                         <span
                             className={cn(
                                 "text-[11px] font-medium",
-                                trendType === "up" && "text-[#2E7D32]",
-                                trendType === "down" && "text-[#B91C1C]",
-                                trendType === "stable" && "text-[#B0AFA8]"
+                                finalTrendType === "up" && "text-[#2E7D32]",
+                                finalTrendType === "down" && "text-[#B91C1C]",
+                                finalTrendType === "stable" && "text-[#B0AFA8]"
                             )}
                         >
                             {trend}

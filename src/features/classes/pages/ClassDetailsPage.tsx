@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
@@ -18,8 +18,6 @@ const ParentMessageModal = ({
   const [isSending, setIsSending] = useState(false);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [image, setImage] = useState<any>(null);
-  const [isUrgent, setIsUrgent] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -31,6 +29,9 @@ const ParentMessageModal = ({
       onClose();
     }, 2000);
   };
+
+  const [image, setImage] = useState<any>(null);
+  const [isUrgent, setIsUrgent] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

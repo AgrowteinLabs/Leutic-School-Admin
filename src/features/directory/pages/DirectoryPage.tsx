@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StaffPage } from "../../settings/pages/StaffPage";
 import { StudentsPage } from "../../students/pages/StudentsPage";
 import { DriversPage } from "../../transportation/pages/DriversPage";
-import { AttendancePage } from "../../classes/pages/AttendancePage";
 
 export const DirectoryPage = () => {
   const navigate = useNavigate();
@@ -550,7 +549,6 @@ export const DirectoryPage = () => {
                 <DriversPage
                   isHubChild
                   externalDrivers={drivers}
-                  onAddDriver={handleCreateAction}
                 />
               </div>
             )}

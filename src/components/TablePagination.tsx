@@ -1,7 +1,4 @@
-import { useState, useEffect } from "react";
-import { cn } from "../lib/utils";
 import { MenuDropdown } from "./MenuDropdown";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface TablePaginationProps {
   totalItems: number;

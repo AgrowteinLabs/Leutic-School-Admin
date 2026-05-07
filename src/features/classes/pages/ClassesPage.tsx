@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { ClassCard } from "../../dashboard/components/ClassCard";
-import { AppFormInput } from "../../../components/FormFields";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { useState } from "react";
 import { cn } from "../../../lib/utils";

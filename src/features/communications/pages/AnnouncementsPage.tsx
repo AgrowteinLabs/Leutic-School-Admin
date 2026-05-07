@@ -79,7 +79,7 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
                 onClick={() => setIsComposing(true)}
                 className="btn-primary h-10 px-6 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 transition-all shadow-lg shadow-primary/10"
               >
-                <Plus className="size-4" />
+                <PlusIcon className="size-4" />
                 Post Announcement
               </button>
             )

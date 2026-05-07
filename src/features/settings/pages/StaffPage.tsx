@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
-import { AppDropdown } from "../../../components/AppDropdown";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
 
@@ -17,7 +16,7 @@ const StaffRow = ({
   onClick: (staff: any) => void;
   onDelete: (e: React.MouseEvent, staff: any) => void;
 }) => {
-  const { name, id, role, department, performance, auraScore, status, img, joiningDate } =
+  const { name, id, role, department, performance, status, img, joiningDate } =
     staff;
 
   const getStatusStyles = (status: string) => {
@@ -31,12 +30,6 @@ const StaffRow = ({
       default:
         return "bg-[#F7F8F4] text-slate-700 border border-slate-500";
     }
-  };
-
-  const getProgressColor = (percent: number) => {
-    if (percent > 85) return "bg-primary";
-    if (percent > 70) return "bg-secondary";
-    return "bg-secondary/40";
   };
 
   return (

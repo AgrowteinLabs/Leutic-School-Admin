@@ -5,7 +5,6 @@ interface AppDropdownProps {
   options: string[];
   value: string;
   onChange: (val: string) => void;
-  label?: string;
   width?: string;
   placeholder?: string;
   searchable?: boolean;
@@ -49,7 +48,7 @@ export const AppDropdown = ({
   }, [isOpen, value]);
 
   const displayValue = (searchable && isOpen) ? searchQuery : (value || "");
-  const placeholderValue = searchable ? (value || "") : (value || placeholder);
+
 
   const filteredOptions = searchable
     ? options.filter((opt: string) => opt.toLowerCase().includes(searchQuery.toLowerCase()))
