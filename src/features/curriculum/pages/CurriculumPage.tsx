@@ -59,6 +59,69 @@ interface BreakDef {
   days: string[];         // empty = all days; otherwise specific days only
 }
 
+// ─── Module-level pure utilities (stable references, never recreated) ───────
+const timeToMins = (t: string) => {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + (m || 0);
+};
+const minsToTime = (mins: number) => {
+  const h = Math.floor(Math.max(0, mins) / 60);
+  const m = Math.max(0, mins) % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+// ─── Isolated search component — owns its own state so keystrokes don't
+//     re-render the parent CurriculumPage or the timetable grid ────────────
+const SlotSearchInput = ({ selectedSection, mappings, subjects, teachers, onAssign }: {
+  selectedSection: string;
+  mappings: { id: string; grade: string; section: string; subjectId: string; teacherId: string }[];
+  subjects: { id: string; name: string }[];
+  teachers: { id: string; name: string }[];
+  onAssign: (e: { subjectId: string; subjectName: string; teacherId: string; teacherName: string }) => void;
+}) => {
+  const [query, setQuery] = useState("");
+  const filtered = query.length > 0
+    ? mappings
+        .filter(m => `${m.grade}-${m.section}` === selectedSection)
+        .filter(m => subjects.find(s => s.id === m.subjectId)?.name.toLowerCase().includes(query.toLowerCase()))
+    : [];
+  return (
+    <div className="relative group/search">
+      <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-primary/40 group-focus-within/search:text-primary transition-colors">search</span>
+      <input autoFocus type="text" placeholder="Subject name..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all" />
+      {query.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#EBE8E0] rounded-lg shadow-[0_20px_50px_rgba(200,180,150,0.35)] max-h-[220px] overflow-y-auto no-scrollbar py-1 animate-in fade-in slide-in-from-top-1 duration-200"
+          style={{ zIndex: 10 }}>
+          {filtered.length > 0 ? filtered.map(m => {
+            const sub = subjects.find(s => s.id === m.subjectId);
+            const teacher = teachers.find(t => t.id === m.teacherId);
+            return (
+              <button key={m.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAssign({ subjectId: m.subjectId, subjectName: sub?.name ?? "", teacherId: m.teacherId, teacherName: teacher?.name ?? m.teacherId });
+                }}
+                className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt">
+                <div className="space-y-0.5">
+                  <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">{sub?.name}</p>
+                  <p className="text-[10px] font-medium text-slate-400">{teacher?.name ?? m.teacherId}</p>
+                </div>
+                <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">add_circle</span>
+              </button>
+            );
+          }) : (
+            <div className="px-3 py-6 text-center"><p className="text-[11px] text-slate-400 font-medium">No results found</p></div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
   const { tab } = useParams();
@@ -134,16 +197,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     }
   }, [showSchedulePanel]);
   const [editingPeriod, setEditingPeriod] = useState<number | null>(null);
-  const timeToMins = (t: string) => {
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + (m || 0);
-  };
-  const minsToTime = (mins: number) => {
-    const h = Math.floor(Math.max(0, mins) / 60);
-    const m = Math.max(0, mins) % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  };
-
   // Per-day period config + break start times (handles before/after placement)
   const { periodConfigByDay, breakStartByDay } = useMemo(() => {
     const allDays = days;
@@ -196,8 +249,34 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     for (let t = first; t <= start + totalDayMinutes; t += 30) ticks.push(t);
     return ticks;
   }, [scheduleConfig.schoolStart, totalDayMinutes]);
-  const [subjectSearch, setSubjectSearch] = useState("");
 
+  // O(1) entry lookup by day+period — prevents .find() on every cell render
+  const entriesBySlot = useMemo(() => {
+    const map = new Map<string, (typeof timetableEntries)[0]>();
+    for (const e of timetableEntries)
+      if (e.section === selectedTimetableSection) map.set(`${e.day}-${e.period}`, e);
+    return map;
+  }, [timetableEntries, selectedTimetableSection]);
+
+  // Pre-built covered-period Sets — prevents per-day linear scans in render
+  const coveredByDay = useMemo(() => {
+    const out: Record<string, Set<number>> = {};
+    for (const day of days) {
+      const s = new Set<number>();
+      for (const e of timetableEntries)
+        if (e.section === selectedTimetableSection && e.day === day && (e.spanPeriods || 1) > 1)
+          for (let i = 1; i < (e.spanPeriods || 1); i++) s.add(e.period + i);
+      out[day] = s;
+    }
+    return out;
+  }, [timetableEntries, selectedTimetableSection, days]);
+
+  // Pre-filtered breaks per day — prevents repeated .filter() inside render loop
+  const breaksByDay = useMemo(() => {
+    const out: Record<string, BreakDef[]> = {};
+    for (const day of days) out[day] = breakConfig.filter(b => b.days.length === 0 || b.days.includes(day));
+    return out;
+  }, [breakConfig, days]);
   // State Data
 
   const [subjects, setSubjects] = useState<Subject[]>([
@@ -380,9 +459,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB]">
-      {/* Subtle Pattern Overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }} />
       {!isHubChild && (
         <>
           <TopBar
@@ -852,7 +928,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                       {/* 3. Selection Summary Overlay (Independent Sticky Bar) */}
                       {selectedTimetableSection && (
-                        <div className="sticky top-[-1px] z-30 bg-white/95 backdrop-blur-md border-b border-x border-slate-100 px-10 py-4 flex items-center justify-between  animate-in fade-in slide-in-from-top-2 duration-500 -mx-[1px] w-[calc(100%+2px)]">
+                        <div className="sticky top-[-1px] z-30 bg-white border-b border-x border-slate-100 px-10 py-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500 -mx-[1px] w-[calc(100%+2px)]">
                           <div className="flex items-center gap-4">
                             <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                               <span className="material-symbols-outlined text-[20px]">check_circle</span>
@@ -908,25 +984,21 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                           <motion.div
                             ref={configPanelRef}
                             key="cfg-panel"
-                            initial={{ height: 0, opacity: 0, y: -15 }}
+                            initial={{ height: 0, opacity: 0 }}
                             animate={{
                               height: 'auto',
                               opacity: 1,
-                              y: 0,
                               transition: {
                                 height: { type: 'spring', stiffness: 90, damping: 24, mass: 1.2 },
                                 opacity: { duration: 0.4, ease: 'easeOut' },
-                                y: { type: 'spring', stiffness: 90, damping: 24, mass: 1.2 }
                               }
                             }}
                             exit={{
                               height: 0,
                               opacity: 0,
-                              y: -10,
                               transition: {
                                 height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
                                 opacity: { duration: 0.2 },
-                                y: { duration: 0.25 }
                               }
                             }}
                             style={{ overflow: 'hidden' }}
@@ -1285,7 +1357,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                             {/* Day headers */}
                             <div className={cn(
-                              "flex border-b border-[#EBE8E0] bg-[#FDFCFB]/90 z-20 backdrop-blur-sm",
+                              "flex border-b border-[#EBE8E0] bg-[#FDFCFB] z-20",
                               stickyDayHeaders ? "sticky top-[64px]" : "relative"
                             )}>
                               <div className="w-[100px] shrink-0 border-r border-[#EBE8E0]" />
@@ -1351,10 +1423,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                                   {/* Day columns */}
                                   {days.map((day, dIdx) => {
-                                    const coveredPeriods = new Set<number>();
-                                    timetableEntries
-                                      .filter(e => e.section === selectedTimetableSection && e.day === day && (e.spanPeriods || 1) > 1)
-                                      .forEach(e => { for (let i = 1; i < (e.spanPeriods || 1); i++) coveredPeriods.add(e.period + i); });
+                                    const coveredPeriods = coveredByDay[day] ?? new Set<number>();
                                     return (
                                       <div key={day}
                                         className={cn("flex-1 relative", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}
@@ -1379,9 +1448,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         ))}
 
                                         {/* Break cells for this day */}
-                                        {breakConfig
-                                          .filter(b => b.days.length === 0 || b.days.includes(day))
-                                          .map(brk => {
+                                        {(breaksByDay[day] ?? []).map(brk => {
                                             const brkStartTime = breakStartByDay[day]?.[brk.id];
                                             if (!brkStartTime) return null;
                                             const brkTop = (timeToMins(brkStartTime) - schoolStartMins) * SCALE;
@@ -1425,7 +1492,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                           if (coveredPeriods.has(p)) return null;
                                           const dayCfg = periodConfigByDay[day]?.[p];
                                           if (!dayCfg) return null;
-                                          const entry = timetableEntries.find(e => e.section === selectedTimetableSection && e.day === day && e.period === p);
+                                          const entry = entriesBySlot.get(`${day}-${p}`);
                                           const spanP = entry?.spanPeriods || 1;
                                           const endP = Math.min(p + spanP - 1, periods[periods.length - 1]);
                                           const endCfg = periodConfigByDay[day]?.[endP];
@@ -1438,14 +1505,11 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                           const isInHRange = extendingSlot?.direction === 'horizontal' && !!extensionTarget && p === extendingSlot.period && dIdx > srcIdx && dIdx <= tgtIdx;
                                           const isDiffTime = dayCfg.start !== periodConfigByDay["Monday"]?.[p]?.start;
                                           return (
-                                            <motion.div
+                                            <div
                                               key={`${day}-${p}`}
-                                              initial={{ opacity: 0 }}
-                                              animate={{ opacity: 1 }}
-                                              transition={{ delay: (p * 5 + dIdx) * 0.01 }}
                                               style={{ top: cellTop, height: cellHeight, left: 0, right: 0, position: 'absolute', zIndex: entry ? 2 : 1 }}
                                               className={cn(
-                                                "group border-b border-[#EBE8E0] transition-colors duration-200 py-4 px-4",
+                                                "group border-b border-[#EBE8E0] transition-colors duration-200 py-4 px-4 animate-in fade-in duration-300",
                                                 !entry && !isInHRange && "cursor-pointer hover:bg-white/90 hover:shadow-[0_4px_20px_rgba(230,220,200,0.4)] hover:z-[15]",
                                                 isInHRange && "bg-primary/[0.04]",
                                                 entry && spanP > 1 && "border-l-[3px] border-l-slate-300"
@@ -1542,7 +1606,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                   <p className="text-[11px] text-slate-300">{extendingSlot.entry.teacherName}</p>
                                                 </div>
                                               )}
-                                            </motion.div>
+                                            </div>
                                           );
                                         })}
 
@@ -1561,48 +1625,20 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                 <div className="relative flex flex-col gap-3">
                                                   <div className="flex justify-between items-center">
                                                     <span className="text-[11px] font-semibold text-slate-400 tracking-tight">Assign subject</span>
-                                                    <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); setSubjectSearch(""); }} className="text-slate-300 hover:text-secondary transition-colors">
+                                                    <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); }} className="text-slate-300 hover:text-secondary transition-colors">
                                                       <span className="material-symbols-outlined text-[14px]">close</span>
                                                     </button>
                                                   </div>
-                                                  <div className="relative group/search">
-                                                    <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-primary/40 group-focus-within/search:text-primary transition-colors">search</span>
-                                                    <input autoFocus type="text" placeholder="Subject name..."
-                                                      value={subjectSearch}
-                                                      onChange={(e) => setSubjectSearch(e.target.value)}
-                                                      onClick={(e) => e.stopPropagation()}
-                                                      className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all" />
-                                                    {subjectSearch.length > 0 && (
-                                                      <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#EBE8E0] rounded-lg shadow-[0_20px_50px_rgba(200,180,150,0.35)] max-h-[220px] overflow-y-auto no-scrollbar py-1 animate-in fade-in slide-in-from-top-1 duration-200"
-                                                        style={{ zIndex: 10 }}>
-                                                        {mappings
-                                                          .filter(m => `${m.grade}-${m.section}` === selectedTimetableSection)
-                                                          .filter(m => { const sub = subjects.find(s => s.id === m.subjectId); return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()); })
-                                                          .map(m => {
-                                                            const sub = subjects.find(s => s.id === m.subjectId);
-                                                            const teacher = teachers.find(t => t.id === m.teacherId);
-                                                            return (
-                                                              <button key={m.id}
-                                                                onClick={(e) => {
-                                                                  e.stopPropagation();
-                                                                  setTimetableEntries(prev => [...prev, { section: selectedTimetableSection, day, period: ap, subjectId: m.subjectId, subjectName: sub?.name || "", teacherId: m.teacherId, teacherName: teacher?.name || m.teacherId }]);
-                                                                  setAssigningSlot(null); setSubjectSearch("");
-                                                                }}
-                                                                className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt">
-                                                                <div className="space-y-0.5">
-                                                                  <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">{sub?.name}</p>
-                                                                  <p className="text-[10px] font-medium text-slate-400">{teacher?.name || m.teacherId}</p>
-                                                                </div>
-                                                                <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">add_circle</span>
-                                                              </button>
-                                                            );
-                                                          })}
-                                                        {mappings.filter(m => { const sub = subjects.find(s => s.id === m.subjectId); return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()) && `${m.grade}-${m.section}` === selectedTimetableSection; }).length === 0 && (
-                                                          <div className="px-3 py-6 text-center"><p className="text-[11px] text-slate-400 font-medium">No results found</p></div>
-                                                        )}
-                                                      </div>
-                                                    )}
-                                                  </div>
+                                                  <SlotSearchInput
+                                                    selectedSection={selectedTimetableSection}
+                                                    mappings={mappings}
+                                                    subjects={subjects}
+                                                    teachers={teachers}
+                                                    onAssign={({ subjectId, subjectName, teacherId, teacherName }) => {
+                                                      setTimetableEntries(prev => [...prev, { section: selectedTimetableSection, day, period: ap, subjectId, subjectName, teacherId, teacherName }]);
+                                                      setAssigningSlot(null);
+                                                    }}
+                                                  />
                                                 </div>
                                               </div>
                                             </div>
