@@ -181,6 +181,27 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const slot = scheduleSlots.find(s => s.kind === 'period' && s.periodNum === periodNum);
     return slot ? slot.rowIdx : 0;
   };
+
+  const SCALE = 2.5; // px per minute
+
+  const totalDayMinutes = useMemo(() => {
+    const schoolStart = timeToMins(scheduleConfig.schoolStart);
+    let maxEnd = 0;
+    for (const day of ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]) {
+      const lastP = periods[periods.length - 1];
+      const lastCfg = periodConfigByDay[day]?.[lastP];
+      if (lastCfg) maxEnd = Math.max(maxEnd, timeToMins(lastCfg.end) - schoolStart);
+    }
+    return maxEnd + 40;
+  }, [scheduleConfig.schoolStart, periodConfigByDay, periods]);
+
+  const timeTicks = useMemo(() => {
+    const start = timeToMins(scheduleConfig.schoolStart);
+    const ticks: number[] = [];
+    const first = Math.ceil(start / 30) * 30;
+    for (let t = first; t <= start + totalDayMinutes; t += 30) ticks.push(t);
+    return ticks;
+  }, [scheduleConfig.schoolStart, totalDayMinutes]);
   const [subjectSearch, setSubjectSearch] = useState("");
   const ACADEMIC_AREAS = ["Mathematics", "Science", "Humanities", "Languages", "Arts", "Technology", "Administration", "Sports"];
 
@@ -1168,494 +1189,326 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex-1 p-8 lg:p-12 overflow-auto bg-transparent relative">
-                          <div className="max-w-[1200px] mx-auto">
-                            <div
-                              className="grid grid-cols-[100px_repeat(5,1fr)] select-none"
-                              style={{ gridTemplateRows: `auto ${scheduleSlots.map(s => { if (s.kind === 'period') { const baseDur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[s.periodNum] || scheduleConfig.defaultDuration); return `minmax(${Math.max(120, Math.round(baseDur * 2.4))}px, auto)`; } return `${Math.max(36, Math.round(s.maxDuration * 1.5))}px`; }).join(' ')}` }}
-                              onMouseLeave={() => extendingSlot && setExtensionTarget(null)}
-                              onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
-                            >
-                              {/* Corner Spacer */}
-                              <div className="border-b border-r border-[#EBE8E0]" style={{ gridRow: 1, gridColumn: 1 }} />
+                        <div className="flex-1 overflow-auto bg-transparent">
+                          <div className="max-w-[1200px] mx-auto select-none"
+                               onMouseUp={() => { if (extendingSlot) { setExtendingSlot(null); setExtensionTarget(null); } }}
+                               onMouseLeave={() => extendingSlot && setExtensionTarget(null)}>
 
-                              {/* Day Headers */}
+                            {/* Day headers */}
+                            <div className="flex border-b border-[#EBE8E0] bg-[#FDFCFB]/90 sticky top-0 z-20 backdrop-blur-sm">
+                              <div className="w-[100px] shrink-0 border-r border-[#EBE8E0]" />
                               {days.map((day, dIdx) => (
-                                <div
-                                  key={day}
-                                  style={{ gridRow: 1, gridColumn: dIdx + 2 }}
-                                  className={cn("pb-8 px-6 border-b border-[#EBE8E0] bg-[#FDFCFB]/80", dIdx < days.length - 1 && "border-r")}
-                                >
+                                <div key={day} className={cn("flex-1 py-5 px-6 bg-[#FDFCFB]/80", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}>
                                   <span className="text-[14px] font-semibold text-secondary tracking-tight block">{day}</span>
                                   <span className="text-[10px] font-medium text-slate-400 tracking-tight">Class day</span>
                                 </div>
                               ))}
+                            </div>
 
-                              {/* Period Labels + Break Labels */}
-                              {scheduleSlots.map((slot) => {
-                                const gridRow = slot.rowIdx + 2;
-                                if (slot.kind === 'breaks') {
-                                  const { brks } = slot;
-                                  return (
-                                    <div
-                                      key={`breaks-label-${slot.rowIdx}`}
-                                      style={{ gridRow, gridColumn: 1 }}
-                                      className="flex flex-col items-center justify-center gap-1 border-b border-r border-[#EBE8E0] bg-slate-50/60 overflow-hidden py-1"
-                                    >
-                                      {brks.map(brk => {
-                                        const ip = brk.type === 'prayer'; const il = brk.type === 'lunch';
-                                        return (
-                                          <div key={brk.id} className="flex flex-col items-center gap-0.5">
-                                            <span className={cn("material-symbols-outlined text-[12px]", ip ? "text-emerald-500" : il ? "text-amber-400" : "text-slate-400")}>
-                                              {ip ? 'mosque' : il ? 'restaurant' : 'free_breakfast'}
-                                            </span>
-                                            <span className="text-[7px] font-semibold text-slate-400 text-center leading-tight px-1 truncate max-w-full">{brk.label}</span>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  );
-                                }
-                                const period = slot.periodNum;
-                                const dur = scheduleConfig.uniformDuration
-                                  ? scheduleConfig.defaultDuration
-                                  : (periodDurations[period] || scheduleConfig.defaultDuration);
-                                return (
-                                  <div
-                                    key={`label-${period}`}
-                                    style={{ gridRow, gridColumn: 1 }}
-                                    className="flex flex-col items-center justify-center gap-1 border-b border-r border-[#EBE8E0] px-2 relative overflow-hidden"
-                                  >
-                                    <span className="text-[22px] font-bold text-secondary/80 leading-none">{period}</span>
-                                    {editingPeriod === period ? (
-                                      <div
-                                        className="flex flex-col items-center gap-1"
-                                        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setEditingPeriod(null); }}
-                                      >
-                                        <div className="flex items-center gap-1">
-                                          <input
-                                            autoFocus
-                                            type="number"
-                                            min={5}
-                                            max={180}
-                                            value={dur}
-                                            onChange={(e) => {
-                                              const v = parseInt(e.target.value) || scheduleConfig.defaultDuration;
-                                              setPeriodDurations(prev => ({ ...prev, [period]: v }));
-                                              if (scheduleConfig.uniformDuration) {
-                                                setScheduleConfig(prev => ({ ...prev, uniformDuration: false }));
-                                              }
-                                            }}
-                                            className="w-10 text-center text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-1 py-1 outline-none focus:border-primary shadow-sm"
-                                          />
-                                          <span className="text-[9px] text-slate-400">m</span>
-                                        </div>
-                                        <div className="text-[8px] text-slate-300 text-center leading-tight">
-                                          {periodConfig[period]?.start}<br />{periodConfig[period]?.end}
-                                        </div>
+                            {/* Time-based body */}
+                            {(() => {
+                              const schoolStartMins = timeToMins(scheduleConfig.schoolStart);
+                              return (
+                                <div className="flex" style={{ height: `${totalDayMinutes * SCALE}px` }}>
+
+                                  {/* Sidebar: time ticks + period labels */}
+                                  <div className="w-[100px] shrink-0 relative border-r border-[#EBE8E0]">
+                                    {timeTicks.map(t => (
+                                      <div key={t} style={{ top: `${(t - schoolStartMins) * SCALE}px` }}
+                                           className="absolute right-2 flex items-center pointer-events-none">
+                                        <span className="text-[8px] text-slate-400 font-medium">{minsToTime(t)}</span>
                                       </div>
-                                    ) : (
-                                      <button
-                                        onClick={() => setEditingPeriod(period)}
-                                        className="flex flex-col items-center gap-0.5 group/time"
-                                      >
-                                        <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">
-                                          {periodConfig[period]?.start}
-                                        </span>
-                                        <span className="text-[8px] font-medium text-slate-300">—</span>
-                                        <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">
-                                          {periodConfig[period]?.end}
-                                        </span>
-                                        <span className="text-[8px] text-slate-300 mt-0.5">{dur}m</span>
-                                      </button>
-                                    )}
-                                  </div>
-                                );
-                              })}
-
-                              {/* Day Cells — vertical drag merges periods (CSS span), horizontal drag fills days */}
-                              {(() => {
-                                const coveredCells = new Set<string>();
-                                timetableEntries
-                                  .filter(e => e.section === selectedTimetableSection && (e.spanPeriods || 1) > 1)
-                                  .forEach(e => {
-                                    const sp = e.spanPeriods || 1;
-                                    const dBase = days.indexOf(e.day);
-                                    for (let dp = 1; dp < sp; dp++) {
-                                      const p = e.period + dp;
-                                      if (p <= periods[periods.length - 1]) coveredCells.add(`${days[dBase]}-${p}`);
-                                    }
-                                  });
-
-                                // Render break rows — one row per period-slot, all breaks at that position grouped
-                                const breakRows = scheduleSlots
-                                  .filter(s => s.kind === 'breaks')
-                                  .flatMap(slot => {
-                                    if (slot.kind !== 'breaks') return [];
-                                    const { brks, rowIdx } = slot;
-                                    return days.map((day, dIdx) => {
-                                      // find the break that applies to this day in this slot
-                                      const brk = brks.find(b => b.days.length === 0 || b.days.includes(day));
-                                      if (!brk) {
-                                        // No break for this day — show pass-through (time is continuous here)
-                                        return (
-                                          <div
-                                            key={`breaks-none-${rowIdx}-${day}`}
-                                            style={{ gridRow: rowIdx + 2, gridColumn: dIdx + 2 }}
-                                            className={cn("border-b border-[#EBE8E0] flex items-center justify-center", dIdx < days.length - 1 && "border-r")}
-                                          >
-                                            <div className="w-10 h-px bg-[#EBE8E0]" />
-                                          </div>
-                                        );
-                                      }
-                                      const isPrayer = brk.type === 'prayer';
-                                      const isLunch = brk.type === 'lunch';
-                                      // per-day start time (uses day-aware cascade)
-                                      const brkStart = timeToMins(periodConfigByDay[day]?.[brk.afterPeriod]?.end || periodConfig[brk.afterPeriod]?.end || scheduleConfig.schoolStart);
-                                      const brkEnd = brkStart + brk.duration;
-                                      const icon = isPrayer ? 'mosque' : isLunch ? 'restaurant' : 'free_breakfast';
-                                      const colorCls = isPrayer ? "bg-emerald-50/60" : isLunch ? "bg-amber-50/40" : "bg-slate-50/60";
-                                      const textCls = isPrayer ? "text-emerald-600/70" : isLunch ? "text-amber-600/70" : "text-slate-400";
-                                      const iconCls = isPrayer ? "text-emerald-500" : isLunch ? "text-amber-400" : "text-slate-400";
+                                    ))}
+                                    {periods.map(p => {
+                                      const mon = periodConfigByDay["Monday"]?.[p];
+                                      if (!mon) return null;
+                                      const top = (timeToMins(mon.start) - schoolStartMins) * SCALE;
+                                      const height = mon.dur * SCALE;
+                                      const dur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
                                       return (
-                                        <div
-                                          key={`breaks-${rowIdx}-${day}`}
-                                          style={{ gridRow: rowIdx + 2, gridColumn: dIdx + 2 }}
-                                          className={cn(
-                                            "flex items-center justify-center gap-1.5 border-b border-[#EBE8E0]",
-                                            dIdx < days.length - 1 && "border-r",
-                                            colorCls
-                                          )}
-                                        >
-                                          <span className={cn("material-symbols-outlined text-[13px]", iconCls)}>{icon}</span>
-                                          <div className="flex flex-col leading-tight">
-                                            <span className={cn("text-[10px] font-semibold", textCls)}>{brk.label}</span>
-                                            <span className="text-[9px] text-slate-300">{minsToTime(brkStart)} – {minsToTime(brkEnd)}</span>
-                                          </div>
-                                        </div>
-                                      );
-                                    });
-                                  });
-
-                                // Render period day cells
-                                const periodCells = periods.flatMap((period, _pIdx) => {
-                                  const pRowIdx = getPeriodRowIdx(period);
-                                  return days.map((day, dIdx) => {
-                                    const cellKey = `${day}-${period}`;
-                                    if (coveredCells.has(cellKey)) return null;
-
-                                    const entry = timetableEntries.find(e =>
-                                      e.section === selectedTimetableSection && e.day === day && e.period === period
-                                    );
-                                    const spanP = entry?.spanPeriods || 1;
-
-                                    // Horizontal fill preview range
-                                    const srcIdx = extendingSlot?.direction === 'horizontal' ? days.indexOf(extendingSlot.day) : -1;
-                                    const tgtIdx = extensionTarget && extendingSlot?.direction === 'horizontal' ? days.indexOf(extensionTarget.day) : -1;
-                                    const isInHRange =
-                                      extendingSlot?.direction === 'horizontal' &&
-                                      !!extensionTarget &&
-                                      period === extendingSlot.period &&
-                                      dIdx > srcIdx &&
-                                      dIdx <= tgtIdx;
-
-                                    // Vertical extend preview
-                                    const isVerticalTarget =
-                                      extendingSlot?.direction === 'vertical' &&
-                                      extensionTarget?.day === day &&
-                                      extensionTarget?.period === period;
-
-                                  return (
-                                    <motion.div
-                                      key={cellKey}
-                                      initial={{ opacity: 0, y: 10 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      transition={{ delay: (period * 5 + dIdx) * 0.015 }}
-                                      style={{
-                                        gridRow: `${pRowIdx + 2} / span ${spanP}`,
-                                        gridColumn: dIdx + 2
-                                      }}
-                                      className={cn(
-                                        "group relative min-h-[140px] transition-all duration-300 py-8 px-6 border-b border-[#EBE8E0]",
-                                        dIdx < days.length - 1 && "border-r",
-                                        !entry && !isInHRange && "cursor-pointer hover:bg-white/80 hover:shadow-[0_20px_50px_rgba(230,220,200,0.3)] hover:z-10",
-                                        isInHRange && "bg-primary/[0.04]",
-                                        isVerticalTarget && "bg-primary/[0.02]",
-                                        entry && spanP > 1 && "border-l-[3px] border-l-slate-300"
-                                      )}
-                                      onClick={() => !entry && !extendingSlot && setAssigningSlot({ day, period })}
-                                      onMouseEnter={() => {
-                                        if (!extendingSlot) return;
-                                        if (extendingSlot.direction === 'horizontal') {
-                                          const src = days.indexOf(extendingSlot.day);
-                                          if (period === extendingSlot.period && dIdx > src) setExtensionTarget({ day, period });
-                                          else setExtensionTarget(null);
-                                        } else {
-                                          const currentSpanP = extendingSlot.entry.spanPeriods || 1;
-                                          if (extendingSlot.day === day && period === extendingSlot.period + currentSpanP) {
-                                            setExtensionTarget({ day, period }); // extend: next cell below span
-                                          } else if (!(extendingSlot.day === day && period === extendingSlot.period)) {
-                                            setExtensionTarget(null); // not on card or extend cell
-                                          }
-                                          // if on the card itself: onMouseMove handles it, don't clear
-                                        }
-                                      }}
-                                      onMouseMove={(e) => {
-                                        if (extendingSlot?.direction === 'vertical' && extendingSlot.entry === entry) {
-                                          const rect = e.currentTarget.getBoundingClientRect();
-                                          const relY = Math.max(0, e.clientY - rect.top);
-                                          const periodIdx = Math.min(Math.floor((relY / rect.height) * spanP), spanP - 1);
-                                          const targetPeriod = period + periodIdx;
-                                          if (extensionTarget?.period !== targetPeriod || extensionTarget?.day !== day) {
-                                            setExtensionTarget({ day, period: targetPeriod });
-                                          }
-                                        }
-                                      }}
-                                      onMouseUp={() => {
-                                        if (extendingSlot && extensionTarget) {
-                                          if (extendingSlot.direction === 'horizontal' && day === extensionTarget.day && period === extensionTarget.period) {
-                                            const src = days.indexOf(extendingSlot.day);
-                                            const tgt = days.indexOf(extensionTarget.day);
-                                            const newEntries = Array.from({ length: tgt - src }, (_, i) => ({
-                                              ...extendingSlot.entry,
-                                              day: days[src + 1 + i],
-                                              period: extendingSlot.period
-                                            }));
-                                            setTimetableEntries(prev => [
-                                              ...prev.filter(e => !(
-                                                e.section === selectedTimetableSection &&
-                                                e.period === extendingSlot.period &&
-                                                days.indexOf(e.day) > src &&
-                                                days.indexOf(e.day) <= tgt
-                                              )),
-                                              ...newEntries
-                                            ]);
-                                          } else if (extendingSlot.direction === 'vertical') {
-                                            const isOnCard = entry === extendingSlot.entry;
-                                            const isExtendCell = day === extensionTarget.day && period === extensionTarget.period;
-                                            if (isOnCard || isExtendCell) {
-                                              const newSpan = Math.max(1, extensionTarget.period - extendingSlot.period + 1);
-                                              setTimetableEntries(prev => prev.map(e =>
-                                                e === extendingSlot.entry ? { ...e, spanPeriods: newSpan } : e
-                                              ));
-                                            }
-                                          }
-                                        }
-                                        setExtendingSlot(null);
-                                        setExtensionTarget(null);
-                                      }}
-                                    >
-                                      {/* Grain on hover */}
-                                      <div className="absolute inset-0 opacity-0 group-hover:opacity-[0.02] pointer-events-none transition-opacity"
-                                        style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/felt.png")' }} />
-
-                                      {/* Per-day period time label — top-left corner (hidden for spanned cells, time already shown below teacher) */}
-                                      {spanP === 1 && (() => {
-                                        const dayCfg = periodConfigByDay[day]?.[period];
-                                        if (!dayCfg) return null;
-                                        const monCfg = periodConfigByDay["Monday"]?.[period];
-                                        const isDiff = monCfg && (dayCfg.start !== monCfg.start || dayCfg.end !== monCfg.end);
-                                        return (
-                                          <div className={cn(
-                                            "absolute top-2 left-3 flex items-center gap-1 pointer-events-none z-[5]",
-                                            isDiff ? "opacity-70" : "opacity-30"
-                                          )}>
-                                            <span className="text-[8px] font-semibold text-secondary tracking-wide">{dayCfg.start}</span>
-                                            <span className="text-[7px] text-slate-400">–</span>
-                                            <span className="text-[8px] font-semibold text-secondary tracking-wide">{dayCfg.end}</span>
-                                            {isDiff && <span className="text-[7px] text-primary font-bold ml-0.5">*</span>}
-                                          </div>
-                                        );
-                                      })()}
-
-                                      {/* Vertical extend preview overlay */}
-                                      {isVerticalTarget && (
-                                        <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/30 z-10 flex items-center justify-center animate-pulse">
-                                          <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-primary/20 shadow-sm">
-                                            <span className="material-symbols-outlined text-[13px] text-primary">expand_more</span>
-                                            <span className="text-[10px] font-bold text-primary tracking-wide">Extend period</span>
-                                          </div>
-                                        </div>
-                                      )}
-
-                                      {/* Horizontal fill ghost preview — shown on all cells in range, overrides existing */}
-                                      {isInHRange && extendingSlot && (
-                                        <div className="absolute inset-0 pointer-events-none flex flex-col justify-center px-6 gap-0.5 z-10">
-                                          <div className="absolute inset-[3px] border border-dashed border-primary/30 rounded-sm" />
-                                          <p className="text-[13px] font-semibold text-secondary/30 leading-tight">{extendingSlot.entry.subjectName}</p>
-                                          <p className="text-[11px] text-slate-300">{extendingSlot.entry.teacherName}</p>
-                                        </div>
-                                      )}
-
-                                      {entry ? (
-                                        <>
-                                          {/* Drag-to-reduce boundary line */}
-                                          {extendingSlot?.direction === 'vertical' && extendingSlot.entry === entry && extensionTarget && spanP > 1 && (
-                                            <div
-                                              className="absolute left-3 right-3 border-t-2 border-dashed border-slate-400/60 z-20 pointer-events-none"
-                                              style={{ top: `${((extensionTarget.period - period + 1) / spanP) * 100}%` }}
-                                            />
-                                          )}
-
-                                          {/* Span badge */}
-                                          {spanP > 1 && (
-                                            <div className="absolute top-3 left-3 flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full z-10">
-                                              <span className="material-symbols-outlined text-[11px]">unfold_more</span>
-                                              <span className="text-[9px] font-semibold tracking-wide">×{spanP} periods</span>
+                                        <div key={`lbl-${p}`} style={{ top, height }}
+                                             className="absolute left-0 right-0 flex flex-col items-center justify-center border-b border-[#EBE8E0] px-1 overflow-hidden">
+                                          <span className="text-[20px] font-bold text-secondary/70 leading-none">{p}</span>
+                                          {editingPeriod === p ? (
+                                            <div className="flex flex-col items-center gap-1 mt-1"
+                                                 onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setEditingPeriod(null); }}>
+                                              <div className="flex items-center gap-1">
+                                                <input autoFocus type="number" min={5} max={180} value={dur}
+                                                       onChange={(e) => {
+                                                         const v = parseInt(e.target.value) || scheduleConfig.defaultDuration;
+                                                         setPeriodDurations(prev => ({ ...prev, [p]: v }));
+                                                         if (scheduleConfig.uniformDuration) setScheduleConfig(prev => ({ ...prev, uniformDuration: false }));
+                                                       }}
+                                                       className="w-10 text-center text-[11px] font-semibold bg-white border border-[#EBE8E0] rounded-lg px-1 py-1 outline-none focus:border-primary shadow-sm" />
+                                                <span className="text-[9px] text-slate-400">m</span>
+                                              </div>
+                                              <div className="text-[8px] text-slate-300 text-center leading-tight">{mon.start}<br />{mon.end}</div>
                                             </div>
-                                          )}
-
-                                          <div className="flex flex-col items-start text-left gap-0.5 animate-in fade-in slide-in-from-left-2 duration-500 h-full justify-center">
-                                            <h4 className="text-[14px] font-semibold text-secondary leading-tight group-hover:text-primary transition-colors">{entry.subjectName}</h4>
-                                            <p className="text-[11px] font-medium text-slate-400 tracking-tight">{entry.teacherName}</p>
-                                            {spanP > 1 && (
-                                              <p className="text-[10px] font-medium text-slate-400 mt-1.5">
-                                                {periodConfig[entry.period]?.start} — {periodConfig[Math.min(entry.period + spanP - 1, periods[periods.length - 1])]?.end}
-                                              </p>
-                                            )}
-                                          </div>
-
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setTimetableEntries(prev => prev.filter(ent => ent !== entry));
-                                            }}
-                                            className="absolute top-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10"
-                                          >
-                                            <span className="material-symbols-outlined text-[15px]">close</span>
-                                          </button>
-
-                                          {/* Shrink vertical span */}
-                                          {spanP > 1 && (
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setTimetableEntries(prev => prev.map(ent =>
-                                                  ent === entry ? { ...ent, spanPeriods: (ent.spanPeriods || 1) - 1 } : ent
-                                                ));
-                                              }}
-                                              className="absolute bottom-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10"
-                                              title="Remove one period"
-                                            >
-                                              <span className="material-symbols-outlined text-[15px]">unfold_less</span>
+                                          ) : (
+                                            <button onClick={() => setEditingPeriod(p)} className="flex flex-col items-center gap-0.5 group/time">
+                                              <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">{mon.start}</span>
+                                              <span className="text-[8px] font-medium text-slate-300">—</span>
+                                              <span className="text-[9px] font-semibold text-secondary/40 group-hover/time:text-primary transition-colors tracking-wider">{mon.end}</span>
+                                              <span className="text-[8px] text-slate-300 mt-0.5">{dur}m</span>
                                             </button>
                                           )}
-
-                                          {/* Bottom handle — merges periods vertically */}
-                                          <div
-                                            onMouseDown={(e) => {
-                                              e.stopPropagation();
-                                              setExtendingSlot({ day, period, entry, direction: 'vertical' });
-                                            }}
-                                            className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize group/handle flex items-center justify-center z-20"
-                                          >
-                                            <div className="w-8 h-1 rounded-full bg-slate-200 group-hover/handle:bg-primary/40 opacity-0 group-hover:opacity-100 transition-all" />
-                                          </div>
-
-                                          {/* Right handle — fills across days */}
-                                          <div
-                                            onMouseDown={(e) => {
-                                              e.stopPropagation();
-                                              setExtendingSlot({ day, period, entry, direction: 'horizontal' });
-                                            }}
-                                            className="absolute top-0 right-0 bottom-0 w-5 cursor-ew-resize group/rhandle flex items-center justify-center z-20"
-                                          >
-                                            <div className="h-10 w-[3px] rounded-full bg-slate-200 group-hover/rhandle:bg-primary/50 opacity-0 group-hover:opacity-100 transition-all duration-200" />
-                                          </div>
-                                        </>
-                                      ) : (
-                                        <div className="h-full flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 duration-300">
-                                          <div className="size-6 rounded-full text-secondary/30 flex items-center justify-center">
-                                            <span className="material-symbols-outlined text-[18px]">add</span>
-                                          </div>
-                                          <span className="text-[11px] font-semibold text-secondary/30">Assign</span>
                                         </div>
-                                      )}
+                                      );
+                                    })}
+                                  </div>
 
-                                      {/* Assignment Popover */}
-                                      {assigningSlot?.day === day && assigningSlot?.period === period && (
-                                        <div className="absolute inset-2 z-20 bg-[#FDFCFB] shadow-[0_20px_60px_rgba(200,180,150,0.3)] rounded-xl border border-[#EBE8E0] p-4 animate-in fade-in zoom-in-95 duration-200">
-                                          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                                            style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '12px 12px' }} />
-                                          <div className="relative z-10 flex flex-col h-full">
-                                            <div className="flex justify-between items-center mb-4">
-                                              <span className="text-[11px] font-semibold text-slate-400 tracking-tight">Assign subject</span>
-                                              <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); setSubjectSearch(""); }} className="text-slate-300 hover:text-secondary transition-colors">
-                                                <span className="material-symbols-outlined text-[14px]">close</span>
-                                              </button>
-                                            </div>
-                                            <div className="relative group/search z-50">
-                                              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-primary/40 group-focus-within/search:text-primary transition-colors">search</span>
-                                              <input
-                                                autoFocus
-                                                type="text"
-                                                placeholder="Subject name..."
-                                                value={subjectSearch}
-                                                onChange={(e) => setSubjectSearch(e.target.value)}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all "
-                                              />
-                                              {subjectSearch.length > 0 && (
-                                                <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#EBE8E0] rounded-lg shadow-[0_20px_50px_rgba(200,180,150,0.35)] z-[100] max-h-[220px] overflow-y-auto no-scrollbar py-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                                                  {mappings
-                                                    .filter(m => `${m.grade}-${m.section}` === selectedTimetableSection)
-                                                    .filter(m => {
-                                                      const sub = subjects.find(s => s.id === m.subjectId);
-                                                      return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase());
-                                                    })
-                                                    .map(m => {
-                                                      const sub = subjects.find(s => s.id === m.subjectId);
-                                                      const teacher = teachers.find(t => t.id === m.teacherId);
-                                                      return (
-                                                        <button
-                                                          key={m.id}
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const newEntry = {
-                                                              section: selectedTimetableSection,
-                                                              day,
-                                                              period,
-                                                              subjectId: m.subjectId,
-                                                              subjectName: sub?.name || "",
-                                                              teacherId: m.teacherId,
-                                                              teacherName: teacher?.name || m.teacherId
-                                                            };
-                                                            setTimetableEntries(prev => [...prev, newEntry]);
-                                                            setAssigningSlot(null);
-                                                            setSubjectSearch("");
-                                                          }}
-                                                          className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt"
-                                                        >
-                                                          <div className="space-y-0.5">
-                                                            <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">{sub?.name}</p>
-                                                            <p className="text-[10px] font-medium text-slate-400">{teacher?.name || m.teacherId}</p>
-                                                          </div>
-                                                          <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">add_circle</span>
-                                                        </button>
-                                                      );
-                                                    })}
-                                                  {mappings.filter(m => {
-                                                    const sub = subjects.find(s => s.id === m.subjectId);
-                                                    return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()) && `${m.grade}-${m.section}` === selectedTimetableSection;
-                                                  }).length === 0 && (
-                                                    <div className="px-3 py-6 text-center space-y-1">
-                                                      <p className="text-[11px] text-slate-400 font-medium">No results found</p>
-                                                    </div>
-                                                  )}
+                                  {/* Day columns */}
+                                  {days.map((day, dIdx) => {
+                                    const coveredPeriods = new Set<number>();
+                                    timetableEntries
+                                      .filter(e => e.section === selectedTimetableSection && e.day === day && (e.spanPeriods || 1) > 1)
+                                      .forEach(e => { for (let i = 1; i < (e.spanPeriods || 1); i++) coveredPeriods.add(e.period + i); });
+                                    return (
+                                      <div key={day}
+                                           className={cn("flex-1 relative", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}
+                                           onMouseMove={(e) => {
+                                             if (!extendingSlot || extendingSlot.direction !== 'vertical' || extendingSlot.day !== day) return;
+                                             const rect = e.currentTarget.getBoundingClientRect();
+                                             const absMin = schoolStartMins + Math.max(0, e.clientY - rect.top) / SCALE;
+                                             let found: number | null = null;
+                                             for (const p of periods) {
+                                               const cfg = periodConfigByDay[day]?.[p];
+                                               if (cfg && timeToMins(cfg.start) <= absMin && absMin <= timeToMins(cfg.end)) { found = p; break; }
+                                             }
+                                             if (found !== null && found >= extendingSlot.period && (extensionTarget?.period !== found || extensionTarget?.day !== day)) {
+                                               setExtensionTarget({ day, period: found });
+                                             }
+                                           }}>
+
+                                        {/* 30-min horizontal guide lines */}
+                                        {timeTicks.map(t => (
+                                          <div key={t} style={{ top: `${(t - schoolStartMins) * SCALE}px` }}
+                                               className="absolute left-0 right-0 border-t border-[#F0EDE8]/80 pointer-events-none" />
+                                        ))}
+
+                                        {/* Break cells for this day */}
+                                        {breakConfig
+                                          .filter(b => b.days.length === 0 || b.days.includes(day))
+                                          .map(brk => {
+                                            const afterEnd = periodConfigByDay[day]?.[brk.afterPeriod]?.end;
+                                            if (!afterEnd) return null;
+                                            const brkTop = (timeToMins(afterEnd) - schoolStartMins) * SCALE;
+                                            const brkHeight = Math.max(20, brk.duration * SCALE);
+                                            const bIsPrayer = brk.type === 'prayer';
+                                            const bIsLunch = brk.type === 'lunch';
+                                            return (
+                                              <div key={`brk-${brk.id}`}
+                                                   style={{ top: brkTop, height: brkHeight, left: 0, right: 0, position: 'absolute', zIndex: 5 }}
+                                                   className={cn("flex items-center justify-center gap-1.5 border-b border-[#EBE8E0]",
+                                                     bIsPrayer ? "bg-emerald-50/70" : bIsLunch ? "bg-amber-50/50" : "bg-slate-50/70")}>
+                                                <span className={cn("material-symbols-outlined text-[12px]", bIsPrayer ? "text-emerald-500" : bIsLunch ? "text-amber-400" : "text-slate-400")}>
+                                                  {bIsPrayer ? 'mosque' : bIsLunch ? 'restaurant' : 'free_breakfast'}
+                                                </span>
+                                                <div className="flex flex-col leading-tight">
+                                                  <span className={cn("text-[10px] font-semibold", bIsPrayer ? "text-emerald-600/70" : bIsLunch ? "text-amber-600/70" : "text-slate-400")}>{brk.label}</span>
+                                                  <span className="text-[8px] text-slate-300">{afterEnd} – {minsToTime(timeToMins(afterEnd) + brk.duration)}</span>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+
+                                        {/* Ghost vertical extension preview */}
+                                        {extendingSlot?.direction === 'vertical' && extendingSlot.day === day && extensionTarget && (() => {
+                                          const se = extendingSlot.entry;
+                                          const curEndP = Math.min(se.period + (se.spanPeriods || 1) - 1, periods[periods.length - 1]);
+                                          const curEndCfg = periodConfigByDay[day]?.[curEndP];
+                                          const tgtCfg = periodConfigByDay[day]?.[extensionTarget.period];
+                                          if (!curEndCfg || !tgtCfg) return null;
+                                          const curEndY = (timeToMins(curEndCfg.end) - schoolStartMins) * SCALE;
+                                          const tgtEndY = (timeToMins(tgtCfg.end) - schoolStartMins) * SCALE;
+                                          if (tgtEndY <= curEndY) return null;
+                                          return (
+                                            <div className="absolute left-0 right-0 bg-primary/5 border-2 border-dashed border-primary/20 pointer-events-none z-10"
+                                                 style={{ top: curEndY, height: tgtEndY - curEndY }} />
+                                          );
+                                        })()}
+
+                                        {/* Period cells */}
+                                        {periods.map(p => {
+                                          if (coveredPeriods.has(p)) return null;
+                                          const dayCfg = periodConfigByDay[day]?.[p];
+                                          if (!dayCfg) return null;
+                                          const entry = timetableEntries.find(e => e.section === selectedTimetableSection && e.day === day && e.period === p);
+                                          const spanP = entry?.spanPeriods || 1;
+                                          const endP = Math.min(p + spanP - 1, periods[periods.length - 1]);
+                                          const endCfg = periodConfigByDay[day]?.[endP];
+                                          const cellTop = (timeToMins(dayCfg.start) - schoolStartMins) * SCALE;
+                                          const cellHeight = endCfg
+                                            ? (timeToMins(endCfg.end) - timeToMins(dayCfg.start)) * SCALE
+                                            : dayCfg.dur * SCALE;
+                                          const srcIdx = extendingSlot?.direction === 'horizontal' ? days.indexOf(extendingSlot.day) : -1;
+                                          const tgtIdx = extensionTarget && extendingSlot?.direction === 'horizontal' ? days.indexOf(extensionTarget.day) : -1;
+                                          const isInHRange = extendingSlot?.direction === 'horizontal' && !!extensionTarget && p === extendingSlot.period && dIdx > srcIdx && dIdx <= tgtIdx;
+                                          const isDiffTime = dayCfg.start !== periodConfigByDay["Monday"]?.[p]?.start;
+                                          return (
+                                            <motion.div
+                                              key={`${day}-${p}`}
+                                              initial={{ opacity: 0 }}
+                                              animate={{ opacity: 1 }}
+                                              transition={{ delay: (p * 5 + dIdx) * 0.01 }}
+                                              style={{ top: cellTop, height: cellHeight, left: 0, right: 0, position: 'absolute', zIndex: entry ? 2 : 1 }}
+                                              className={cn(
+                                                "group border-b border-[#EBE8E0] transition-colors duration-200 py-4 px-4 overflow-hidden",
+                                                !entry && !isInHRange && "cursor-pointer hover:bg-white/90 hover:shadow-[0_4px_20px_rgba(230,220,200,0.4)] hover:z-[15]",
+                                                isInHRange && "bg-primary/[0.04]",
+                                                entry && spanP > 1 && "border-l-[3px] border-l-slate-300"
+                                              )}
+                                              onClick={() => !entry && !extendingSlot && setAssigningSlot({ day, period: p })}
+                                              onMouseEnter={() => {
+                                                if (!extendingSlot || extendingSlot.direction !== 'horizontal') return;
+                                                const src = days.indexOf(extendingSlot.day);
+                                                if (p === extendingSlot.period && dIdx > src) setExtensionTarget({ day, period: p });
+                                                else setExtensionTarget(null);
+                                              }}
+                                              onMouseUp={() => {
+                                                if (extendingSlot && extensionTarget) {
+                                                  if (extendingSlot.direction === 'horizontal' && day === extensionTarget.day && p === extensionTarget.period) {
+                                                    const src = days.indexOf(extendingSlot.day);
+                                                    const tgt = days.indexOf(extensionTarget.day);
+                                                    const newEntries = Array.from({ length: tgt - src }, (_, i) => ({ ...extendingSlot.entry, day: days[src + 1 + i], period: extendingSlot.period }));
+                                                    setTimetableEntries(prev => [
+                                                      ...prev.filter(e => !(e.section === selectedTimetableSection && e.period === extendingSlot.period && days.indexOf(e.day) > src && days.indexOf(e.day) <= tgt)),
+                                                      ...newEntries
+                                                    ]);
+                                                  } else if (extendingSlot.direction === 'vertical' && extendingSlot.day === day) {
+                                                    const newSpan = Math.max(1, extensionTarget.period - extendingSlot.period + 1);
+                                                    setTimetableEntries(prev => prev.map(e => e === extendingSlot.entry ? { ...e, spanPeriods: newSpan } : e));
+                                                  }
+                                                }
+                                                setExtendingSlot(null); setExtensionTarget(null);
+                                              }}
+                                            >
+                                              {/* Per-day time label */}
+                                              {spanP === 1 && (
+                                                <div className={cn("absolute top-1.5 left-3 flex items-center gap-1 pointer-events-none z-[5]", isDiffTime ? "opacity-70" : "opacity-30")}>
+                                                  <span className="text-[8px] font-semibold text-secondary tracking-wide">{dayCfg.start}</span>
+                                                  <span className="text-[7px] text-slate-400">–</span>
+                                                  <span className="text-[8px] font-semibold text-secondary tracking-wide">{dayCfg.end}</span>
+                                                  {isDiffTime && <span className="text-[7px] text-primary font-bold ml-0.5">*</span>}
                                                 </div>
                                               )}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      )}
-                                    </motion.div>
-                                  );
-                                  });
-                                });
-
-                                return [...breakRows, ...periodCells];
+                                              {entry ? (
+                                                <>
+                                                  {extendingSlot?.direction === 'vertical' && extendingSlot.entry === entry && extensionTarget && spanP > 1 && (() => {
+                                                    const tgtEndCfg = periodConfigByDay[day]?.[extensionTarget.period];
+                                                    if (!tgtEndCfg || !endCfg) return null;
+                                                    const cellStartMin = timeToMins(dayCfg.start);
+                                                    const cellEndMin = timeToMins(endCfg.end);
+                                                    const pct = Math.min(100, Math.max(0, (timeToMins(tgtEndCfg.end) - cellStartMin) / (cellEndMin - cellStartMin) * 100));
+                                                    return <div className="absolute left-3 right-3 border-t-2 border-dashed border-slate-400/60 z-20 pointer-events-none" style={{ top: `${pct}%` }} />;
+                                                  })()}
+                                                  {spanP > 1 && (
+                                                    <div className="absolute top-3 left-3 flex items-center gap-1 bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full z-10">
+                                                      <span className="material-symbols-outlined text-[11px]">unfold_more</span>
+                                                      <span className="text-[9px] font-semibold tracking-wide">×{spanP} periods</span>
+                                                    </div>
+                                                  )}
+                                                  <div className="flex flex-col items-start text-left gap-0.5 animate-in fade-in duration-500 h-full justify-center">
+                                                    <h4 className="text-[14px] font-semibold text-secondary leading-tight group-hover:text-primary transition-colors">{entry.subjectName}</h4>
+                                                    <p className="text-[11px] font-medium text-slate-400 tracking-tight">{entry.teacherName}</p>
+                                                    {spanP > 1 && endCfg && (
+                                                      <p className="text-[10px] font-medium text-slate-400 mt-1.5">{dayCfg.start} — {endCfg.end}</p>
+                                                    )}
+                                                  </div>
+                                                  <button onClick={(e) => { e.stopPropagation(); setTimetableEntries(prev => prev.filter(ent => ent !== entry)); }}
+                                                          className="absolute top-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10">
+                                                    <span className="material-symbols-outlined text-[15px]">close</span>
+                                                  </button>
+                                                  {spanP > 1 && (
+                                                    <button onClick={(e) => { e.stopPropagation(); setTimetableEntries(prev => prev.map(ent => ent === entry ? { ...ent, spanPeriods: (ent.spanPeriods || 1) - 1 } : ent)); }}
+                                                            className="absolute bottom-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all flex items-center justify-center text-slate-300 shadow-sm bg-white z-10"
+                                                            title="Remove one period">
+                                                      <span className="material-symbols-outlined text-[15px]">unfold_less</span>
+                                                    </button>
+                                                  )}
+                                                  <div onMouseDown={(e) => { e.stopPropagation(); setExtendingSlot({ day, period: p, entry, direction: 'vertical' }); }}
+                                                       className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize group/handle flex items-center justify-center z-20">
+                                                    <div className="w-8 h-1 rounded-full bg-slate-200 group-hover/handle:bg-primary/40 opacity-0 group-hover:opacity-100 transition-all" />
+                                                  </div>
+                                                  <div onMouseDown={(e) => { e.stopPropagation(); setExtendingSlot({ day, period: p, entry, direction: 'horizontal' }); }}
+                                                       className="absolute top-0 right-0 bottom-0 w-5 cursor-ew-resize group/rhandle flex items-center justify-center z-20">
+                                                    <div className="h-10 w-[3px] rounded-full bg-slate-200 group-hover/rhandle:bg-primary/50 opacity-0 group-hover:opacity-100 transition-all duration-200" />
+                                                  </div>
+                                                </>
+                                              ) : (
+                                                <div className="h-full flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 duration-300">
+                                                  <div className="size-6 rounded-full text-secondary/30 flex items-center justify-center">
+                                                    <span className="material-symbols-outlined text-[18px]">add</span>
+                                                  </div>
+                                                  <span className="text-[11px] font-semibold text-secondary/30">Assign</span>
+                                                </div>
+                                              )}
+                                              {isInHRange && extendingSlot && (
+                                                <div className="absolute inset-0 pointer-events-none flex flex-col justify-center px-4 gap-0.5 z-10">
+                                                  <div className="absolute inset-[3px] border border-dashed border-primary/30 rounded-sm" />
+                                                  <p className="text-[13px] font-semibold text-secondary/30 leading-tight">{extendingSlot.entry.subjectName}</p>
+                                                  <p className="text-[11px] text-slate-300">{extendingSlot.entry.teacherName}</p>
+                                                </div>
+                                              )}
+                                              {assigningSlot?.day === day && assigningSlot?.period === p && (
+                                                <div className="absolute inset-2 z-[30] bg-[#FDFCFB] shadow-[0_20px_60px_rgba(200,180,150,0.3)] rounded-xl border border-[#EBE8E0] p-4 animate-in fade-in zoom-in-95 duration-200">
+                                                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '12px 12px' }} />
+                                                  <div className="relative z-10 flex flex-col h-full">
+                                                    <div className="flex justify-between items-center mb-4">
+                                                      <span className="text-[11px] font-semibold text-slate-400 tracking-tight">Assign subject</span>
+                                                      <button onClick={(e) => { e.stopPropagation(); setAssigningSlot(null); setSubjectSearch(""); }} className="text-slate-300 hover:text-secondary transition-colors">
+                                                        <span className="material-symbols-outlined text-[14px]">close</span>
+                                                      </button>
+                                                    </div>
+                                                    <div className="relative group/search z-50">
+                                                      <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-primary/40 group-focus-within/search:text-primary transition-colors">search</span>
+                                                      <input autoFocus type="text" placeholder="Subject name..."
+                                                             value={subjectSearch}
+                                                             onChange={(e) => setSubjectSearch(e.target.value)}
+                                                             onClick={(e) => e.stopPropagation()}
+                                                             className="w-full h-9 bg-white/80 border border-[#EBE8E0] rounded-lg pl-9 pr-3 text-[12px] font-medium placeholder-slate-300 outline-none focus:border-primary/20 focus:bg-white transition-all" />
+                                                      {subjectSearch.length > 0 && (
+                                                        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#EBE8E0] rounded-lg shadow-[0_20px_50px_rgba(200,180,150,0.35)] z-[100] max-h-[220px] overflow-y-auto no-scrollbar py-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                                          {mappings
+                                                            .filter(m => `${m.grade}-${m.section}` === selectedTimetableSection)
+                                                            .filter(m => { const sub = subjects.find(s => s.id === m.subjectId); return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()); })
+                                                            .map(m => {
+                                                              const sub = subjects.find(s => s.id === m.subjectId);
+                                                              const teacher = teachers.find(t => t.id === m.teacherId);
+                                                              return (
+                                                                <button key={m.id}
+                                                                        onClick={(e) => {
+                                                                          e.stopPropagation();
+                                                                          setTimetableEntries(prev => [...prev, { section: selectedTimetableSection, day, period: p, subjectId: m.subjectId, subjectName: sub?.name || "", teacherId: m.teacherId, teacherName: teacher?.name || m.teacherId }]);
+                                                                          setAssigningSlot(null); setSubjectSearch("");
+                                                                        }}
+                                                                        className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt">
+                                                                  <div className="space-y-0.5">
+                                                                    <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">{sub?.name}</p>
+                                                                    <p className="text-[10px] font-medium text-slate-400">{teacher?.name || m.teacherId}</p>
+                                                                  </div>
+                                                                  <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">add_circle</span>
+                                                                </button>
+                                                              );
+                                                            })}
+                                                          {mappings.filter(m => { const sub = subjects.find(s => s.id === m.subjectId); return sub?.name.toLowerCase().includes(subjectSearch.toLowerCase()) && `${m.grade}-${m.section}` === selectedTimetableSection; }).length === 0 && (
+                                                            <div className="px-3 py-6 text-center"><p className="text-[11px] text-slate-400 font-medium">No results found</p></div>
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </motion.div>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
                             })()}
-                            </div>
                           </div>
                         </div>
                       )}
