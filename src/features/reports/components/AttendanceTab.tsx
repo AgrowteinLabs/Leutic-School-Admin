@@ -23,7 +23,7 @@ export const AttendanceTab = () => {
           { label: "Half Day", value: totals.halfDay.toString(), icon: "timelapse", color: "text-[#B45309]" },
           { label: "Overall", value: `${overallPct}%`, icon: "monitoring", color: "text-foreground" },
         ].map((s, i) => (
-          <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm">
+          <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 ">
             <div className="size-10 rounded-xl flex items-center justify-center bg-accent shrink-0">
               <span className={cn("material-symbols-outlined text-[20px]", s.color || "text-foreground/70")}>{s.icon}</span>
             </div>
@@ -37,7 +37,7 @@ export const AttendanceTab = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Class-wise Attendance */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-foreground text-[15px] font-semibold">Class-wise Attendance</h3>
@@ -56,7 +56,7 @@ export const AttendanceTab = () => {
         </div>
 
         {/* Attendance Trend */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-foreground text-[15px] font-semibold">Weekly Attendance Trend</h3>
@@ -84,7 +84,7 @@ export const AttendanceTab = () => {
       </div>
 
       {/* Chronic Absentees Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="size-9 rounded-xl bg-[#FEE2E2] flex items-center justify-center">

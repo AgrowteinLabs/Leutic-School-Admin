@@ -14,7 +14,7 @@ export const TransportTab = () => (
         { label: "Avg Route Duration", value: "1h 07m", icon: "timer", color: "text-foreground" },
         { label: "Auto-Stops (Idle)", value: "2", icon: "stop_circle", color: "text-[#B45309]" },
       ].map((s, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm">
+        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 ">
           <div className="size-10 rounded-xl flex items-center justify-center bg-accent shrink-0">
             <span className={cn("material-symbols-outlined text-[20px]", s.color)}>{s.icon}</span>
           </div>
@@ -27,7 +27,7 @@ export const TransportTab = () => (
     </div>
 
     {/* Bus Route Summary Table */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="size-9 rounded-xl bg-[#DBEAFE] flex items-center justify-center">
@@ -75,7 +75,7 @@ export const TransportTab = () => (
     </div>
 
     {/* Driver Activity Chart */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <h3 className="text-foreground text-[15px] font-semibold mb-1">Weekly Driver Activity</h3>
       <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Sessions and tracking hours per day</p>
       <ResponsiveContainer width="100%" height={300}>

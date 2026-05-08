@@ -14,7 +14,7 @@ export const NotificationTab = () => (
         { label: "Read", value: "758", icon: "visibility", color: "text-[#2E7D32]" },
         { label: "Read Rate", value: "77.6%", icon: "analytics", color: "text-primary" },
       ].map((s, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm">
+        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 ">
           <div className="size-10 rounded-xl flex items-center justify-center bg-accent shrink-0">
             <span className={cn("material-symbols-outlined text-[20px]", s.color)}>{s.icon}</span>
           </div>
@@ -27,7 +27,7 @@ export const NotificationTab = () => (
     </div>
 
     {/* Delivery by Role */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <h3 className="text-foreground text-[15px] font-semibold mb-1">Delivery & Read Rate by Role</h3>
       <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Notification effectiveness per user role</p>
       <div className="space-y-5">
@@ -66,7 +66,7 @@ export const NotificationTab = () => (
 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Response Timeline */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
         <h3 className="text-foreground text-[15px] font-semibold mb-1">Time to Read Distribution</h3>
         <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">How fast users read notifications after delivery</p>
         <ResponsiveContainer width="100%" height={280}>
@@ -81,7 +81,7 @@ export const NotificationTab = () => (
       </div>
 
       {/* SMS Fallback */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
         <h3 className="text-foreground text-[15px] font-semibold mb-1">SMS Fallback Report</h3>
         <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Push failures that triggered SMS notifications</p>
         <ResponsiveContainer width="100%" height={280}>

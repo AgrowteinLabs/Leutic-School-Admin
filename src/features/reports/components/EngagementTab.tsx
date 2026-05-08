@@ -13,7 +13,7 @@ export const EngagementTab = () => (
         { label: "Active Community Users", value: "892", icon: "groups", trend: "+12%", up: true },
         { label: "Avg Replies/Post", value: "3.4", icon: "reply_all", trend: "+0.6", up: true },
       ].map((s, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm">
+        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 ">
           <div className="size-10 rounded-xl flex items-center justify-center bg-accent shrink-0">
             <span className="material-symbols-outlined text-[20px] text-foreground/70">{s.icon}</span>
           </div>
@@ -29,7 +29,7 @@ export const EngagementTab = () => (
     </div>
 
     {/* Community Activity Trend */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <h3 className="text-foreground text-[15px] font-semibold mb-1">Community Activity Trend</h3>
       <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Posts, replies, and reactions over 8 weeks</p>
       <ResponsiveContainer width="100%" height={320}>
@@ -61,7 +61,7 @@ export const EngagementTab = () => (
     </div>
 
     {/* Parent Engagement */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <h3 className="text-foreground text-[15px] font-semibold mb-1">Parent Engagement Metrics</h3>
       <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">How actively parents are using the platform</p>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -86,7 +86,7 @@ export const EngagementTab = () => (
     </div>
 
     {/* Moderation Stats */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <h3 className="text-foreground text-[15px] font-semibold mb-1">Content Moderation Overview</h3>
       <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Teacher moderation queue status</p>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

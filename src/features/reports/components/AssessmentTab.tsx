@@ -14,7 +14,7 @@ export const AssessmentTab = () => (
         { label: "Avg Score", value: "72%", icon: "grade", trend: "+3.2%" },
         { label: "Competitions", value: "8", icon: "emoji_events", trend: "5 won" },
       ].map((s, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm">
+        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 ">
           <div className="size-10 rounded-xl flex items-center justify-center bg-accent shrink-0">
             <span className="material-symbols-outlined text-[20px] text-foreground/70">{s.icon}</span>
           </div>
@@ -29,7 +29,7 @@ export const AssessmentTab = () => (
 
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Quiz Performance */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
         <h3 className="text-foreground text-[15px] font-semibold mb-1">Quiz Score Distribution</h3>
         <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Average score per quiz</p>
         <ResponsiveContainer width="100%" height={300}>
@@ -50,7 +50,7 @@ export const AssessmentTab = () => (
       </div>
 
       {/* Class Participation Heatmap-like */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
         <h3 className="text-foreground text-[15px] font-semibold mb-1">Quiz Participation by Class</h3>
         <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Engagement levels across classes</p>
         <div className="space-y-3">
@@ -76,7 +76,7 @@ export const AssessmentTab = () => (
     </div>
 
     {/* Time Analysis */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <h3 className="text-foreground text-[15px] font-semibold mb-1">Time vs Score Analysis</h3>
       <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">How quiz timing correlates with performance</p>
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
@@ -104,7 +104,7 @@ export const AssessmentTab = () => (
     </div>
 
     {/* Competition Results */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="size-9 rounded-xl bg-[#FEF3C7] flex items-center justify-center">

@@ -34,7 +34,7 @@ export const AcademicTab = () => (
         { label: "Highest Class Avg", value: "90% (10-A)", icon: "trending_up", trend: "+4.2%", up: true },
         { label: "At-Risk Students", value: "23", icon: "warning", trend: "-3", up: true },
       ].map((s, i) => (
-        <div key={i} className="flex items-center gap-4 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm shadow-slate-100/30 group hover:shadow-md transition-all">
+        <div key={i} className="flex items-center gap-4 rounded-2xl px-5 py-4 bg-white border border-slate-100  -100/30 group hover: transition-all">
           <div className="size-11 rounded-2xl flex items-center justify-center bg-accent shrink-0">
             <span className="material-symbols-outlined text-[22px] text-foreground/70">{s.icon}</span>
           </div>
@@ -51,7 +51,7 @@ export const AcademicTab = () => (
 
     {/* Class-wise Performance Chart */}
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-foreground text-[15px] font-semibold">Class-wise Average Marks</h3>
@@ -76,7 +76,7 @@ export const AcademicTab = () => (
       </div>
 
       {/* Subject Radar */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-foreground text-[15px] font-semibold">Subject Performance Radar</h3>
@@ -98,7 +98,7 @@ export const AcademicTab = () => (
     </div>
 
     {/* Exam Comparison Trend */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-foreground text-[15px] font-semibold">Exam Performance Trend</h3>
@@ -120,7 +120,7 @@ export const AcademicTab = () => (
     </div>
 
     {/* Teacher Performance Table */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-foreground text-[15px] font-semibold">Teacher-wise Performance</h3>

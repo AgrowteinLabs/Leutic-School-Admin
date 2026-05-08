@@ -26,7 +26,7 @@ export const FinanceTab = () => (
         { label: "Pending", value: `₹${(feeCollectionSummary.pending / 100000).toFixed(1)}L`, icon: "schedule", color: "text-[#B45309]" },
         { label: "Overdue", value: `₹${(feeCollectionSummary.overdue / 100000).toFixed(1)}L`, icon: "error", color: "text-[#B91C1C]" },
       ].map((s, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm">
+        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 ">
           <div className="size-10 rounded-xl flex items-center justify-center bg-accent shrink-0">
             <span className={cn("material-symbols-outlined text-[20px]", s.color)}>{s.icon}</span>
           </div>
@@ -40,7 +40,7 @@ export const FinanceTab = () => (
 
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       {/* Fee Collection Donut */}
-      <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+      <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-6 ">
         <h3 className="text-foreground text-[15px] font-semibold mb-2">Collection Overview</h3>
         <p className="text-[#B0AFA8] text-[11px] font-medium mb-4">Current academic year</p>
         <div className="flex items-center justify-center">
@@ -88,7 +88,7 @@ export const FinanceTab = () => (
       </div>
 
       {/* Class-wise Fee Bar */}
-      <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+      <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-100 p-6 ">
         <h3 className="text-foreground text-[15px] font-semibold mb-2">Class-wise Collection Rate</h3>
         <p className="text-[#B0AFA8] text-[11px] font-medium mb-4">Percentage collected per class</p>
         <ResponsiveContainer width="100%" height={340}>
@@ -110,33 +110,56 @@ export const FinanceTab = () => (
       </div>
     </div>
 
-    {/* Fee Reminder Funnel */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    {/* Fee Reminder Effectiveness */}
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <h3 className="text-foreground text-[15px] font-semibold mb-2">Fee Reminder Effectiveness</h3>
       <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Conversion funnel from reminder to payment</p>
-      <div className="flex items-end justify-center gap-2 h-48">
-        {feeReminderFunnel.map((stage, i) => {
-          const maxCount = feeReminderFunnel[0].count;
-          const heightPct = (stage.count / maxCount) * 100;
-          const opacity = 1 - (i * 0.15);
-          return (
-            <div key={i} className="flex flex-col items-center gap-2 flex-1 max-w-[140px]">
-              <span className="text-[14px] font-bold text-foreground">{stage.count}</span>
-              <div className="w-full rounded-t-xl transition-all duration-500" style={{ height: `${heightPct}%`, background: `rgba(21,35,40,${opacity})` }} />
-              <span className="text-[10px] font-medium text-[#B0AFA8] text-center leading-tight">{stage.stage}</span>
-            </div>
-          );
-        })}
-      </div>
+      
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart
+          layout="vertical"
+          data={feeReminderFunnel}
+          margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={true} vertical={false} />
+          <XAxis type="number" hide />
+          <YAxis 
+            dataKey="stage" 
+            type="category" 
+            tick={{ fontSize: 11, fontBold: "700", fill: "#444441" }}
+            width={100}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip
+            contentStyle={{ borderRadius: 12, border: "1px solid #f1f5f9", fontSize: 12 }}
+            cursor={{ fill: '#F7F8F4' }}
+          />
+          <Bar 
+            dataKey="count" 
+            radius={[0, 10, 10, 0]} 
+            barSize={32}
+          >
+            {feeReminderFunnel.map((_, i) => (
+              <Cell 
+                key={i} 
+                fill={i === 4 ? "#10b981" : i === 0 ? "#152328" : "#D9EA85"} 
+                fillOpacity={1 - (i * 0.12)}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+
       <div className="mt-4 pt-4 border-t border-slate-50 flex justify-center">
         <span className="text-[12px] font-medium text-[#B0AFA8]">
-          Conversion Rate: <span className="text-foreground font-bold">{((feeReminderFunnel[4].count / feeReminderFunnel[0].count) * 100).toFixed(1)}%</span> (Sent → Paid)
+          Overall Conversion: <span className="text-foreground font-bold">{((feeReminderFunnel[4].count / feeReminderFunnel[0].count) * 100).toFixed(1)}%</span> (Sent → Paid)
         </span>
       </div>
     </div>
 
     {/* Defaulters Table */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="size-9 rounded-xl bg-[#FEE2E2] flex items-center justify-center">

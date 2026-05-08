@@ -22,7 +22,7 @@ export const AuraTab = () => (
         { label: "Badges Awarded", value: "89", icon: "military_tech", color: "text-[#3D6B2C]" },
         { label: "Top Score", value: "1,250", icon: "emoji_events", color: "text-[#B45309]" },
       ].map((s, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm">
+        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 ">
           <div className="size-10 rounded-xl flex items-center justify-center bg-accent shrink-0">
             <span className={cn("material-symbols-outlined text-[20px]", s.color)}>{s.icon}</span>
           </div>
@@ -35,7 +35,7 @@ export const AuraTab = () => (
     </div>
 
     {/* Leaderboard */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="size-9 rounded-xl bg-[#FEF3C7] flex items-center justify-center">
@@ -62,7 +62,7 @@ export const AuraTab = () => (
             </div>
 
             {/* Avatar */}
-            <div className="size-10 rounded-full bg-slate-200 bg-cover bg-center ring-2 ring-white shadow-sm shrink-0"
+            <div className="size-10 rounded-full bg-slate-200 bg-cover bg-center ring-2 ring-white  shrink-0"
               style={{ backgroundImage: `url('${s.avatar}')` }}
             />
 
@@ -105,7 +105,7 @@ export const AuraTab = () => (
     </div>
 
     {/* Earning Trend */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <h3 className="text-foreground text-[15px] font-semibold mb-1">Aura Earning Sources Over Time</h3>
       <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">How students are earning points across categories</p>
       <ResponsiveContainer width="100%" height={320}>
@@ -142,7 +142,7 @@ export const AuraTab = () => (
     </div>
 
     {/* Badge Gallery */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <h3 className="text-foreground text-[15px] font-semibold mb-1">Badge Distribution</h3>
       <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Badges awarded across the school</p>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -150,7 +150,7 @@ export const AuraTab = () => (
           const r = rarityColors[b.rarity];
           return (
             <div key={i} className={cn("rounded-2xl p-5 border text-center group hover:scale-[1.02] transition-all", r.bg, r.border)}>
-              <div className={cn("size-14 rounded-2xl mx-auto flex items-center justify-center mb-3 bg-white shadow-sm", r.border)}>
+              <div className={cn("size-14 rounded-2xl mx-auto flex items-center justify-center mb-3 bg-white ", r.border)}>
                 <span className={cn("material-symbols-outlined text-[28px]", r.text)}>{b.icon}</span>
               </div>
               <p className="text-[13px] font-bold text-foreground mb-0.5">{b.badge}</p>
