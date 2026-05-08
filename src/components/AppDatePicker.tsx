@@ -23,7 +23,7 @@ export const AppDatePicker = ({
   placeholder = "DD / MM / YYYY",
   icon = "calendar_today",
   maxDate,
-  height = "h-12",
+  height = "h-10",
   placement = "bottom",
 }: AppDatePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -121,9 +121,9 @@ export const AppDatePicker = ({
           onChange={handleInputChange}
           placeholder={placeholder}
           className={cn(
-            "w-full h-full bg-transparent outline-none text-[14px] font-semibold transition-colors placeholder-[#B0AFA8] z-10",
+            "w-full h-full bg-transparent outline-none text-[length:var(--font-size-input)] font-[var(--font-weight-input)] transition-colors placeholder-[#B0AFA8] placeholder:font-medium z-10",
             inputValue || value ? "text-foreground" : "text-foreground",
-            icon ? "pl-12 pr-6" : "px-6"
+            icon ? "pl-11 pr-4" : "px-4"
           )}
         />
       </div>
@@ -199,7 +199,7 @@ export const AppDatePicker = ({
                     disabled={isDisabled}
                     onClick={() => !isDisabled && handleDateClick(day)}
                     className={cn(
-                      "size-8 rounded-full flex items-center justify-center text-[13px] font-semibold transition-all outline-none mx-auto",
+                      "size-8 rounded-full flex items-center justify-center text-[length:var(--font-size-input)] font-[var(--font-weight-input)] transition-all outline-none mx-auto",
                       isSelected 
                         ? "bg-primary text-white shadow-md shadow-primary/20 scale-110" 
                         : isToday 

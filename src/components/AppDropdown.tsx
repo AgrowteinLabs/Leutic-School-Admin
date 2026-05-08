@@ -20,7 +20,7 @@ export const AppDropdown = ({
   placeholder = "Select option",
   searchable = false,
   icon,
-  height = "h-12",
+  height = "h-10",
 }: AppDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,17 +82,17 @@ export const AppDropdown = ({
             onFocus={() => setIsOpen(true)}
             placeholder={placeholder}
             className={cn(
-              "w-full h-full bg-transparent outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] z-10 transition-all",
-              icon ? "pl-12 pr-6" : "px-6"
+              "w-full h-full bg-transparent outline-none text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-foreground placeholder-[#B0AFA8] placeholder:font-medium z-10 transition-all",
+              icon ? "pl-11 pr-4" : "px-4"
             )}
           />
         ) : (
           <div
             onClick={() => setIsOpen(!isOpen)}
             className={cn(
-              "w-full text-[14px] font-semibold transition-colors flex items-center h-full", 
-              value && value !== placeholder ? "text-foreground" : "text-[#B0AFA8]",
-              icon ? "pl-12 pr-6" : "px-6"
+              "w-full text-[length:var(--font-size-input)] transition-colors flex items-center h-full", 
+              value && value !== placeholder ? "text-foreground font-[var(--font-weight-input)]" : "text-[#B0AFA8] font-medium",
+              icon ? "pl-11 pr-4" : "px-4"
             )}
           >
             {value || placeholder}
@@ -118,7 +118,7 @@ export const AppDropdown = ({
                     key={opt}
                     onClick={() => { onChange?.(opt); setIsOpen(false); }}
                     className={cn(
-                      "px-4 py-3 mx-2 my-1 rounded-[10px] text-[14px] font-semibold cursor-pointer transition-all flex items-center justify-between group",
+                      "px-4 py-3 mx-2 my-1 rounded-[10px] text-[length:var(--font-size-input)] font-[var(--font-weight-input)] cursor-pointer transition-all flex items-center justify-between group",
                       isSelected
                         ? "bg-[#EAF2D7] text-foreground border border-[#D9EA85]"
                         : "text-[#444441] hover:bg-[#F7F8F4] hover:text-foreground"

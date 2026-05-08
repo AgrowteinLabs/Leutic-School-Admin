@@ -553,12 +553,13 @@ const ManageClassDrawer = ({ isOpen, onClose, classData, onDelete }: any) => {
                   ))}
                 </div>
 
-                <div className="relative group">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px] group-focus-within:text-primary transition-colors">person_search</span>
+                <div className="relative group h-10">
+                  <div className="absolute inset-0 bg-[#F7F8F4] border border-slate-100 rounded-[12px] transition-all group-focus-within:border-primary/50 group-focus-within:ring-4 group-focus-within:ring-primary/5 group-focus-within:bg-white overflow-hidden pointer-events-none" />
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px] group-focus-within:text-primary transition-colors z-20">person_search</span>
                   <input
                     type="text"
                     placeholder="Quick add student by name or ID..."
-                    className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[14px] pl-12 pr-6 text-[13px] font-semibold text-foreground placeholder-[#B0AFA8] focus:bg-white focus:border-primary/50 outline-none transition-all"
+                    className="relative w-full h-full bg-transparent border-none outline-none pl-12 pr-6 text-[13px] font-semibold text-foreground placeholder-[#B0AFA8] z-10"
                   />
                 </div>
               </div>
@@ -734,12 +735,13 @@ export const ClassDetailsPage = () => {
                     {classData.students.length} Total
                   </span>
                 </div>
-                <div className="relative group">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-sm">
+                <div className="relative group h-10 w-64">
+                  <div className="absolute inset-0 bg-[#F7F8F4] border border-slate-100 rounded-[10px] transition-all group-focus-within:border-primary/50 group-focus-within:ring-4 group-focus-within:ring-primary/5 group-focus-within:bg-white overflow-hidden pointer-events-none" />
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-primary transition-colors text-[18px] z-20">
                     search
                   </span>
                   <input
-                    className="pl-9 pr-4 h-9 text-xs border border-slate-100 rounded-[10px] bg-[#F7F8F4]/50 focus:border-primary/50 focus:ring-4 focus:ring-primary/5 w-64 outline-none transition-all focus:bg-white"
+                    className="relative w-full h-full bg-transparent border-none outline-none pl-11 pr-4 text-[13px] font-medium text-foreground placeholder-[#B0AFA8] placeholder:font-medium z-10"
                     placeholder="Search students..."
                     type="text"
                   />

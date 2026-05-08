@@ -129,7 +129,7 @@ export const DashboardPage = () => {
                                                 <input
                                                     type="text"
                                                     placeholder="Know Your Student — Search Name, ID or Roll Number..."
-                                                    className="flex-1 bg-transparent border-none outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] py-2.5 px-1"
+                                                    className="flex-1 bg-transparent border-none outline-none text-[14px] font-medium text-foreground placeholder-[#B0AFA8] placeholder:font-medium py-2.5 px-1"
                                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                                 />
                                                 <button

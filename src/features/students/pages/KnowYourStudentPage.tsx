@@ -71,7 +71,7 @@ export const KnowYourStudentPage = () => {
                                 placeholder="Know Your Student — Enter Name, Enrollment ID or Roll Number..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-[12px] pl-14 pr-4 py-3.5 text-[14px] font-normal text-foreground placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm"
+                                className="w-full bg-white border border-slate-200 rounded-[12px] pl-14 pr-4 py-3.5 text-[14px] font-medium text-foreground placeholder-slate-400 placeholder:font-medium focus:outline-none focus:ring-1 focus:ring-primary transition-all shadow-sm"
                             />
                         </div>
                         

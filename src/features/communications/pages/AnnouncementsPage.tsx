@@ -216,7 +216,7 @@ export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: b
                     <input 
                         type="text"
                         placeholder="e.g. Science Lab Maintenance Updates..."
-                        className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl px-6 py-4 text-sm font-semibold text-foreground placeholder:text-[#B0AFA8] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                        className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl px-6 py-4 text-sm font-medium text-foreground placeholder:text-[#B0AFA8] placeholder:font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                         value={newNotice.title}
                         onChange={(e) => setNewNotice({...newNotice, title: e.target.value})}
                     />

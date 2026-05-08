@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export const TopBar = ({
     title,
+    subtitle,
     actions,
     onBack,
 }: {
@@ -91,7 +92,11 @@ export const TopBar = ({
                             </button>
                         )}
                         <div className="flex flex-col gap-0.5">
-                            <p className="text-[#B0AFA8] text-[13px] font-medium">{greeting}, Principal</p>
+                            {subtitle ? (
+                                <p className="text-[#B0AFA8] text-[13px] font-medium">{subtitle}</p>
+                            ) : (
+                                <p className="text-[#B0AFA8] text-[13px] font-medium">{greeting}, Principal</p>
+                            )}
                             <h2 className="text-xl font-semibold tracking-tight text-foreground leading-tight">
                                 {title}
                             </h2>

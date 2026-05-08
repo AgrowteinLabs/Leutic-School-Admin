@@ -3,297 +3,210 @@ import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import Lottie from "lottie-react";
-import successAnimation from "../../../assets/animations/success.json";
-import { AppDropdown } from "../../../components/AppDropdown";
-import { AppDatePicker } from "../../../components/AppDatePicker";
+import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
+import { PDSButton } from "../../../components/pds/PDSButton";
+import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 
 export const AddDriverPage = () => {
     const navigate = useNavigate();
-    const [step, setStep] = useState(1);
-
-    const steps = [
-        { id: 1, title: "Personal", subtitle: "Driver identity" },
-        { id: 2, title: "Compliance", subtitle: "License & legal" },
-        { id: 3, title: "Assignment", subtitle: "Vehicle & route" },
-    ];
-
+    const [activeStep, setActiveStep] = useState(1);
     const [showSuccess, setShowSuccess] = useState(false);
+
+    // Step 1 State
+    const [fullName, setFullName] = useState("");
+    const [mobile, setMobile] = useState("");
+    const [emergencyContact, setEmergencyContact] = useState("");
+    const [bloodGroup, setBloodGroup] = useState("");
+    const [nationalId, setNationalId] = useState("");
+    const [address, setAddress] = useState("");
+
+    // Step 2 State
+    const [licenseNo, setLicenseNo] = useState("");
+    const [licenseExpiry, setLicenseExpiry] = useState<Date | null>(null);
+    const [licenseClass, setLicenseClass] = useState("");
+    const [policeVerification, setPoliceVerification] = useState("");
+    const [medicalFitness, setMedicalFitness] = useState("");
+    const [exp, setExp] = useState("");
+
+    // Step 3 State
+    const [assignedVehicle, setAssignedVehicle] = useState("");
+    const [shift, setShift] = useState("");
+    const [assignedRoute, setAssignedRoute] = useState("");
 
     const handleFinalize = () => {
         setShowSuccess(true);
     };
 
+    const steps = [
+        { id: 1, title: "Driver Identity", subtitle: "Personal information and contact details", icon: "person", color: "text-primary", bg: "bg-primary/10" },
+        { id: 2, title: "Compliance & Legal", subtitle: "Driving license and verification details", icon: "gavel", color: "text-emerald-600", bg: "bg-emerald-50" },
+        { id: 3, title: "Assignment & Route", subtitle: "Vehicle mapping and shift scheduling", icon: "directions_bus", color: "text-amber-600", bg: "bg-amber-50" },
+    ];
+
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white font-sans">
+        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB] font-sans">
             <TopBar
                 title="Register Driver"
                 subtitle="Enroll a new transport captain into the school ecosystem"
                 actions={
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="btn-text px-4 py-2 rounded-[10px] text-[13px] transition-all"
-                        >
-                            Cancel
-                        </button>
+                    <div className="flex items-center gap-3">
+                        <PDSButton variant="text" onClick={() => navigate(-1)}>Cancel</PDSButton>
+                        <PDSButton variant="primary" icon="how_to_reg" onClick={handleFinalize} disabled={activeStep < 3}>Complete Registration</PDSButton>
                     </div>
                 }
             />
 
-            <div className="flex-1 overflow-y-auto no-scrollbar relative">
-                <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-12">
-                    {/* Minimal Stepper */}
-                    <div className="mb-16">
-                        <div className="flex items-center justify-between relative max-w-sm mx-auto">
-                            <div className="absolute top-[11px] left-0 right-0 h-[2px] bg-slate-100 -z-10" />
-                            <motion.div
-                                className="absolute top-[11px] left-0 h-[2px] bg-foreground -z-10 origin-left"
-                                initial={{ width: "0%" }}
-                                animate={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
-                                transition={{ duration: 0.5, ease: "easeInOut" }}
-                            />
+            <div className="flex-1 overflow-y-auto no-scrollbar">
+                <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-10">
+                    
+                    {/* Unified Matured UI Container with Accordion Stepper */}
+                    <div className="bg-white border border-slate-100 rounded-[32px] shadow-sm shadow-slate-100/50 overflow-visible relative z-10 flex flex-col">
+                        
+                        {steps.map((step, index) => {
+                            const isExpanded = activeStep === step.id;
+                            const isCompleted = activeStep > step.id;
 
-                            {steps.map((s) => {
-                                const isActive = step === s.id;
-                                const isCompleted = step > s.id;
-
-                                return (
-                                    <div key={s.id} className="flex flex-col items-center gap-4 relative bg-white px-4">
-                                        <motion.div
-                                            className={cn(
-                                                "size-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 z-10",
-                                                isActive ? "bg-foreground text-white shadow-md shadow-slate-900/10" :
-                                                    isCompleted ? "bg-foreground text-white" : "bg-white border-2 border-slate-100 text-[#B0AFA8]"
-                                            )}
-                                            animate={isActive ? { scale: 1.2 } : { scale: 1 }}
-                                        >
-                                            {isCompleted ? <span className="material-symbols-outlined text-[14px]">check</span> : s.id}
-                                        </motion.div>
-                                        <div className="text-center absolute top-10 w-32 -ml-16 left-1/2">
-                                            <p className={cn(
-                                                "text-[13px] font-bold transition-colors duration-300",
-                                                isActive || isCompleted ? "text-foreground" : "text-[#B0AFA8]"
-                                            )}>{s.title}</p>
-                                            <p className="text-[11px] text-[#B0AFA8] font-medium mt-0.5">{s.subtitle}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="min-h-[400px] mt-20">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={step}
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -8 }}
-                                transition={{ duration: 0.4, ease: "easeOut" }}
-                            >
-                                {step === 1 && (
-                                    <div className="space-y-8">
-                                        <div className="flex items-center gap-6 pb-8 border-b border-slate-50">
-                                            <div className="size-24 rounded-3xl bg-[#F7F8F4] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-[#B0AFA8] hover:border-primary hover:text-primary transition-all cursor-pointer">
-                                                <span className="material-symbols-outlined text-2xl">person</span>
-                                                <span className="text-[10px] font-semibold ">Upload</span>
+                            return (
+                                <div key={step.id} className="flex flex-col">
+                                    {/* Section Header */}
+                                    <button 
+                                        onClick={() => setActiveStep(step.id)}
+                                        className={cn(
+                                            "w-full text-left p-10 flex items-center justify-between transition-all outline-none group",
+                                            isExpanded ? "bg-slate-50/40" : "hover:bg-slate-50/50",
+                                            index === 0 && "rounded-t-[31px]",
+                                            index !== 0 && "border-t border-slate-50"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-6">
+                                            <div className={cn(
+                                                "size-12 rounded-[20px] flex items-center justify-center transition-all duration-500",
+                                                isExpanded ? step.bg : "bg-slate-100",
+                                                isExpanded ? step.color : "text-slate-400"
+                                            )}>
+                                                <span className="material-symbols-outlined text-[24px]">
+                                                    {isCompleted ? "check_circle" : step.icon}
+                                                </span>
                                             </div>
-                                            <div>
-                                                <h4 className="text-foreground font-bold text-lg">Driver Profile Photo</h4>
-                                                <p className="text-[#B0AFA8] text-sm">Official photo for transport verification system.</p>
+                                            <div className="flex flex-col">
+                                                <h3 className={cn(
+                                                    "font-bold text-[length:var(--font-size-h3)] tracking-tight transition-colors",
+                                                    isExpanded ? "text-foreground" : "text-slate-500"
+                                                )}>
+                                                    {step.title}
+                                                </h3>
+                                                <p className="text-[length:var(--font-size-input)] font-medium text-[var(--text-color-body-muted)] mt-0.5">{step.subtitle}</p>
                                             </div>
                                         </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-                                            <FormGroup label="Driver Full Name" placeholder="Name as per Government ID" />
-                                            <FormGroup label="Mobile Number" placeholder="+91 XXXXX XXXXX" icon="call" />
-                                            <FormGroup label="Emergency Contact" placeholder="+91 XXXXX XXXXX" icon="emergency" />
-                                            <FormGroup label="Blood Group" type="select" options={["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]} optional searchable />
-                                            <div className="col-span-full">
-                                                <div className="space-y-2 group">
-                                                    <label className="text-[12px] font-bold text-[#B0AFA8] tracking-tight group-focus-within:text-foreground transition-colors px-1">Permanent Address</label>
-                                                    <textarea
-                                                        className="w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] px-6 py-4 outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] min-h-[100px] transition-all no-scrollbar"
-                                                        placeholder="Enter permanent residential address..."
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {step === 2 && (
-                                    <div className="space-y-8">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-                                            <FormGroup label="Driving License No." placeholder="DL-XXXXX-XXXXXX" icon="featured_video" />
-                                            <FormGroup label="License Expiry" type="date" placeholder="DD / MM / YYYY" icon="calendar_today" />
-                                            <FormGroup label="License Class" type="select" options={["Commercial (HMV)", "Light Motor Vehicle (LMV)", "Heavy Passenger Vehicle"]} searchable />
-                                            <FormGroup label="Medical Fitness Status" type="select" options={["Certified Fit", "Pending Review", "Annual Checkup Due"]} />
-                                            <FormGroup label="Police Verification Ref" placeholder="PV-XXXX-XXXX" icon="gavel" />
-                                            <FormGroup label="Total Driving Experience" placeholder="e.g. 12 Years" />
-                                            <FormGroup label="Previous Institution" placeholder="e.g. St. Xavier's Transport" optional />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {step === 3 && (
-                                    <div className="space-y-8">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-                                            <FormGroup label="Assigned Vehicle" type="select" options={["DL-12-S-5542 (Route A)", "DL-01-P-9902 (Route B)", "HR-55-G-1123 (Route C)"]} icon="directions_bus" searchable />
-                                            <FormGroup label="Primary Shift" type="select" options={["Morning & Evening", "Morning Only", "Evening Only"]} />
-                                            <FormGroup label="Assigned Route" type="select" options={["Route A - Aerocity", "Route B - Rohini", "Route C - Dwarka"]} disabled />
-                                            <FormGroup label="GPS Tracker ID (Auto)" placeholder="GPS-XXXX-XXX" disabled />
-                                        </div>
-
-                                        <div className="bg-[#F7F8F4] rounded-[20px] p-6 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
+                                        
+                                        {!isExpanded && (
                                             <div className="flex items-center gap-4">
-                                                <div className="size-12 rounded-full bg-white shadow-sm flex items-center justify-center text-foreground">
-                                                    <span className="material-symbols-outlined">qr_code_2</span>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[14px] font-bold text-foreground">Vehicle QR Token</p>
-                                                    <p className="text-[13px] text-[#B0AFA8] font-medium mt-0.5">Generate QR for student board pass scanning.</p>
-                                                </div>
+                                                {isCompleted && <span className="text-[11px] font-bold text-emerald-600 px-3 py-1.5 bg-emerald-50 rounded-full tracking-wider uppercase">Completed</span>}
+                                                <span className="material-symbols-outlined text-slate-300 group-hover:text-slate-400 transition-colors">expand_more</span>
                                             </div>
-                                            <button className="btn-secondary px-6 h-10 rounded-xl text-[12px] font-bold">Generate QR</button>
-                                        </div>
-                                    </div>
-                                )}
+                                        )}
+                                    </button>
 
-                            </motion.div>
-                        </AnimatePresence>
+                                    {/* Section Content */}
+                                    <AnimatePresence initial={false}>
+                                        {isExpanded && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.5, ease: [0.04, 0.62, 0.23, 0.98] }}
+                                                style={{ overflow: isExpanded ? "visible" : "hidden" }}
+                                            >
+                                                <div className="p-10 pt-4 space-y-12">
+                                                    {/* Step 1: Personal Details */}
+                                                    {step.id === 1 && (
+                                                        <div className="flex flex-col lg:flex-row gap-16">
+                                                            <div className="shrink-0">
+                                                                <div className="size-40 rounded-[40px] bg-[#F7F8F4] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 text-[#B0AFA8] hover:border-primary hover:text-primary transition-all cursor-pointer group">
+                                                                    <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">person_add</span>
+                                                                    <span className="text-[11px] font-bold uppercase tracking-wider">Driver Photo</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                                <PDSFormGroup label="Driver Full Name" placeholder="As per Govt. ID" value={fullName} onChange={setFullName} />
+                                                                <PDSFormGroup label="Mobile Number" placeholder="+91 XXXX" icon="call" value={mobile} onChange={setMobile} />
+                                                                <PDSFormGroup label="Emergency Contact" placeholder="+91 XXXX" icon="emergency" value={emergencyContact} onChange={setEmergencyContact} />
+                                                                <PDSFormGroup label="Blood Group" type="select" options={["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]} optional searchable value={bloodGroup} onChange={setBloodGroup} />
+                                                                <PDSFormGroup label="National ID" placeholder="XXXX-XXXX-XXXX" value={nationalId} onChange={setNationalId} />
+                                                                <PDSFormGroup label="Residential Address" type="textarea" placeholder="Full address..." value={address} onChange={setAddress} rows={2} className="md:col-span-2" />
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Step 2: Compliance */}
+                                                    {step.id === 2 && (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                            <PDSFormGroup label="Driving License No." placeholder="DL-XXXXX" icon="featured_video" value={licenseNo} onChange={setLicenseNo} />
+                                                            <PDSFormGroup label="License Expiry" type="date" value={licenseExpiry} onChange={setLicenseExpiry} />
+                                                            <PDSFormGroup label="License Class" type="select" options={["Commercial (HMV)", "Light Motor Vehicle (LMV)"]} value={licenseClass} onChange={setLicenseClass} />
+                                                            <PDSFormGroup label="Police Verification" placeholder="PV-Ref-XXX" icon="gavel" value={policeVerification} onChange={setPoliceVerification} />
+                                                            <PDSFormGroup label="Medical Fitness" type="select" options={["Certified Fit", "Review Pending"]} value={medicalFitness} onChange={setMedicalFitness} />
+                                                            <PDSFormGroup label="Years of Exp." placeholder="e.g. 10 Years" value={exp} onChange={setExp} />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Step 3: Assignment */}
+                                                    {step.id === 3 && (
+                                                        <div className="space-y-12">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                                <PDSFormGroup label="Assigned Vehicle" type="select" options={["Bus 01 - Route A", "Bus 02 - Route B", "Bus 03 - Route C"]} value={assignedVehicle} onChange={setAssignedVehicle} icon="directions_bus" searchable />
+                                                                <PDSFormGroup label="Primary Shift" type="select" options={["Morning & Evening", "Morning Only", "Evening Only"]} value={shift} onChange={setShift} />
+                                                                <PDSFormGroup label="Assigned Route" type="select" options={["Route A - North", "Route B - South"]} value={assignedRoute} onChange={setAssignedRoute} searchable />
+                                                            </div>
+                                                            
+                                                            <div className="bg-emerald-50/50 p-8 rounded-[32px] border border-emerald-100 flex items-center justify-between">
+                                                                <div className="flex items-center gap-6">
+                                                                    <div className="size-14 rounded-2xl bg-white flex items-center justify-center text-emerald-600 shadow-sm shadow-emerald-900/5">
+                                                                        <span className="material-symbols-outlined text-[28px]">qr_code_2</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-[15px] font-bold text-foreground">Transport Token</p>
+                                                                        <p className="text-[13px] text-[#B0AFA8] font-medium">Generate QR for passenger verification during boarding</p>
+                                                                    </div>
+                                                                </div>
+                                                                <PDSButton variant="primary" icon="qr_code_scanner" className="px-8 h-10">Generate QR</PDSButton>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Section Actions */}
+                                                    <div className="flex justify-end pt-8 border-t border-slate-100">
+                                                        {step.id < 3 ? (
+                                                            <PDSButton variant="primary" className="px-12 h-10" onClick={() => setActiveStep(step.id + 1)}>
+                                                                Save & Continue
+                                                            </PDSButton>
+                                                        ) : (
+                                                            <PDSButton variant="primary" className="px-12 h-10" onClick={handleFinalize}>
+                                                                Complete Registration
+                                                            </PDSButton>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            );
+                        })}
+
+                        {/* Silhouette Maintainer */}
+                        <div className="h-10 bg-white rounded-b-[32px]" />
                     </div>
                 </div>
             </div>
 
-            {/* Navigation Actions - Fixed at bottom */}
-            <div className="bg-white border-t border-slate-100 py-5 px-6 lg:px-10 z-20">
-                <div className="max-w-[1400px] mx-auto flex items-center justify-between">
-                    <button
-                        onClick={() => setStep(prev => Math.max(1, prev - 1))}
-                        className={cn(
-                            "btn-text px-8 h-10 rounded-xl text-[13px] font-bold transition-all",
-                            step === 1 && "opacity-0 pointer-events-none"
-                        )}
-                    >
-                        Back
-                    </button>
-
-                    <button
-                        onClick={() => step < 3 ? setStep(prev => prev + 1) : handleFinalize()}
-                        className="btn-primary px-10 h-10 rounded-xl text-[13px] font-bold transition-all shadow-lg active:scale-95 flex items-center gap-2 group"
-                    >
-                        {step === 3 ? "Complete Registration" : "Next Step"}
-                        {step < 3 && (
-                            <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {/* Success Modal */}
-            <AnimatePresence>
-                {showSuccess && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => navigate("/directory")}
-                            className="absolute inset-0 bg-foreground/40 backdrop-blur-sm cursor-pointer"
-                        />
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-white rounded-[40px] p-12 max-w-lg w-full relative z-10 shadow-2xl text-center"
-                        >
-                            <div className="mb-8 relative">
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
-                                    className="size-32 mx-auto relative z-10"
-                                >
-                                    <Lottie animationData={successAnimation} loop={false} className="w-full h-full" />
-                                </motion.div>
-                                <motion.div
-                                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0, 0.3] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="absolute inset-0 size-32 bg-[#EAF2D7] rounded-full mx-auto"
-                                />
-                            </div>
-
-                            <h3 className="text-[24px] font-bold text-[#3D6B2C] tracking-tight mb-2">Driver Registered!</h3>
-                            <p className="text-[#B0AFA8] text-[13px] font-medium leading-relaxed mb-10 px-4">
-                                The transport captain has been successfully added to the school network.
-                            </p>
-
-                            <button
-                                onClick={() => navigate("/directory/drivers")}
-                                className="btn-primary w-full h-10 rounded-xl text-[13px] font-bold"
-                            >
-                                View Transport Directory
-                            </button>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
-
-const FormGroup = ({ label, placeholder, icon, type = "input", options = [], searchable = false, disabled = false, optional = false, uppercase = false, maxDate }: any) => {
-    const [selectedValue, setSelectedValue] = useState("");
-
-    return (
-        <div className="space-y-2 group">
-            <label className={cn(
-                "text-[12px] font-bold transition-colors px-1 flex items-center justify-between tracking-tight",
-                "text-[#B0AFA8] group-focus-within:text-foreground"
-            )}>
-                {label}
-                {optional && <span className="text-[10px] text-[#B0AFA8] font-medium normal-case tracking-normal opacity-60">Optional</span>}
-            </label>
-            <div className="relative">
-                {icon && type === "input" && (
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px] group-focus-within:text-primary transition-colors z-10">
-                        {icon}
-                    </span>
-                )}
-                {type === "input" && (
-                    <input
-                        disabled={disabled}
-                        className={cn(
-                            "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white",
-                            icon ? "pl-12 pr-6" : "px-6",
-                            disabled && "opacity-50 cursor-not-allowed",
-                            uppercase && "uppercase placeholder:normal-case"
-                        )}
-                        placeholder={placeholder}
-                    />
-                )}
-                {type === "date" && (
-                    <AppDatePicker
-                        value={selectedValue ? new Date(selectedValue) : null}
-                        onChange={(d) => setSelectedValue(d.toISOString())}
-                        placeholder={placeholder}
-                        icon={icon}
-                        maxDate={maxDate}
-                    />
-                )}
-                {type === "select" && (
-                    <AppDropdown
-                        options={options}
-                        value={selectedValue}
-                        onChange={setSelectedValue}
-                        placeholder={placeholder}
-                        searchable={searchable}
-                        icon={icon}
-                    />
-                )}
-            </div>
+            <PDSSuccessModal 
+                show={showSuccess}
+                title="Driver Registered!"
+                description="The transport captain has been successfully added to the school network."
+                buttonText="Go to Transport Hub"
+                onClose={() => navigate("/transportation")}
+            />
         </div>
     );
 };

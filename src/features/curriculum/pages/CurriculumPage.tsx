@@ -96,8 +96,8 @@ const SlotSearchInput = ({ selectedSection, mappings, subjects, teachers, onAssi
   const [query, setQuery] = useState("");
   const filtered = query.length > 0
     ? mappings
-        .filter(m => `${m.grade}-${m.section}` === selectedSection)
-        .filter(m => subjects.find(s => s.id === m.subjectId)?.name.toLowerCase().includes(query.toLowerCase()))
+      .filter(m => `${m.grade}-${m.section}` === selectedSection)
+      .filter(m => subjects.find(s => s.id === m.subjectId)?.name.toLowerCase().includes(query.toLowerCase()))
     : [];
   return (
     <div className="relative group/search">
@@ -223,7 +223,7 @@ const TimetableGrid = memo(({
           <div className="w-[100px] shrink-0 border-r border-[#EBE8E0]" />
           {days.map((day, dIdx) => (
             <div key={day} className={cn("flex-1 py-5 px-6 bg-[#FDFCFB]/80", dIdx < days.length - 1 && "border-r border-[#EBE8E0]")}>
-              <span className="text-[14px] font-semibold text-secondary tracking-tight block">{day}</span>
+              <span className="text-[length:var(--font-size-body)] font-[var(--font-weight-label)] text-secondary tracking-tight block">{day}</span>
               <span className="text-[10px] font-medium text-slate-400 tracking-tight">Class day</span>
             </div>
           ))}
@@ -826,1073 +826,1073 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
   return (
     <CurriculumErrorBoundary>
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB]">
-      {!isHubChild && (
-        <>
-          <TopBar
-            title="Curriculum & Subject Mapping"
-            subtitle="Design academic structures, manage subjects, and assign faculty"
-            actions={
-              <div className="flex gap-3">
-                <button className="btn-outline h-10 px-5 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all">
-                  <span className="material-symbols-outlined text-lg">download</span>
-                  Export Schema
-                </button>
-              </div>
-            }
-          />
-
-          {/* Tabs Navigation */}
-          <div className="px-8 border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
-            <div className="flex gap-8 overflow-x-auto no-scrollbar">
-              {[
-                { id: "master", label: "Subject Master", icon: "book_4" },
-                { id: "grades", label: "Grade Templates", icon: "account_tree" },
-                { id: "mapping", label: "Teacher Mapping", icon: "assignment_ind" },
-                { id: "timetable", label: "Weekly Timetable", icon: "calendar_view_week" },
-              ].map((t) => {
-                const isActive = activeTab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => handleTabChange(t.id)}
-                    className={cn(
-                      "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
-                      isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "material-symbols-outlined text-[20px] transition-all",
-                        isActive ? "text-primary" : ""
-                      )}
-                      style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
-                    >
-                      {t.icon}
-                    </span>
-                    {t.label}
-                    {isActive && (
-                      <motion.div
-                        layoutId="curriculumTab"
-                        className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full shadow-[0_-2px_8px_rgba(217,234,133,0.4)]"
-                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                      />
-                    )}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB]">
+        {!isHubChild && (
+          <>
+            <TopBar
+              title="Curriculum & Subject Mapping"
+              subtitle="Design academic structures, manage subjects, and assign faculty"
+              actions={
+                <div className="flex gap-3">
+                  <button className="btn-outline h-10 px-5 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all">
+                    <span className="material-symbols-outlined text-lg">download</span>
+                    Export Schema
                   </button>
-                );
-              })}
+                </div>
+              }
+            />
+
+            {/* Tabs Navigation */}
+            <div className="px-8 border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
+              <div className="flex gap-8 overflow-x-auto no-scrollbar">
+                {[
+                  { id: "master", label: "Subject Master", icon: "book_4" },
+                  { id: "grades", label: "Grade Templates", icon: "account_tree" },
+                  { id: "mapping", label: "Teacher Mapping", icon: "assignment_ind" },
+                  { id: "timetable", label: "Weekly Timetable", icon: "calendar_view_week" },
+                ].map((t) => {
+                  const isActive = activeTab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => handleTabChange(t.id)}
+                      className={cn(
+                        "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
+                        isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "material-symbols-outlined text-[20px] transition-all",
+                          isActive ? "text-primary" : ""
+                        )}
+                        style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                      >
+                        {t.icon}
+                      </span>
+                      {t.label}
+                      {isActive && (
+                        <motion.div
+                          layoutId="curriculumTab"
+                          className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full shadow-[0_-2px_8px_rgba(217,234,133,0.4)]"
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
 
-      <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pb-10">
-        <div className="max-w-[1400px] mx-auto space-y-6 pt-4">
+        <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pb-10">
+          <div className="max-w-[1400px] mx-auto space-y-6 pt-4">
 
-          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px]">
+            <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px]">
 
-            {/* Header / Search Area (Hidden for Timetable to maximize space) */}
-            {activeTab !== "timetable" && (
-              <div className="p-3 border-b border-slate-100/50 flex flex-wrap gap-4 items-center justify-between bg-white rounded-t-[24px]">
-                <div className="flex-1">
-                  <div className="relative">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[20px]">search</span>
-                    <input
-                      type="text"
-                      placeholder={`Search in ${activeTab === 'master' ? 'Subjects' : activeTab === 'grades' ? 'Grade Templates' : 'Teacher Assignments'}...`}
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="input-base pl-11 pr-4 w-full"
+              {/* Header / Search Area (Hidden for Timetable to maximize space) */}
+              {activeTab !== "timetable" && (
+                <div className="p-3 border-b border-slate-100/50 flex flex-wrap gap-4 items-center justify-between bg-white rounded-t-[24px]">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[20px]">search</span>
+                      <input
+                        type="text"
+                        placeholder={`Search in ${activeTab === 'master' ? 'Subjects' : activeTab === 'grades' ? 'Grade Templates' : 'Teacher Assignments'}...`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="input-base pl-11 pr-4 w-full placeholder:font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <MenuDropdown
+                      value={sortOrder === "asc" ? "Ascending" : "Descending"}
+                      trigger={
+                        <button className="btn-outline px-4 gap-2">
+                          <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">
+                            {sortOrder === "asc" ? "sort_by_alpha" : "filter_list_off"}
+                          </span>
+                          {sortOrder === "asc" ? "Ascending" : "Descending"}
+                        </button>
+                      }
+                      items={[
+                        { label: "Ascending", onClick: () => setSortOrder("asc") },
+                        { label: "Descending", onClick: () => setSortOrder("desc") }
+                      ]}
                     />
+
+                    <MenuDropdown
+                      value={deptFilter}
+                      trigger={
+                        <button className="btn-outline px-4 gap-2">
+                          <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">filter_list</span>
+                          {deptFilter}
+                        </button>
+                      }
+                      items={[
+                        { label: "All Departments", onClick: () => setDeptFilter("All Departments") },
+                        ...activeSubjectAreas.map((area: string) => ({
+                          label: area,
+                          onClick: () => setDeptFilter(area)
+                        }))
+                      ]}
+                    />
+
+                    <div className="h-8 w-px bg-slate-100 mx-1" />
+
+                    {activeTab === "mapping" && (
+                      <button
+                        onClick={handleAddAdditionalSubject}
+                        className="btn-secondary h-10 px-4 flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">add_task</span>
+                        Custom Mapping
+                      </button>
+                    )}
+
+                    {activeTab === "grades" && (
+                      <button
+                        onClick={() => setShowTierDrawer(true)}
+                        className="size-10 rounded-xl bg-slate-50 border border-slate-100 text-[#B0AFA8] hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center group relative"
+                        title="Manage Academic Tiers"
+                      >
+                        <span className="material-symbols-outlined text-[20px] group-hover:rotate-90 group-hover:text-primary transition-all">settings</span>
+                        <span className="material-symbols-outlined text-[12px] absolute translate-x-[9px] translate-y-[-9px] text-[#B0AFA8] group-hover:text-primary transition-all">account_tree</span>
+                      </button>
+                    )}
+
+                    {activeTab !== "mapping" && (
+                      <button
+                        onClick={handleAddAction}
+                        className="btn-primary h-10 px-6 flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">add</span>
+                        {activeTab === "master" ? "New Subject" : "Configure Grade"}
+                      </button>
+                    )}
                   </div>
                 </div>
+              )}
 
-                <div className="flex items-center gap-3">
-                  <MenuDropdown
-                    value={sortOrder === "asc" ? "Ascending" : "Descending"}
-                    trigger={
-                      <button className="btn-outline px-4 gap-2">
-                        <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">
-                          {sortOrder === "asc" ? "sort_by_alpha" : "filter_list_off"}
-                        </span>
-                        {sortOrder === "asc" ? "Ascending" : "Descending"}
-                      </button>
-                    }
-                    items={[
-                      { label: "Ascending", onClick: () => setSortOrder("asc") },
-                      { label: "Descending", onClick: () => setSortOrder("desc") }
-                    ]}
-                  />
-
-                  <MenuDropdown
-                    value={deptFilter}
-                    trigger={
-                      <button className="btn-outline px-4 gap-2">
-                        <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">filter_list</span>
-                        {deptFilter}
-                      </button>
-                    }
-                    items={[
-                      { label: "All Departments", onClick: () => setDeptFilter("All Departments") },
-                      ...activeSubjectAreas.map((area: string) => ({
-                        label: area,
-                        onClick: () => setDeptFilter(area)
-                      }))
-                    ]}
-                  />
-
-                  <div className="h-8 w-px bg-slate-100 mx-1" />
-
-                  {activeTab === "mapping" && (
-                    <button
-                      onClick={handleAddAdditionalSubject}
-                      className="btn-secondary h-10 px-4 flex items-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">add_task</span>
-                      Custom Mapping
-                    </button>
-                  )}
-
-                  {activeTab === "grades" && (
-                    <button
-                      onClick={() => setShowTierDrawer(true)}
-                      className="size-10 rounded-xl bg-slate-50 border border-slate-100 text-[#B0AFA8] hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center justify-center group relative"
-                      title="Manage Academic Tiers"
-                    >
-                      <span className="material-symbols-outlined text-[20px] group-hover:rotate-90 group-hover:text-primary transition-all">settings</span>
-                      <span className="material-symbols-outlined text-[12px] absolute translate-x-[9px] translate-y-[-9px] text-[#B0AFA8] group-hover:text-primary transition-all">account_tree</span>
-                    </button>
-                  )}
-
-                  {activeTab !== "mapping" && (
-                    <button
-                      onClick={handleAddAction}
-                      className="btn-primary h-10 px-6 flex items-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">add</span>
-                      {activeTab === "master" ? "New Subject" : "Configure Grade"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Content Table Area */}
-            <div className="flex-1">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3 }}
-                  className="rounded-[23px]"
-                >
-                  {activeTab === "master" && (
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-[#F7F8F4]/50 border-b border-slate-50">
-                          {["Subject Name", "Code", "Category", "Department", "Actions"].map((h, i) => (
-                            <th key={h} className={cn(
-                              "px-8 py-4 text-[11px] font-semibold text-[#B0AFA8]",
-                              i === 4 ? "text-right" : ""
-                            )}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {[...subjects]
-                          .sort((a, b) => sortOrder === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name))
-                          .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                          .filter(s => deptFilter === "All Departments" || s.department === deptFilter)
-                          .map((sub) => (
-                            <tr key={sub.id} className="hover:bg-[#F7F8F4]/30 transition-colors group">
-                              <td className="px-8 py-5">
-                                <div className="flex items-center gap-3">
-                                  <span className="text-[14px] font-bold text-foreground group-hover:text-primary transition-colors">{sub.name}</span>
-                                </div>
-                              </td>
-                              <td className="px-8 py-5 text-[12px] font-medium text-slate-500">{sub.code}</td>
-                              <td className="px-8 py-5">
-                                <span className={cn(
-                                  "px-3 py-1 rounded-full text-[10px] font-bold border capitalize",
-                                  sub.category === "Core" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-                                    sub.category === "Elective" ? "bg-blue-50 text-blue-700 border-blue-100" :
-                                      sub.category === "Language" ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-purple-50 text-purple-700 border-purple-100"
-                                )}>
-                                  {sub.category}
-                                </span>
-                              </td>
-                              <td className="px-8 py-5 text-[13px] font-medium text-[#444441]">{sub.department}</td>
-                              <td className="px-8 py-5 text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                  <button
-                                    onClick={() => handleEditSubject(sub)}
-                                    className="size-8 rounded-lg text-[#B0AFA8] hover:bg-white hover:text-primary hover:shadow-sm transition-all flex items-center justify-center"
-                                    title="Edit Subject"
-                                  >
-                                    <span className="material-symbols-outlined text-[18px]">edit</span>
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteSubject(sub)}
-                                    className="size-8 rounded-lg text-[#B0AFA8] hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center"
-                                    title="Delete Subject"
-                                  >
-                                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  )}
-
-                  {activeTab === "grades" && (
-                    <div className="flex flex-col">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
-                        {[...gradeConfigs]
-                          .filter(g => g.grade.toLowerCase().includes(searchTerm.toLowerCase()))
-                          .sort((a, b) => sortOrder === "asc" ? a.grade.localeCompare(b.grade) : b.grade.localeCompare(a.grade))
-                          .map((config) => {
-                            const group = gradeGroups.find(gg => gg.grades.includes(config.grade));
-                            return (
-                              <div
-                                key={config.grade}
-                                className="p-6 rounded-[32px] border border-slate-100 bg-white hover:border-primary/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group flex flex-col h-full cursor-default"
-                              >
-                                <div className="flex justify-between items-start mb-6">
-                                  <div>
-                                    <h3 className="text-[18px] font-bold text-foreground mb-1">{config.grade}</h3>
-                                    <p className="text-[11px] font-medium text-[#B0AFA8]">Default Grade Subjects</p>
+              {/* Content Table Area */}
+              <div className="flex-1">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className="rounded-[23px]"
+                  >
+                    {activeTab === "master" && (
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-[#F7F8F4]/50 border-b border-slate-50">
+                            {["Subject Name", "Code", "Category", "Department", "Actions"].map((h, i) => (
+                              <th key={h} className={cn(
+                                "px-8 py-4 text-[10px] font-semibold text-[#B0AFA8] tracking-wider uppercase",
+                                i === 4 ? "text-right" : ""
+                              )}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {[...subjects]
+                            .sort((a, b) => sortOrder === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name))
+                            .filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                            .filter(s => deptFilter === "All Departments" || s.department === deptFilter)
+                            .map((sub) => (
+                              <tr key={sub.id} className="hover:bg-[#F7F8F4]/30 transition-colors group">
+                                <td className="px-8 py-5">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-[14px] font-bold text-foreground group-hover:text-primary transition-colors">{sub.name}</span>
                                   </div>
-                                  {group && (
-                                    <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[9px] font-bold text-[#B0AFA8]">
-                                      {group.label}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex flex-wrap gap-2 flex-1 items-start content-start">
-                                  {config.subjects.map(sid => {
-                                    const s = subjects.find(sub => sub.id === sid);
-                                    if (!s) return null;
-                                    return (
-                                      <span key={sid} className={cn(
-                                        "px-2.5 py-1 text-[10px] font-bold rounded-lg border",
-                                        s.category === "Core" ? "bg-emerald-50/50 text-emerald-700 border-emerald-100/50" :
-                                          s.category === "Elective" ? "bg-blue-50/50 text-blue-700 border-blue-100/50" :
-                                            s.category === "Language" ? "bg-amber-50/50 text-amber-700 border-amber-100/50" :
-                                              "bg-purple-50/50 text-purple-700 border-purple-100/50"
-                                      )}>
-                                        {s.name}
+                                </td>
+                                <td className="px-8 py-5 text-[12px] font-medium text-slate-500">{sub.code}</td>
+                                <td className="px-8 py-5">
+                                  <span className={cn(
+                                    "px-3 py-1 rounded-full text-[10px] font-bold border capitalize",
+                                    sub.category === "Core" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                                      sub.category === "Elective" ? "bg-blue-50 text-blue-700 border-blue-100" :
+                                        sub.category === "Language" ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-purple-50 text-purple-700 border-purple-100"
+                                  )}>
+                                    {sub.category}
+                                  </span>
+                                </td>
+                                <td className="px-8 py-5 text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-[#444441]">{sub.department}</td>
+                                <td className="px-8 py-5 text-right">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button
+                                      onClick={() => handleEditSubject(sub)}
+                                      className="size-8 rounded-lg text-[#B0AFA8] hover:bg-white hover:text-primary hover:shadow-sm transition-all flex items-center justify-center"
+                                      title="Edit Subject"
+                                    >
+                                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteSubject(sub)}
+                                      className="size-8 rounded-lg text-[#B0AFA8] hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center"
+                                      title="Delete Subject"
+                                    >
+                                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    )}
+
+                    {activeTab === "grades" && (
+                      <div className="flex flex-col">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-8">
+                          {[...gradeConfigs]
+                            .filter(g => g.grade.toLowerCase().includes(searchTerm.toLowerCase()))
+                            .sort((a, b) => sortOrder === "asc" ? a.grade.localeCompare(b.grade) : b.grade.localeCompare(a.grade))
+                            .map((config) => {
+                              const group = gradeGroups.find(gg => gg.grades.includes(config.grade));
+                              return (
+                                <div
+                                  key={config.grade}
+                                  className="p-6 rounded-[32px] border border-slate-100 bg-white hover:border-primary/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group flex flex-col h-full cursor-default"
+                                >
+                                  <div className="flex justify-between items-start mb-6">
+                                    <div>
+                                      <h3 className="text-[18px] font-bold text-foreground mb-1">{config.grade}</h3>
+                                      <p className="text-[11px] font-medium text-[#B0AFA8]">Default Grade Subjects</p>
+                                    </div>
+                                    {group && (
+                                      <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[9px] font-bold text-[#B0AFA8]">
+                                        {group.label}
                                       </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap gap-2 flex-1 items-start content-start">
+                                    {config.subjects.map(sid => {
+                                      const s = subjects.find(sub => sub.id === sid);
+                                      if (!s) return null;
+                                      return (
+                                        <span key={sid} className={cn(
+                                          "px-2.5 py-1 text-[10px] font-bold rounded-lg border",
+                                          s.category === "Core" ? "bg-emerald-50/50 text-emerald-700 border-emerald-100/50" :
+                                            s.category === "Elective" ? "bg-blue-50/50 text-blue-700 border-blue-100/50" :
+                                              s.category === "Language" ? "bg-amber-50/50 text-amber-700 border-amber-100/50" :
+                                                "bg-purple-50/50 text-purple-700 border-purple-100/50"
+                                        )}>
+                                          {s.name}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                      <span className="text-[10px] font-medium text-[#B0AFA8]">{config.subjects.length} Subjects</span>
+                                      <span
+                                        onClick={() => handleEditGrade(config)}
+                                        className="text-[12px] font-bold text-[#444441] hover:text-primary transition-colors cursor-pointer flex items-center gap-1.5 group/edit"
+                                      >
+                                        Edit Template
+                                        <span className="material-symbols-outlined text-[16px] group-hover/edit:translate-x-0.5 transition-transform">arrow_forward</span>
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => handleDeleteGrade(config)}
+                                      className="size-9 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center"
+                                      title="Delete Template"
+                                    >
+                                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          <button
+                            onClick={() => setShowGradeDrawer(true)}
+                            className="rounded-[24px] border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center gap-3 text-[#B0AFA8] hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group min-h-[220px]"
+                          >
+                            <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">add_circle</span>
+                            <span className="text-[13px] font-bold">Add Grade Template</span>
+                            <span className="text-[11px] font-medium text-center opacity-80 px-4">Create a new default subject package for a specific grade level.</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === "mapping" && (
+                      <div className="flex flex-col bg-white">
+                        {[...sections]
+                          .sort((a, b) => {
+                            const keyA = `${a.grade}-${a.id}`;
+                            const keyB = `${b.grade}-${b.id}`;
+                            return sortOrder === "asc" ? keyA.localeCompare(keyB) : keyB.localeCompare(keyA);
+                          })
+                          .filter(s => {
+                            const fullSearch = `${s.grade} ${s.id}`.toLowerCase();
+                            const shortSearch = `${s.grade.replace("Grade ", "")} ${s.id}`.toLowerCase();
+                            const normalizedTerm = searchTerm.toLowerCase();
+                            return fullSearch.includes(normalizedTerm) || shortSearch.includes(normalizedTerm);
+                          }).map(s => {
+                            const gradeConfig = gradeConfigs.find(gc => gc.grade === s.grade);
+                            const sectionMappings = mappings.filter(m => m.grade === s.grade && m.section === s.id);
+
+                            // Merge template subjects and additional subjects
+                            const templateSubjectIds = gradeConfig?.subjects || [];
+                            const additionalSubjectIds = sectionMappings.filter(m => m.isAdditional).map(m => m.subjectId);
+                            const allSubjectIds = Array.from(new Set([...templateSubjectIds, ...additionalSubjectIds]));
+
+                            return (
+                              <div key={`${s.grade}-${s.id}`} className="group px-8 py-10 border-b border-slate-100 hover:bg-[#F9F9F8]/40 transition-all flex flex-col lg:flex-row gap-12 lg:gap-16 items-start">
+                                <div className="w-24 shrink-0 flex flex-col pt-1">
+                                  <span className="text-[12px] font-bold text-[#B0AFA8] mb-2">Grade</span>
+                                  <h4 className="text-[28px] font-bold text-secondary leading-none">
+                                    {s.grade.replace("Grade ", "")} {s.id}
+                                  </h4>
+                                </div>
+
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-10">
+                                  {allSubjectIds.map(sid => {
+                                    const sub = subjects.find(sub => sub.id === sid);
+                                    const mapping = sectionMappings.find(m => m.subjectId === sid);
+                                    const isFromTemplate = templateSubjectIds.includes(sid);
+
+                                    // Skip if department filter is active and doesn't match
+                                    if (deptFilter !== "All Departments" && sub?.department !== deptFilter) return null;
+
+                                    return (
+                                      <div
+                                        key={sid}
+                                        className="flex flex-col gap-1 relative group/item"
+                                      >
+                                        <div className={cn(
+                                          "absolute -left-6 top-0 bottom-0 w-[1px] transition-colors",
+                                          mapping ? "bg-slate-100 group-hover/item:bg-primary" : "bg-red-100/50 group-hover/item:bg-red-400"
+                                        )} />
+                                        <div className="flex items-center gap-2">
+                                          <span className={cn(
+                                            "text-[14px] font-bold leading-tight",
+                                            mapping ? "text-[#444441]" : "text-[#B0AFA8]"
+                                          )}>{sub?.name}</span>
+                                          {!isFromTemplate && <div className="size-1 rounded-full bg-primary" />}
+                                          {!mapping && <span className="text-[8px] font-bold text-red-400">Required</span>}
+                                        </div>
+                                        {!isFromTemplate && mapping && (
+                                          <button
+                                            onClick={() => handleDeleteMapping(mapping.id)}
+                                            className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all z-10"
+                                            title="Remove Custom Subject"
+                                          >
+                                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                                          </button>
+                                        )}
+                                        <div className="flex flex-col pr-4">
+                                          <select
+                                            className="bg-transparent border-none p-0 text-[11px] font-medium text-secondary focus:ring-0 cursor-pointer outline-none w-full"
+                                            value={mapping?.teacherId || ""}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              if (val) {
+                                                handleQuickAssign(s.grade, s.id, sid, val, isFromTemplate);
+                                              }
+                                            }}
+                                          >
+                                            <option value="" disabled className="text-slate-400">Assign Teacher</option>
+                                            {teachers
+                                              .filter(t => t.specializations.includes(sid))
+                                              .map(t => (
+                                                <option key={t.id} value={t.id} className="text-[#444441]">{t.name}</option>
+                                              ))}
+                                          </select>
+                                        </div>
+                                      </div>
                                     );
                                   })}
-                                </div>
-                                <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
-                                  <div className="flex flex-col">
-                                    <span className="text-[10px] font-medium text-[#B0AFA8]">{config.subjects.length} Subjects</span>
-                                    <span
-                                      onClick={() => handleEditGrade(config)}
-                                      className="text-[12px] font-bold text-[#444441] hover:text-primary transition-colors cursor-pointer flex items-center gap-1.5 group/edit"
+                                  {/* Add Custom Subject Trigger (Ultra-Minimal Link) */}
+                                  <div className="flex items-center pt-1">
+                                    <button
+                                      onClick={() => {
+                                        setEditingMapping({ id: "", grade: s.grade, section: s.id, subjectId: "", teacherId: "", hoursPerWeek: 4, isAdditional: true });
+                                        setIsAddingAdditional(true);
+                                        setShowMappingDrawer(true);
+                                      }}
+                                      className="flex items-center gap-1.5 text-[#B0AFA8] hover:text-primary transition-all group/plus active:scale-95"
                                     >
-                                      Edit Template
-                                      <span className="material-symbols-outlined text-[16px] group-hover/edit:translate-x-0.5 transition-transform">arrow_forward</span>
-                                    </span>
+                                      <span className="material-symbols-outlined text-[18px] group-hover:rotate-90 transition-transform duration-300">add</span>
+                                      <span className="text-[11px] font-bold tracking-tight">Add Custom</span>
+                                    </button>
                                   </div>
-                                  <button
-                                    onClick={() => handleDeleteGrade(config)}
-                                    className="size-9 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center"
-                                    title="Delete Template"
-                                  >
-                                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                                  </button>
                                 </div>
                               </div>
                             );
                           })}
-                        <button
-                          onClick={() => setShowGradeDrawer(true)}
-                          className="rounded-[24px] border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center gap-3 text-[#B0AFA8] hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group min-h-[220px]"
-                        >
-                          <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">add_circle</span>
-                          <span className="text-[13px] font-bold">Add Grade Template</span>
-                          <span className="text-[11px] font-medium text-center opacity-80 px-4">Create a new default subject package for a specific grade level.</span>
-                        </button>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {activeTab === "mapping" && (
-                    <div className="flex flex-col bg-white">
-                      {[...sections]
-                        .sort((a, b) => {
-                          const keyA = `${a.grade}-${a.id}`;
-                          const keyB = `${b.grade}-${b.id}`;
-                          return sortOrder === "asc" ? keyA.localeCompare(keyB) : keyB.localeCompare(keyA);
-                        })
-                        .filter(s => {
-                          const fullSearch = `${s.grade} ${s.id}`.toLowerCase();
-                          const shortSearch = `${s.grade.replace("Grade ", "")} ${s.id}`.toLowerCase();
-                          const normalizedTerm = searchTerm.toLowerCase();
-                          return fullSearch.includes(normalizedTerm) || shortSearch.includes(normalizedTerm);
-                        }).map(s => {
-                          const gradeConfig = gradeConfigs.find(gc => gc.grade === s.grade);
-                          const sectionMappings = mappings.filter(m => m.grade === s.grade && m.section === s.id);
 
-                          // Merge template subjects and additional subjects
-                          const templateSubjectIds = gradeConfig?.subjects || [];
-                          const additionalSubjectIds = sectionMappings.filter(m => m.isAdditional).map(m => m.subjectId);
-                          const allSubjectIds = Array.from(new Set([...templateSubjectIds, ...additionalSubjectIds]));
-
-                          return (
-                            <div key={`${s.grade}-${s.id}`} className="group px-8 py-10 border-b border-slate-100 hover:bg-[#F9F9F8]/40 transition-all flex flex-col lg:flex-row gap-12 lg:gap-16 items-start">
-                              <div className="w-24 shrink-0 flex flex-col pt-1">
-                                <span className="text-[12px] font-bold text-[#B0AFA8] mb-2">Grade</span>
-                                <h4 className="text-[28px] font-bold text-secondary leading-none">
-                                  {s.grade.replace("Grade ", "")} {s.id}
-                                </h4>
-                              </div>
-
-                              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-10">
-                                {allSubjectIds.map(sid => {
-                                  const sub = subjects.find(sub => sub.id === sid);
-                                  const mapping = sectionMappings.find(m => m.subjectId === sid);
-                                  const isFromTemplate = templateSubjectIds.includes(sid);
-
-                                  // Skip if department filter is active and doesn't match
-                                  if (deptFilter !== "All Departments" && sub?.department !== deptFilter) return null;
-
-                                  return (
-                                    <div
-                                      key={sid}
-                                      className="flex flex-col gap-1 relative group/item"
-                                    >
-                                      <div className={cn(
-                                        "absolute -left-6 top-0 bottom-0 w-[1px] transition-colors",
-                                        mapping ? "bg-slate-100 group-hover/item:bg-primary" : "bg-red-100/50 group-hover/item:bg-red-400"
-                                      )} />
-                                      <div className="flex items-center gap-2">
-                                        <span className={cn(
-                                          "text-[14px] font-bold leading-tight",
-                                          mapping ? "text-[#444441]" : "text-[#B0AFA8]"
-                                        )}>{sub?.name}</span>
-                                        {!isFromTemplate && <div className="size-1 rounded-full bg-primary" />}
-                                        {!mapping && <span className="text-[8px] font-bold text-red-400">Required</span>}
-                                      </div>
-                                      {!isFromTemplate && mapping && (
-                                        <button
-                                          onClick={() => handleDeleteMapping(mapping.id)}
-                                          className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all z-10"
-                                          title="Remove Custom Subject"
-                                        >
-                                          <span className="material-symbols-outlined text-[16px]">delete</span>
-                                        </button>
-                                      )}
-                                      <div className="flex flex-col pr-4">
-                                        <select
-                                          className="bg-transparent border-none p-0 text-[11px] font-medium text-secondary focus:ring-0 cursor-pointer outline-none w-full"
-                                          value={mapping?.teacherId || ""}
-                                          onChange={(e) => {
-                                            const val = e.target.value;
-                                            if (val) {
-                                              handleQuickAssign(s.grade, s.id, sid, val, isFromTemplate);
-                                            }
-                                          }}
-                                        >
-                                          <option value="" disabled className="text-slate-400">Assign Teacher</option>
-                                          {teachers
-                                            .filter(t => t.specializations.includes(sid))
-                                            .map(t => (
-                                              <option key={t.id} value={t.id} className="text-[#444441]">{t.name}</option>
-                                            ))}
-                                        </select>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                                {/* Add Custom Subject Trigger (Ultra-Minimal Link) */}
-                                <div className="flex items-center pt-1">
-                                  <button
-                                    onClick={() => {
-                                      setEditingMapping({ id: "", grade: s.grade, section: s.id, subjectId: "", teacherId: "", hoursPerWeek: 4, isAdditional: true });
-                                      setIsAddingAdditional(true);
-                                      setShowMappingDrawer(true);
-                                    }}
-                                    className="flex items-center gap-1.5 text-[#B0AFA8] hover:text-primary transition-all group/plus active:scale-95"
-                                  >
-                                    <span className="material-symbols-outlined text-[18px] group-hover:rotate-90 transition-transform duration-300">add</span>
-                                    <span className="text-[11px] font-bold tracking-tight">Add Custom</span>
-                                  </button>
-                                </div>
-                              </div>
+                    {activeTab === "timetable" && (
+                      <div className="flex flex-col bg-[#FDFCFB]/50 backdrop-blur-sm rounded-[24px] -mx-[1px] w-[calc(100%+2px)] border-x border-slate-100">
+                        {/* Hierarchical Section Selector (Sleek Typographic Index) */}
+                        <div className="px-10 py-8 bg-white border-b border-x border-slate-100 flex flex-col gap-12 rounded-t-[24px] -mx-[1px] w-[calc(100%+2px)]">
+                          {/* 1. Academic Index (Grades) */}
+                          <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-[var(--text-color-label)] tracking-tight">Academic index</span>
+                              <div className="h-px flex-1 bg-slate-50" />
                             </div>
-                          );
-                        })}
-                    </div>
-                  )}
-
-
-                  {activeTab === "timetable" && (
-                    <div className="flex flex-col bg-[#FDFCFB]/50 backdrop-blur-sm rounded-[24px] -mx-[1px] w-[calc(100%+2px)] border-x border-slate-100">
-                      {/* Hierarchical Section Selector (Sleek Typographic Index) */}
-                      <div className="px-10 py-8 bg-white border-b border-x border-slate-100 flex flex-col gap-12 rounded-t-[24px] -mx-[1px] w-[calc(100%+2px)]">
-                        {/* 1. Academic Index (Grades) */}
-                        <div className="flex flex-col gap-4">
-                          <div className="flex items-center gap-3">
-                            <span className="text-[13px] font-semibold text-slate-400 tracking-tight">Academic index</span>
-                            <div className="h-px flex-1 bg-slate-50" />
-                          </div>
-                          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
-                            {gradeConfigs.map(config => (
-                              <button
-                                key={config.grade}
-                                onClick={() => {
-                                  setSelectedTimetableGrade(config.grade);
-                                  setSelectedTimetableSection("");
-                                }}
-                                className={cn(
-                                  "text-[15px] transition-all relative py-1",
-                                  selectedTimetableGrade === config.grade
-                                    ? "font-semibold text-secondary"
-                                    : "font-medium text-slate-400 hover:text-secondary"
-                                )}
-                              >
-                                {config.grade}
-                                {selectedTimetableGrade === config.grade && (
-                                  <motion.div layoutId="grade-underline" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-primary" />
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* 2. Class Roster (Sections) */}
-                        <div className="flex flex-col gap-4">
-                          <div className="flex items-center gap-3">
-                            <span className="text-[13px] font-semibold text-slate-400 tracking-tight">Section roster</span>
-                            <div className="h-px flex-1 bg-slate-50" />
-                          </div>
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-                            {sections
-                              .filter(s => s.grade === selectedTimetableGrade)
-                              .map(s => (
+                            <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                              {gradeConfigs.map(config => (
                                 <button
-                                  key={`${s.grade}-${s.id}`}
-                                  onClick={() => setSelectedTimetableSection(`${s.grade}-${s.id}`)}
+                                  key={config.grade}
+                                  onClick={() => {
+                                    setSelectedTimetableGrade(config.grade);
+                                    setSelectedTimetableSection("");
+                                  }}
                                   className={cn(
-                                    "size-8 rounded-full text-[13px] transition-all flex items-center justify-center",
-                                    selectedTimetableSection === `${s.grade}-${s.id}`
-                                      ? "font-semibold text-white bg-primary shadow-lg shadow-primary/20"
-                                      : "font-medium text-slate-400 hover:text-secondary hover:bg-slate-50"
+                                    "text-[15px] transition-all relative py-1",
+                                    selectedTimetableGrade === config.grade
+                                      ? "font-semibold text-secondary"
+                                      : "font-medium text-slate-400 hover:text-secondary"
                                   )}
                                 >
-                                  {s.id}
+                                  {config.grade}
+                                  {selectedTimetableGrade === config.grade && (
+                                    <motion.div layoutId="grade-underline" className="absolute -bottom-1 left-0 right-0 h-[2px] bg-primary" />
+                                  )}
                                 </button>
                               ))}
+                            </div>
                           </div>
-                        </div>
-                      </div>
 
-                      {/* 3. Selection Summary Overlay (Independent Sticky Bar) */}
-                      {selectedTimetableSection && (
-                        <div className="sticky top-[-1px] z-30 bg-white border-b border-x border-slate-100 px-10 py-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500 -mx-[1px] w-[calc(100%+2px)]">
-                          <div className="flex items-center gap-4">
-                            <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                              <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                            </div>
-                            <div className="flex flex-col text-left">
-                              <span className="text-[11px] font-bold text-[#B0AFA8] tracking-tight">Active View</span>
-                              <span className="text-[14px] font-bold text-secondary">
-                                {selectedTimetableGrade} — Section {selectedTimetableSection.split("-")[1]}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer group/toggle"
-                              onClick={() => setStickyDayHeaders(!stickyDayHeaders)}>
-                              <div className={cn(
-                                "w-7 h-4 rounded-full relative transition-all duration-300",
-                                stickyDayHeaders ? "bg-primary" : "bg-slate-200"
-                              )}>
-                                <div className={cn(
-                                  "absolute top-0.5 size-3 rounded-full bg-white transition-all duration-300",
-                                  stickyDayHeaders ? "left-[13px]" : "left-0.5"
-                                )} />
-                              </div>
-                              <span className="text-[10px] font-medium text-[#B0AFA8] group-hover/toggle:text-secondary transition-colors ">Day rows always at top</span>
-                            </div>
+                          {/* 2. Class Roster (Sections) */}
+                          <div className="flex flex-col gap-4">
                             <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => setShowSchedulePanel(!showSchedulePanel)}
-                                className={cn(
-                                  "h-10 px-6 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all",
-                                  showSchedulePanel
-                                    ? "bg-secondary text-white shadow-inner"
-                                    : "bg-white border border-slate-100 text-[#B0AFA8] hover:bg-[#F7F8F4] hover:text-foreground hover:shadow-sm"
-                                )}
-                              >
-                                <span className="material-symbols-outlined text-[18px]">
-                                  {showSchedulePanel ? 'expand_less' : 'settings_input_component'}
-                                </span>
-                                <span>{configSaved && !showSchedulePanel ? 'Configured' : 'Configure'}</span>
-                              </button>
-                              <button className="btn-primary gap-2">
-                                <span className="material-symbols-outlined text-[18px]">save</span>
-                                <span>Save Schedule</span>
-                              </button>
+                              <span className="text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-[var(--text-color-label)] tracking-tight">Section roster</span>
+                              <div className="h-px flex-1 bg-slate-50" />
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                              {sections
+                                .filter(s => s.grade === selectedTimetableGrade)
+                                .map(s => (
+                                  <button
+                                    key={`${s.grade}-${s.id}`}
+                                    onClick={() => setSelectedTimetableSection(`${s.grade}-${s.id}`)}
+                                    className={cn(
+                                      "size-8 rounded-full text-[13px] transition-all flex items-center justify-center",
+                                      selectedTimetableSection === `${s.grade}-${s.id}`
+                                        ? "font-semibold text-white bg-primary shadow-lg shadow-primary/20"
+                                        : "font-medium text-slate-400 hover:text-secondary hover:bg-slate-50"
+                                    )}
+                                  >
+                                    {s.id}
+                                  </button>
+                                ))}
                             </div>
                           </div>
                         </div>
-                      )}
 
-                      {/* Schedule Config Panel */}
-                      <AnimatePresence>
-                        {showSchedulePanel && (
-                          <motion.div
-                            ref={configPanelRef}
-                            key="cfg-panel"
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{
-                              height: 'auto',
-                              opacity: 1,
-                              transition: {
-                                height: { type: 'spring', stiffness: 90, damping: 24, mass: 1.2 },
-                                opacity: { duration: 0.4, ease: 'easeOut' },
-                              }
-                            }}
-                            exit={{
-                              height: 0,
-                              opacity: 0,
-                              transition: {
-                                height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
-                                opacity: { duration: 0.2 },
-                              }
-                            }}
-                            style={{ overflow: 'hidden' }}
-                            className="bg-[#FDFCFB]/50 border-b border-slate-100/50"
-                          >
-                            <div className="px-8 py-12">
-                              <div className="flex flex-col gap-12">
-                                {/* Curriculum Configuration Section */}
-                                <div className="flex items-center gap-2.5">
-                                  <span className="material-symbols-outlined text-[18px] text-primary">calendar_view_day</span>
-                                  <span className="text-[16px] font-bold text-foreground tracking-tight">Curriculum Configuration</span>
+                        {/* 3. Selection Summary Overlay (Independent Sticky Bar) */}
+                        {selectedTimetableSection && (
+                          <div className="sticky top-[-1px] z-30 bg-white border-b border-x border-slate-100 px-10 py-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500 -mx-[1px] w-[calc(100%+2px)]">
+                            <div className="flex items-center gap-4">
+                              <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                              </div>
+                              <div className="flex flex-col text-left">
+                                <span className="text-[11px] font-bold text-[#B0AFA8] tracking-tight">Active View</span>
+                                <span className="text-[14px] font-bold text-secondary">
+                                  {selectedTimetableGrade} — Section {selectedTimetableSection.split("-")[1]}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-6">
+                              <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer group/toggle"
+                                onClick={() => setStickyDayHeaders(!stickyDayHeaders)}>
+                                <div className={cn(
+                                  "w-7 h-4 rounded-full relative transition-all duration-300",
+                                  stickyDayHeaders ? "bg-primary" : "bg-slate-200"
+                                )}>
+                                  <div className={cn(
+                                    "absolute top-0.5 size-3 rounded-full bg-white transition-all duration-300",
+                                    stickyDayHeaders ? "left-[13px]" : "left-0.5"
+                                  )} />
                                 </div>
-                                {/* Working days */}
-                                <div className="flex flex-col gap-2.5">
-                                  <span className="text-[12px] font-semibold text-[#B0AFA8]">Operational days</span>
-                                  <div className="flex flex-wrap gap-2">
-                                    {ALL_WEEK.map(d => {
-                                      const isActive = activeDays.includes(d);
-                                      const isSun = d === "Sunday";
-                                      return (
-                                        <button key={d}
-                                          onClick={() => setActiveDays(prev =>
-                                            prev.includes(d)
-                                              ? prev.length > 1 ? prev.filter(x => x !== d) : prev
-                                              : [...ALL_WEEK.filter(w => [...prev, d].includes(w))]
-                                          )}
-                                          className={cn(
-                                            "h-9 px-4 rounded-lg text-[11px] font-bold border transition-all",
-                                            isActive
-                                              ? isSun ? "bg-rose-500 text-white border-rose-500" : "bg-secondary text-white border-secondary"
-                                              : "bg-[#F7F8F4] border-slate-100 text-[#B0AFA8] hover:border-slate-200"
-                                          )}>
-                                          {d.slice(0, 3)}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
+                                <span className="text-[10px] font-medium text-[#B0AFA8] group-hover/toggle:text-secondary transition-colors ">Day rows always at top</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => setShowSchedulePanel(!showSchedulePanel)}
+                                  className={cn(
+                                    "h-10 px-6 rounded-xl text-[12px] font-bold flex items-center gap-2 transition-all",
+                                    showSchedulePanel
+                                      ? "bg-secondary text-white shadow-inner"
+                                      : "bg-white border border-slate-100 text-[#B0AFA8] hover:bg-[#F7F8F4] hover:text-foreground hover:shadow-sm"
+                                  )}
+                                >
+                                  <span className="material-symbols-outlined text-[18px]">
+                                    {showSchedulePanel ? 'expand_less' : 'settings_input_component'}
+                                  </span>
+                                  <span>{configSaved && !showSchedulePanel ? 'Configured' : 'Configure'}</span>
+                                </button>
+                                <button className="btn-primary gap-2">
+                                  <span className="material-symbols-outlined text-[18px]">save</span>
+                                  <span>Save Schedule</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
-                                <div className="flex items-end gap-14 flex-wrap">
+                        {/* Schedule Config Panel */}
+                        <AnimatePresence>
+                          {showSchedulePanel && (
+                            <motion.div
+                              ref={configPanelRef}
+                              key="cfg-panel"
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{
+                                height: 'auto',
+                                opacity: 1,
+                                transition: {
+                                  height: { type: 'spring', stiffness: 90, damping: 24, mass: 1.2 },
+                                  opacity: { duration: 0.4, ease: 'easeOut' },
+                                }
+                              }}
+                              exit={{
+                                height: 0,
+                                opacity: 0,
+                                transition: {
+                                  height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+                                  opacity: { duration: 0.2 },
+                                }
+                              }}
+                              style={{ overflow: 'hidden' }}
+                              className="bg-[#FDFCFB]/50 border-b border-slate-100/50"
+                            >
+                              <div className="px-8 py-12">
+                                <div className="flex flex-col gap-12">
+                                  {/* Curriculum Configuration Section */}
+                                  <div className="flex items-center gap-2.5">
+                                    <span className="material-symbols-outlined text-[18px] text-primary">calendar_view_day</span>
+                                    <span className="text-[16px] font-bold text-foreground tracking-tight">Curriculum Configuration</span>
+                                  </div>
+                                  {/* Working days */}
                                   <div className="flex flex-col gap-2.5">
-                                    <span className="text-[12px] font-semibold text-[#B0AFA8]">School starts</span>
-                                    <AppTimePicker
-                                      value={scheduleConfig.schoolStart}
-                                      onChange={(time) => setScheduleConfig(prev => ({ ...prev, schoolStart: time }))}
-                                      width="w-[130px]"
-                                    />
-                                  </div>
-                                  <div className="flex flex-col gap-2.5">
-                                    <span className="text-[12px] font-semibold text-[#B0AFA8]">Session duration</span>
-                                    <div className="flex items-center gap-2.5">
-                                      <input type="number" min={5} max={180} value={scheduleConfig.defaultDuration}
-                                        onChange={(e) => setScheduleConfig(prev => ({ ...prev, defaultDuration: parseInt(e.target.value) || 60 }))}
-                                        disabled={!scheduleConfig.uniformDuration}
-                                        className="h-10 w-16 px-3 text-center rounded-lg border border-slate-100 text-[13px] font-semibold text-foreground outline-none focus:border-primary/40 focus:bg-white bg-[#F7F8F4] disabled:opacity-40 transition-all" />
-                                      <span className="text-[12px] text-[#B0AFA8] font-bold">min</span>
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-col gap-2.5">
-                                    <span className="text-[12px] font-semibold text-[#B0AFA8]">Daily periods</span>
-                                    <div className="flex items-center gap-1 h-10">
-                                      <button onClick={() => setNumPeriods(p => Math.max(1, p - 1))}
-                                        className="size-8 rounded-lg text-secondary hover:text-primary transition-all flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-[20px]">remove</span>
-                                      </button>
-                                      <div className="flex items-center justify-center min-w-[28px]">
-                                        <span className="text-[16px] font-bold text-foreground leading-none">{numPeriods}</span>
-                                      </div>
-                                      <button onClick={() => setNumPeriods(p => Math.min(16, p + 1))}
-                                        className="size-8 rounded-lg text-secondary hover:text-primary transition-all flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-[20px]">add</span>
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-col gap-2.5">
-                                    <span className="text-[12px] font-semibold text-[#B0AFA8]">Duration type</span>
-                                    <div className="flex bg-[#F7F8F4] border border-slate-100 rounded-xl p-1 h-10 w-fit items-center">
-                                      <button
-                                        onClick={() => setScheduleConfig(prev => ({ ...prev, uniformDuration: true }))}
-                                        className={cn(
-                                          "h-full px-4 rounded-lg text-[12px] font-semibold transition-all flex items-center gap-2",
-                                          scheduleConfig.uniformDuration ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary"
-                                        )}
-                                      >
-                                        <span className="material-symbols-outlined text-[16px]">linear_scale</span>
-                                        Uniform
-                                      </button>
-                                      <button
-                                        onClick={() => setScheduleConfig(prev => ({ ...prev, uniformDuration: false }))}
-                                        className={cn(
-                                          "h-full px-4 rounded-lg text-[12px] font-semibold transition-all flex items-center gap-2",
-                                          !scheduleConfig.uniformDuration ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary"
-                                        )}
-                                      >
-                                        <span className="material-symbols-outlined text-[16px]">ssid_chart</span>
-                                        Variable
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                                {!scheduleConfig.uniformDuration && (
-                                  <div className="grid grid-cols-[repeat(auto-fill,minmax(60px,1fr))] gap-x-4 gap-y-3 pt-6 border-t border-slate-50">
-                                    {periods.map(p => (
-                                      <div key={p} className="flex flex-col items-center gap-1.5">
-                                        <span className="text-[11px] text-[#B0AFA8] font-semibold">P{p}</span>
-                                        <input type="number" min={5} max={180}
-                                          value={periodDurations[p] || scheduleConfig.defaultDuration}
-                                          onChange={(e) => setPeriodDurations(prev => ({ ...prev, [p]: parseInt(e.target.value) || scheduleConfig.defaultDuration }))}
-                                          className="h-10 w-14 text-center rounded-xl border border-slate-100 text-[13px] font-bold text-foreground outline-none focus:border-primary/40 bg-[#F7F8F4] focus:bg-white transition-all" />
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                {/* Moved Day Overrides Here */}
-                                <div className="pt-6 border-t border-slate-50">
-                                  <div className="flex items-center gap-2.5 mb-4">
-                                    <span className="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
-                                    <span className="text-[13px] font-bold text-foreground">Day Overrides</span>
-                                  </div>
-                                  <div className="flex flex-col gap-3">
-                                    <p className="text-[11px] text-[#B0AFA8] font-medium leading-relaxed">Assign custom period lengths for specific operational days.</p>
-                                    <div className="flex gap-1.5">
-                                      {days.map(d => {
-                                        const hasOverride = !!perDayDurations[d] && Object.keys(perDayDurations[d]).length > 0;
+                                    <span className="text-[12px] font-semibold text-[#B0AFA8]">Operational days</span>
+                                    <div className="flex flex-wrap gap-2">
+                                      {ALL_WEEK.map(d => {
+                                        const isActive = activeDays.includes(d);
+                                        const isSun = d === "Sunday";
                                         return (
                                           <button key={d}
-                                            onClick={() => setPerDayDurations(prev => {
-                                              if (prev[d]) { const next = { ...prev }; delete next[d]; return next; }
-                                              return { ...prev, [d]: {} };
-                                            })}
-                                            className={cn("h-8 flex-1 rounded-lg text-[10px] font-bold border transition-all",
-                                              hasOverride ? "bg-secondary text-white border-secondary" : "bg-[#F7F8F4] border-slate-100 text-[#B0AFA8] hover:border-slate-200")}>
+                                            onClick={() => setActiveDays(prev =>
+                                              prev.includes(d)
+                                                ? prev.length > 1 ? prev.filter(x => x !== d) : prev
+                                                : [...ALL_WEEK.filter(w => [...prev, d].includes(w))]
+                                            )}
+                                            className={cn(
+                                              "h-9 px-4 rounded-lg text-[11px] font-bold border transition-all",
+                                              isActive
+                                                ? isSun ? "bg-rose-500 text-white border-rose-500" : "bg-secondary text-white border-secondary"
+                                                : "bg-[#F7F8F4] border-slate-100 text-[#B0AFA8] hover:border-slate-200"
+                                            )}>
                                             {d.slice(0, 3)}
                                           </button>
                                         );
                                       })}
                                     </div>
-                                    {Object.keys(perDayDurations).map(day => (
-                                      <div key={day} className="bg-white rounded-xl border border-slate-100/80 p-3 transition-colors">
-                                        <div className="flex items-center justify-between mb-3 px-0.5">
-                                          <div className="flex items-center gap-2">
-                                            <div className="size-1 rounded-full bg-primary/60" />
-                                            <span className="text-[12px] font-semibold text-foreground/80 tracking-tight">{day}</span>
-                                          </div>
-                                          <button onClick={() => setPerDayDurations(prev => { const n = { ...prev }; delete n[day]; return n; })}
-                                            className="text-[#B0AFA8] hover:text-rose-500 transition-all">
-                                            <span className="material-symbols-outlined text-[14px]">close</span>
-                                          </button>
-                                        </div>
-                                        <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-x-3 gap-y-2">
-                                          {periods.map(p => {
-                                            const baseDur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
-                                            const val = perDayDurations[day]?.[p] ?? baseDur;
-                                            const isDiff = perDayDurations[day]?.[p] !== undefined && perDayDurations[day][p] !== baseDur;
-                                            return (
-                                              <div key={p} className="flex flex-col items-center gap-1">
-                                                <span className={cn("text-[10px] font-semibold", isDiff ? "text-primary" : "text-[#B0AFA8]/60")}>P{p}</span>
-                                                <input type="number" min={5} max={180} value={val}
-                                                  onChange={(e) => {
-                                                    const v = parseInt(e.target.value) || baseDur;
-                                                    setPerDayDurations(prev => ({ ...prev, [day]: { ...(prev[day] || {}), [p]: v } }));
-                                                  }}
-                                                  className={cn("h-10 w-14 text-center rounded-xl border text-[13px] font-bold outline-none transition-all",
-                                                    isDiff ? "border-primary/40 bg-primary/5 text-primary" : "border-slate-100 bg-[#F7F8F4] text-secondary focus:bg-white")} />
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      </div>
-                                    ))}
                                   </div>
-                                </div>
 
-                                {/* Breaks & Gaps Section */}
-                                <div className="pt-12 border-t border-slate-200/40">
-                                  <div className="flex items-center justify-between mb-8">
-                                    <div className="flex items-center gap-2.5">
-                                      <span className="material-symbols-outlined text-[18px] text-primary">coffee</span>
-                                      <span className="text-[14px] font-bold text-foreground tracking-tight">Breaks & Gaps</span>
+                                  <div className="flex items-end gap-14 flex-wrap">
+                                    <div className="flex flex-col gap-2.5">
+                                      <span className="text-[12px] font-semibold text-[#B0AFA8]">School starts</span>
+                                      <AppTimePicker
+                                        value={scheduleConfig.schoolStart}
+                                        onChange={(time) => setScheduleConfig(prev => ({ ...prev, schoolStart: time }))}
+                                        width="w-[130px]"
+                                      />
                                     </div>
-                                    <button
-                                      onClick={() => setBreakConfig(prev => [
-                                        ...prev,
-                                        { id: `b${Date.now()}`, period: periods[Math.floor(periods.length / 2)], placement: 'after', duration: 15, type: 'short', label: 'Short Break', days: [] }
-                                      ])}
-                                      className="h-9 px-4 rounded-xl text-secondary text-[12px] font-bold flex items-center gap-2 hover:bg-secondary/5 transition-all">
-                                      <span className="material-symbols-outlined text-[18px]">add</span>
-                                      Add New Break
-                                    </button>
+                                    <div className="flex flex-col gap-2.5">
+                                      <span className="text-[12px] font-semibold text-[#B0AFA8]">Session duration</span>
+                                      <div className="flex items-center gap-2.5">
+                                        <input type="number" min={5} max={180} value={scheduleConfig.defaultDuration}
+                                          onChange={(e) => setScheduleConfig(prev => ({ ...prev, defaultDuration: parseInt(e.target.value) || 60 }))}
+                                          disabled={!scheduleConfig.uniformDuration}
+                                          className="h-10 w-16 px-3 text-center rounded-lg border border-slate-100 text-[13px] font-semibold text-foreground outline-none focus:border-primary/40 focus:bg-white bg-[#F7F8F4] disabled:opacity-40 transition-all" />
+                                        <span className="text-[12px] text-[#B0AFA8] font-bold">min</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col gap-2.5">
+                                      <span className="text-[12px] font-semibold text-[#B0AFA8]">Daily periods</span>
+                                      <div className="flex items-center gap-1 h-10">
+                                        <button onClick={() => setNumPeriods(p => Math.max(1, p - 1))}
+                                          className="size-8 rounded-lg text-secondary hover:text-primary transition-all flex items-center justify-center">
+                                          <span className="material-symbols-outlined text-[20px]">remove</span>
+                                        </button>
+                                        <div className="flex items-center justify-center min-w-[28px]">
+                                          <span className="text-[16px] font-bold text-foreground leading-none">{numPeriods}</span>
+                                        </div>
+                                        <button onClick={() => setNumPeriods(p => Math.min(16, p + 1))}
+                                          className="size-8 rounded-lg text-secondary hover:text-primary transition-all flex items-center justify-center">
+                                          <span className="material-symbols-outlined text-[20px]">add</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col gap-2.5">
+                                      <span className="text-[12px] font-semibold text-[#B0AFA8]">Duration type</span>
+                                      <div className="flex bg-[#F7F8F4] border border-slate-100 rounded-xl p-1 h-10 w-fit items-center">
+                                        <button
+                                          onClick={() => setScheduleConfig(prev => ({ ...prev, uniformDuration: true }))}
+                                          className={cn(
+                                            "h-full px-4 rounded-lg text-[12px] font-semibold transition-all flex items-center gap-2",
+                                            scheduleConfig.uniformDuration ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary"
+                                          )}
+                                        >
+                                          <span className="material-symbols-outlined text-[16px]">linear_scale</span>
+                                          Uniform
+                                        </button>
+                                        <button
+                                          onClick={() => setScheduleConfig(prev => ({ ...prev, uniformDuration: false }))}
+                                          className={cn(
+                                            "h-full px-4 rounded-lg text-[12px] font-semibold transition-all flex items-center gap-2",
+                                            !scheduleConfig.uniformDuration ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary"
+                                          )}
+                                        >
+                                          <span className="material-symbols-outlined text-[16px]">ssid_chart</span>
+                                          Variable
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {!scheduleConfig.uniformDuration && (
+                                    <div className="grid grid-cols-[repeat(auto-fill,minmax(60px,1fr))] gap-x-4 gap-y-3 pt-6 border-t border-slate-50">
+                                      {periods.map(p => (
+                                        <div key={p} className="flex flex-col items-center gap-1.5">
+                                          <span className="text-[11px] text-[#B0AFA8] font-semibold">P{p}</span>
+                                          <input type="number" min={5} max={180}
+                                            value={periodDurations[p] || scheduleConfig.defaultDuration}
+                                            onChange={(e) => setPeriodDurations(prev => ({ ...prev, [p]: parseInt(e.target.value) || scheduleConfig.defaultDuration }))}
+                                            className="h-10 w-14 text-center rounded-xl border border-slate-100 text-[13px] font-bold text-foreground outline-none focus:border-primary/40 bg-[#F7F8F4] focus:bg-white transition-all" />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {/* Moved Day Overrides Here */}
+                                  <div className="pt-6 border-t border-slate-50">
+                                    <div className="flex items-center gap-2.5 mb-4">
+                                      <span className="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
+                                      <span className="text-[13px] font-bold text-foreground">Day Overrides</span>
+                                    </div>
+                                    <div className="flex flex-col gap-3">
+                                      <p className="text-[11px] text-[#B0AFA8] font-medium leading-relaxed">Assign custom period lengths for specific operational days.</p>
+                                      <div className="flex gap-1.5">
+                                        {days.map(d => {
+                                          const hasOverride = !!perDayDurations[d] && Object.keys(perDayDurations[d]).length > 0;
+                                          return (
+                                            <button key={d}
+                                              onClick={() => setPerDayDurations(prev => {
+                                                if (prev[d]) { const next = { ...prev }; delete next[d]; return next; }
+                                                return { ...prev, [d]: {} };
+                                              })}
+                                              className={cn("h-8 flex-1 rounded-lg text-[10px] font-bold border transition-all",
+                                                hasOverride ? "bg-secondary text-white border-secondary" : "bg-[#F7F8F4] border-slate-100 text-[#B0AFA8] hover:border-slate-200")}>
+                                              {d.slice(0, 3)}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                      {Object.keys(perDayDurations).map(day => (
+                                        <div key={day} className="bg-white rounded-xl border border-slate-100/80 p-3 transition-colors">
+                                          <div className="flex items-center justify-between mb-3 px-0.5">
+                                            <div className="flex items-center gap-2">
+                                              <div className="size-1 rounded-full bg-primary/60" />
+                                              <span className="text-[12px] font-semibold text-foreground/80 tracking-tight">{day}</span>
+                                            </div>
+                                            <button onClick={() => setPerDayDurations(prev => { const n = { ...prev }; delete n[day]; return n; })}
+                                              className="text-[#B0AFA8] hover:text-rose-500 transition-all">
+                                              <span className="material-symbols-outlined text-[14px]">close</span>
+                                            </button>
+                                          </div>
+                                          <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-x-3 gap-y-2">
+                                            {periods.map(p => {
+                                              const baseDur = scheduleConfig.uniformDuration ? scheduleConfig.defaultDuration : (periodDurations[p] || scheduleConfig.defaultDuration);
+                                              const val = perDayDurations[day]?.[p] ?? baseDur;
+                                              const isDiff = perDayDurations[day]?.[p] !== undefined && perDayDurations[day][p] !== baseDur;
+                                              return (
+                                                <div key={p} className="flex flex-col items-center gap-1">
+                                                  <span className={cn("text-[10px] font-semibold", isDiff ? "text-primary" : "text-[#B0AFA8]/60")}>P{p}</span>
+                                                  <input type="number" min={5} max={180} value={val}
+                                                    onChange={(e) => {
+                                                      const v = parseInt(e.target.value) || baseDur;
+                                                      setPerDayDurations(prev => ({ ...prev, [day]: { ...(prev[day] || {}), [p]: v } }));
+                                                    }}
+                                                    className={cn("h-10 w-14 text-center rounded-xl border text-[13px] font-bold outline-none transition-all",
+                                                      isDiff ? "border-primary/40 bg-primary/5 text-primary" : "border-slate-100 bg-[#F7F8F4] text-secondary focus:bg-white")} />
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
 
-                                  <div className="flex flex-col gap-2">
-                                    {breakConfig.map(brk => {
-                                      const appliesToAllDays = brk.days.length === 0;
+                                  {/* Breaks & Gaps Section */}
+                                  <div className="pt-12 border-t border-slate-200/40">
+                                    <div className="flex items-center justify-between mb-8">
+                                      <div className="flex items-center gap-2.5">
+                                        <span className="material-symbols-outlined text-[18px] text-primary">coffee</span>
+                                        <span className="text-[14px] font-bold text-foreground tracking-tight">Breaks & Gaps</span>
+                                      </div>
+                                      <button
+                                        onClick={() => setBreakConfig(prev => [
+                                          ...prev,
+                                          { id: `b${Date.now()}`, period: periods[Math.floor(periods.length / 2)], placement: 'after', duration: 15, type: 'short', label: 'Short Break', days: [] }
+                                        ])}
+                                        className="h-9 px-4 rounded-xl text-secondary text-[12px] font-bold flex items-center gap-2 hover:bg-secondary/5 transition-all">
+                                        <span className="material-symbols-outlined text-[18px]">add</span>
+                                        Add New Break
+                                      </button>
+                                    </div>
 
-                                      return (
-                                        <div key={brk.id} className="group bg-[#FDFCFB]/50 hover:bg-white rounded-xl border border-slate-100 p-3 transition-all flex flex-wrap items-start gap-x-6 gap-y-4">
-                                          {/* Category & Label */}
-                                          <div className="flex flex-col gap-1.5 min-w-[180px] flex-1 lg:flex-none">
-                                            <span className="text-[10.5px] font-semibold text-[#B0AFA8] ml-1">Type & Name</span>
-                                            <div className="flex items-center gap-3">
-                                              <div className="flex rounded-lg border border-slate-100 overflow-hidden bg-slate-50/50 h-8 p-0.5 shrink-0">
-                                                <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: 'short', label: b.label === 'Lunch Break' || b.label === 'Special Break' ? 'Short Break' : b.label } : b))}
-                                                  className={cn("px-2 rounded-md transition-all", brk.type === 'short' ? "bg-white text-slate-600 shadow-sm" : "text-slate-300 hover:text-slate-500")}>
-                                                  <span className="material-symbols-outlined text-[14px]">free_breakfast</span>
-                                                </button>
-                                                <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: 'lunch', label: b.label === 'Short Break' || b.label === 'Special Break' ? 'Lunch Break' : b.label } : b))}
-                                                  className={cn("px-2 rounded-md transition-all", brk.type === 'lunch' ? "bg-white text-amber-500 shadow-sm" : "text-slate-300 hover:text-slate-500")}>
-                                                  <span className="material-symbols-outlined text-[14px]">restaurant</span>
-                                                </button>
-                                                <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: 'other', label: b.label === 'Short Break' || b.label === 'Lunch Break' ? 'Special Break' : b.label } : b))}
-                                                  className={cn("px-2 rounded-md transition-all", brk.type === 'other' ? "bg-white text-violet-400 shadow-sm" : "text-slate-300 hover:text-slate-500")}>
-                                                  <span className="material-symbols-outlined text-[14px]">timer</span>
-                                                </button>
-                                              </div>
-                                              <input type="text" value={brk.label}
-                                                onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, label: e.target.value } : b))}
-                                                className="bg-transparent border-none text-[12px] font-bold text-foreground outline-none w-full" placeholder="Break Label" />
-                                            </div>
-                                          </div>
+                                    <div className="flex flex-col gap-2">
+                                      {breakConfig.map(brk => {
+                                        const appliesToAllDays = brk.days.length === 0;
 
-                                          {/* Timing Group (Placement + Period + Length) */}
-                                          <div className="flex items-start gap-4 flex-wrap lg:flex-nowrap">
-                                            {/* Placement */}
-                                            <div className="flex flex-col gap-1.5 shrink-0">
-                                              <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Placement</span>
-                                              <div className="flex rounded-lg border border-slate-100 overflow-hidden bg-white h-9 p-1">
-                                                <button
-                                                  onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, placement: 'before' } : b))}
-                                                  className={cn("px-3 rounded-md text-[10px] font-bold transition-all",
-                                                    brk.placement === 'before' ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary")}>
-                                                  Before
-                                                </button>
-                                                <button
-                                                  onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, placement: 'after' } : b))}
-                                                  className={cn("px-3 rounded-md text-[10px] font-bold transition-all",
-                                                    brk.placement === 'after' ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary")}>
-                                                  After
-                                                </button>
+                                        return (
+                                          <div key={brk.id} className="group bg-[#FDFCFB]/50 hover:bg-white rounded-xl border border-slate-100 p-3 transition-all flex flex-wrap items-start gap-x-6 gap-y-4">
+                                            {/* Category & Label */}
+                                            <div className="flex flex-col gap-1.5 min-w-[180px] flex-1 lg:flex-none">
+                                              <span className="text-[10.5px] font-semibold text-[#B0AFA8] ml-1">Type & Name</span>
+                                              <div className="flex items-center gap-3">
+                                                <div className="flex rounded-lg border border-slate-100 overflow-hidden bg-slate-50/50 h-8 p-0.5 shrink-0">
+                                                  <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: 'short', label: b.label === 'Lunch Break' || b.label === 'Special Break' ? 'Short Break' : b.label } : b))}
+                                                    className={cn("px-2 rounded-md transition-all", brk.type === 'short' ? "bg-white text-slate-600 shadow-sm" : "text-slate-300 hover:text-slate-500")}>
+                                                    <span className="material-symbols-outlined text-[14px]">free_breakfast</span>
+                                                  </button>
+                                                  <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: 'lunch', label: b.label === 'Short Break' || b.label === 'Special Break' ? 'Lunch Break' : b.label } : b))}
+                                                    className={cn("px-2 rounded-md transition-all", brk.type === 'lunch' ? "bg-white text-amber-500 shadow-sm" : "text-slate-300 hover:text-slate-500")}>
+                                                    <span className="material-symbols-outlined text-[14px]">restaurant</span>
+                                                  </button>
+                                                  <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, type: 'other', label: b.label === 'Short Break' || b.label === 'Lunch Break' ? 'Special Break' : b.label } : b))}
+                                                    className={cn("px-2 rounded-md transition-all", brk.type === 'other' ? "bg-white text-violet-400 shadow-sm" : "text-slate-300 hover:text-slate-500")}>
+                                                    <span className="material-symbols-outlined text-[14px]">timer</span>
+                                                  </button>
+                                                </div>
+                                                <input type="text" value={brk.label}
+                                                  onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, label: e.target.value } : b))}
+                                                  className="bg-transparent border-none text-[12px] font-bold text-foreground outline-none w-full" placeholder="Break Label" />
                                               </div>
                                             </div>
 
-                                            {/* Period & Length */}
-                                            <div className="flex items-center gap-3 shrink-0">
-                                              <div className="flex flex-col gap-1.5">
-                                                <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Period</span>
-                                                <select value={brk.period}
-                                                  onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, period: parseInt(e.target.value) } : b))}
-                                                  className="h-9 px-2 rounded-lg border border-slate-100 text-[11px] font-bold text-foreground outline-none bg-white">
-                                                  {periods.map(p => <option key={p} value={p}>P{p}</option>)}
-                                                </select>
+                                            {/* Timing Group (Placement + Period + Length) */}
+                                            <div className="flex items-start gap-4 flex-wrap lg:flex-nowrap">
+                                              {/* Placement */}
+                                              <div className="flex flex-col gap-1.5 shrink-0">
+                                                <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Placement</span>
+                                                <div className="flex rounded-lg border border-slate-100 overflow-hidden bg-white h-9 p-1">
+                                                  <button
+                                                    onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, placement: 'before' } : b))}
+                                                    className={cn("px-3 rounded-md text-[10px] font-bold transition-all",
+                                                      brk.placement === 'before' ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary")}>
+                                                    Before
+                                                  </button>
+                                                  <button
+                                                    onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, placement: 'after' } : b))}
+                                                    className={cn("px-3 rounded-md text-[10px] font-bold transition-all",
+                                                      brk.placement === 'after' ? "bg-secondary text-white shadow-sm" : "text-[#B0AFA8] hover:text-secondary")}>
+                                                    After
+                                                  </button>
+                                                </div>
                                               </div>
-                                              <div className="flex flex-col gap-1.5">
-                                                <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Length</span>
-                                                <div className="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg h-9 px-2">
-                                                  <input type="number" min={5} max={120} value={brk.duration}
-                                                    onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, duration: parseInt(e.target.value) || 15 } : b))}
-                                                    className="w-8 text-center bg-transparent border-none text-[11px] font-bold text-foreground outline-none" />
-                                                  <span className="text-[9px] text-[#B0AFA8] font-bold">min</span>
+
+                                              {/* Period & Length */}
+                                              <div className="flex items-center gap-3 shrink-0">
+                                                <div className="flex flex-col gap-1.5">
+                                                  <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Period</span>
+                                                  <select value={brk.period}
+                                                    onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, period: parseInt(e.target.value) } : b))}
+                                                    className="h-9 px-2 rounded-lg border border-slate-100 text-[11px] font-bold text-foreground outline-none bg-white">
+                                                    {periods.map(p => <option key={p} value={p}>P{p}</option>)}
+                                                  </select>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                  <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Length</span>
+                                                  <div className="flex items-center gap-1.5 bg-white border border-slate-100 rounded-lg h-9 px-2">
+                                                    <input type="number" min={5} max={120} value={brk.duration}
+                                                      onChange={(e) => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, duration: parseInt(e.target.value) || 15 } : b))}
+                                                      className="w-8 text-center bg-transparent border-none text-[11px] font-bold text-foreground outline-none" />
+                                                    <span className="text-[9px] text-[#B0AFA8] font-bold">min</span>
+                                                  </div>
                                                 </div>
                                               </div>
                                             </div>
-                                          </div>
 
-                                          {/* Days Selector */}
-                                          <div className="flex flex-col gap-1.5 lg:border-l lg:border-slate-100 lg:pl-6">
-                                            <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Operational Days</span>
-                                            <div className="flex items-center gap-1">
-                                              {days.map(d => {
-                                                const active = appliesToAllDays || brk.days.includes(d);
-                                                return (
-                                                  <button key={d}
-                                                    onClick={() => {
-                                                      setBreakConfig(prev => prev.map(b => {
-                                                        if (b.id !== brk.id) return b;
-                                                        if (appliesToAllDays) return { ...b, days: [d] };
-                                                        const newDays = b.days.includes(d) ? b.days.filter(x => x !== d) : [...b.days, d];
-                                                        return { ...b, days: newDays };
-                                                      }));
-                                                    }}
-                                                    className={cn("h-8 px-3 rounded-lg text-[10px] font-bold transition-all",
-                                                      active ? "bg-secondary text-white shadow-sm" : "bg-white border border-slate-100 text-slate-300 hover:text-slate-400")}>
-                                                    {d.slice(0, 3)}
-                                                  </button>
-                                                );
-                                              })}
-                                              <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, days: [] } : b))}
-                                                className={cn("h-8 px-4 rounded-lg text-[10px] font-bold transition-all ml-1",
-                                                  appliesToAllDays ? "bg-primary text-foreground" : "bg-slate-50 text-slate-400")}>
-                                                All
+                                            {/* Days Selector */}
+                                            <div className="flex flex-col gap-1.5 lg:border-l lg:border-slate-100 lg:pl-6">
+                                              <span className="text-[10.5px] font-semibold text-[#B0AFA8]">Operational Days</span>
+                                              <div className="flex items-center gap-1">
+                                                {days.map(d => {
+                                                  const active = appliesToAllDays || brk.days.includes(d);
+                                                  return (
+                                                    <button key={d}
+                                                      onClick={() => {
+                                                        setBreakConfig(prev => prev.map(b => {
+                                                          if (b.id !== brk.id) return b;
+                                                          if (appliesToAllDays) return { ...b, days: [d] };
+                                                          const newDays = b.days.includes(d) ? b.days.filter(x => x !== d) : [...b.days, d];
+                                                          return { ...b, days: newDays };
+                                                        }));
+                                                      }}
+                                                      className={cn("h-8 px-3 rounded-lg text-[10px] font-bold transition-all",
+                                                        active ? "bg-secondary text-white shadow-sm" : "bg-white border border-slate-100 text-slate-300 hover:text-slate-400")}>
+                                                      {d.slice(0, 3)}
+                                                    </button>
+                                                  );
+                                                })}
+                                                <button onClick={() => setBreakConfig(prev => prev.map(b => b.id === brk.id ? { ...b, days: [] } : b))}
+                                                  className={cn("h-8 px-4 rounded-lg text-[10px] font-bold transition-all ml-1",
+                                                    appliesToAllDays ? "bg-primary text-foreground" : "bg-slate-50 text-slate-400")}>
+                                                  All
+                                                </button>
+                                              </div>
+                                            </div>
+
+                                            {/* Delete */}
+                                            <div className="flex-1 flex justify-end pt-5">
+                                              <button onClick={() => setBreakConfig(prev => prev.filter(b => b.id !== brk.id))}
+                                                className="size-7 rounded-lg flex items-center justify-center text-slate-200 hover:text-rose-500 hover:bg-rose-50 transition-all">
+                                                <span className="material-symbols-outlined text-[16px]">delete</span>
                                               </button>
                                             </div>
                                           </div>
-
-                                          {/* Delete */}
-                                          <div className="flex-1 flex justify-end pt-5">
-                                            <button onClick={() => setBreakConfig(prev => prev.filter(b => b.id !== brk.id))}
-                                              className="size-7 rounded-lg flex items-center justify-center text-slate-200 hover:text-rose-500 hover:bg-rose-50 transition-all">
-                                              <span className="material-symbols-outlined text-[16px]">delete</span>
-                                            </button>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
+                                        );
+                                      })}
+                                    </div>
+                                    {breakConfig.length === 0 && (
+                                      <div className="text-[11px] text-slate-300 font-medium text-center py-6 border border-dashed border-[#EBE8E0] rounded-[16px]">No breaks configured</div>
+                                    )}
                                   </div>
-                                  {breakConfig.length === 0 && (
-                                    <div className="text-[11px] text-slate-300 font-medium text-center py-6 border border-dashed border-[#EBE8E0] rounded-[16px]">No breaks configured</div>
-                                  )}
+
+                                  {/* Action Bar */}
+                                  <div className="flex items-center justify-end pt-12 border-t border-slate-200/40">
+                                    <button
+                                      onClick={() => {
+                                        setConfigSaved(true);
+                                        setShowSchedulePanel(false);
+                                        setTimeout(() => timetableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 260);
+                                      }}
+                                      className="btn-primary gap-2 shadow-lg shadow-secondary/10"
+                                    >
+                                      <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                      Apply Configuration
+                                    </button>
+                                  </div>
                                 </div>
 
-                                {/* Action Bar */}
-                                <div className="flex items-center justify-end pt-12 border-t border-slate-200/40">
-                                  <button
-                                    onClick={() => {
-                                      setConfigSaved(true);
-                                      setShowSchedulePanel(false);
-                                      setTimeout(() => timetableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 260);
-                                    }}
-                                    className="btn-primary gap-2 shadow-lg shadow-secondary/10"
-                                  >
-                                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                                    Apply Configuration
-                                  </button>
-                                </div>
                               </div>
 
-                            </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
 
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      <TimetableGrid
-                        days={days}
-                        periods={periods}
-                        periodConfigByDay={periodConfigByDay}
-                        breaksByDay={breaksByDay}
-                        breakStartByDay={breakStartByDay}
-                        entriesBySlot={entriesBySlot}
-                        coveredByDay={coveredByDay}
-                        timeTicks={timeTicks}
-                        totalDayMinutes={totalDayMinutes}
-                        selectedTimetableSection={selectedTimetableSection}
-                        scheduleConfig={scheduleConfig}
-                        periodDurations={periodDurations}
-                        stickyDayHeaders={stickyDayHeaders}
-                        mappings={mappings}
-                        subjects={subjects}
-                        teachers={teachers}
-                        onEntriesChange={setTimetableEntries}
-                        onPeriodDurationChange={handlePeriodDurationChange}
-                        timetableRef={timetableRef}
-                      />
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {activeTab !== "timetable" && (
-              <div className="bg-white rounded-b-[24px]">
-                <TablePagination
-                  currentPage={currentPage}
-                  totalItems={activeTab === "master" ? subjects.length : activeTab === "grades" ? gradeConfigs.length : mappings.length}
-                  itemsPerPage={itemsPerPage}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={setItemsPerPage}
-                  itemName={activeTab === "master" ? "subjects" : activeTab === "grades" ? "templates" : "mappings"}
-                />
+                        <TimetableGrid
+                          days={days}
+                          periods={periods}
+                          periodConfigByDay={periodConfigByDay}
+                          breaksByDay={breaksByDay}
+                          breakStartByDay={breakStartByDay}
+                          entriesBySlot={entriesBySlot}
+                          coveredByDay={coveredByDay}
+                          timeTicks={timeTicks}
+                          totalDayMinutes={totalDayMinutes}
+                          selectedTimetableSection={selectedTimetableSection}
+                          scheduleConfig={scheduleConfig}
+                          periodDurations={periodDurations}
+                          stickyDayHeaders={stickyDayHeaders}
+                          mappings={mappings}
+                          subjects={subjects}
+                          teachers={teachers}
+                          onEntriesChange={setTimetableEntries}
+                          onPeriodDurationChange={handlePeriodDurationChange}
+                          timetableRef={timetableRef}
+                        />
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
               </div>
-            )}
+
+              {activeTab !== "timetable" && (
+                <div className="bg-white rounded-b-[24px]">
+                  <TablePagination
+                    currentPage={currentPage}
+                    totalItems={activeTab === "master" ? subjects.length : activeTab === "grades" ? gradeConfigs.length : mappings.length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={setItemsPerPage}
+                    itemName={activeTab === "master" ? "subjects" : activeTab === "grades" ? "templates" : "mappings"}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Global Action Bar (Quiet Luxury Save Mechanism) ── */}
-      <AnimatePresence>
-        {hasUnsavedChanges && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-6"
-          >
-            <div className="bg-white/80 backdrop-blur-xl border border-slate-200/60 p-2 pl-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="size-2 rounded-full bg-primary animate-pulse" />
-                <div className="flex flex-col">
-                  <p className="text-[13px] font-bold text-secondary">Save Changes?</p>
-                  <p className="text-[10px] text-[#B0AFA8] font-medium">You have changes that need to be saved.</p>
+        {/* ── Global Action Bar (Quiet Luxury Save Mechanism) ── */}
+        <AnimatePresence>
+          {hasUnsavedChanges && (
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-6"
+            >
+              <div className="bg-white/80 backdrop-blur-xl border border-slate-200/60 p-2 pl-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="size-2 rounded-full bg-primary animate-pulse" />
+                  <div className="flex flex-col">
+                    <p className="text-[13px] font-bold text-secondary">Save Changes?</p>
+                    <p className="text-[10px] text-[#B0AFA8] font-medium">You have changes that need to be saved.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setHasUnsavedChanges(false)}
+                    className="h-10 px-6 rounded-xl text-[12px] font-bold text-[#B0AFA8] hover:text-secondary hover:bg-slate-50 transition-all"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Simulating API sync
+                      setTimeout(() => setHasUnsavedChanges(false), 800);
+                    }}
+                    className="h-10 px-8 bg-secondary text-white rounded-xl text-[12px] font-bold shadow-lg shadow-secondary/10 hover:bg-secondary/90 active:scale-95 transition-all flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-primary">sync</span>
+                    Save Changes
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setHasUnsavedChanges(false)}
-                  className="h-11 px-6 rounded-xl text-[12px] font-bold text-[#B0AFA8] hover:text-secondary hover:bg-slate-50 transition-all"
-                >
-                  Discard
-                </button>
-                <button
-                  onClick={() => {
-                    // Simulating API sync
-                    setTimeout(() => setHasUnsavedChanges(false), 800);
-                  }}
-                  className="h-11 px-8 bg-secondary text-white rounded-xl text-[12px] font-bold shadow-lg shadow-secondary/10 hover:bg-secondary/90 active:scale-95 transition-all flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-[18px] text-primary">sync</span>
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Confirmation Modal (Quiet Luxury Navigation Guard) ── */}
-      <AnimatePresence>
-        {showConfirmModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-6"
-          >
-            <div className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" onClick={() => setShowConfirmModal(false)} />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-[32px] shadow-2xl p-8 max-w-md w-full relative z-10 border border-slate-100"
-            >
-              <div className="size-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 mb-6 border border-amber-100">
-                <span className="material-symbols-outlined text-[28px]">warning</span>
-              </div>
-              <h3 className="text-[20px] font-bold text-secondary mb-2">Unsaved Changes</h3>
-              <p className="text-[14px] text-[#B0AFA8] leading-relaxed mb-8">
-                You have pending teacher assignments. Moving to another tab will discard these modifications. Are you sure you want to proceed?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowConfirmModal(false)}
-                  className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:bg-slate-50 transition-all"
-                >
-                  Stay Here
-                </button>
-                <button
-                  onClick={confirmNavigation}
-                  className="flex-1 h-12 rounded-xl bg-red-50 text-red-600 text-[13px] font-bold hover:bg-red-100 transition-all"
-                >
-                  Discard & Move
-                </button>
-              </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
 
-      {/* Drawers */}
-      <SideDrawer
-        isOpen={showSubjectDrawer}
-        onClose={() => { setShowSubjectDrawer(false); setEditingSubject(null); }}
-        title={editingSubject ? "Edit Subject" : "Add New Subject"}
-        subtitle={editingSubject ? "Update the details for this academic subject." : "Add a new subject to your school library. Once added, you can assign it to grades and teachers."}
-      >
-        <SubjectForm
-          initialData={editingSubject}
+        {/* ── Confirmation Modal (Quiet Luxury Navigation Guard) ── */}
+        <AnimatePresence>
+          {showConfirmModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-6"
+            >
+              <div className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" onClick={() => setShowConfirmModal(false)} />
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="bg-white rounded-[32px] shadow-2xl p-8 max-w-md w-full relative z-10 border border-slate-100"
+              >
+                <div className="size-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 mb-6 border border-amber-100">
+                  <span className="material-symbols-outlined text-[28px]">warning</span>
+                </div>
+                <h3 className="text-[20px] font-bold text-secondary mb-2">Unsaved Changes</h3>
+                <p className="text-[14px] text-[#B0AFA8] leading-relaxed mb-8">
+                  You have pending teacher assignments. Moving to another tab will discard these modifications. Are you sure you want to proceed?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowConfirmModal(false)}
+                    className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:bg-slate-50 transition-all"
+                  >
+                    Stay Here
+                  </button>
+                  <button
+                    onClick={confirmNavigation}
+                    className="flex-1 h-12 rounded-xl bg-red-50 text-red-600 text-[13px] font-bold hover:bg-red-100 transition-all"
+                  >
+                    Discard & Move
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Drawers */}
+        <SideDrawer
+          isOpen={showSubjectDrawer}
           onClose={() => { setShowSubjectDrawer(false); setEditingSubject(null); }}
-          onSubmit={onAddSubject}
-        />
-      </SideDrawer>
+          title={editingSubject ? "Edit Subject" : "Add New Subject"}
+          subtitle={editingSubject ? "Update the details for this academic subject." : "Add a new subject to your school library. Once added, you can assign it to grades and teachers."}
+        >
+          <SubjectForm
+            initialData={editingSubject}
+            onClose={() => { setShowSubjectDrawer(false); setEditingSubject(null); }}
+            onSubmit={onAddSubject}
+          />
+        </SideDrawer>
 
-      <SideDrawer
-        isOpen={showGradeDrawer}
-        onClose={() => { setShowGradeDrawer(false); setEditingGrade(null); }}
-        title={editingGrade ? "Edit Grade Template" : "Set Grade Subjects"}
-        subtitle="Choose which subjects are taught by default for this grade. These will be added to all sections automatically."
-      >
-        <GradeConfigForm
-          subjects={subjects}
-          initialData={editingGrade}
+        <SideDrawer
+          isOpen={showGradeDrawer}
           onClose={() => { setShowGradeDrawer(false); setEditingGrade(null); }}
-          onSubmit={onAddGradeConfig}
-        />
-      </SideDrawer>
+          title={editingGrade ? "Edit Grade Template" : "Set Grade Subjects"}
+          subtitle="Choose which subjects are taught by default for this grade. These will be added to all sections automatically."
+        >
+          <GradeConfigForm
+            subjects={subjects}
+            initialData={editingGrade}
+            onClose={() => { setShowGradeDrawer(false); setEditingGrade(null); }}
+            onSubmit={onAddGradeConfig}
+          />
+        </SideDrawer>
 
-      <SideDrawer
-        isOpen={showMappingDrawer}
-        onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }}
-        title={editingMapping ? "Update Assignment" : isAddingAdditional ? "Assign Custom Subject" : "Assign Teacher"}
-        subtitle="Assign a teacher to a specific subject and class. We will show a warning if the teacher’s profile doesn’t match."
-      >
-        <MappingForm
-          subjects={subjects}
-          teachers={teachers}
-          mappings={mappings}
-          gradeConfigs={gradeConfigs}
-          initialData={editingMapping}
-          isAdditional={isAddingAdditional}
+        <SideDrawer
+          isOpen={showMappingDrawer}
           onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }}
-          onSubmit={onAddMapping}
+          title={editingMapping ? "Update Assignment" : isAddingAdditional ? "Assign Custom Subject" : "Assign Teacher"}
+          subtitle="Assign a teacher to a specific subject and class. We will show a warning if the teacher’s profile doesn’t match."
+        >
+          <MappingForm
+            subjects={subjects}
+            teachers={teachers}
+            mappings={mappings}
+            gradeConfigs={gradeConfigs}
+            initialData={editingMapping}
+            isAdditional={isAddingAdditional}
+            onClose={() => { setShowMappingDrawer(false); setEditingMapping(null); }}
+            onSubmit={onAddMapping}
+          />
+        </SideDrawer>
+
+        <SideDrawer
+          isOpen={showTierDrawer}
+          onClose={() => setShowTierDrawer(false)}
+          title="Group Grades"
+          subtitle="Organize your grades into groups like Primary, Secondary, or High School."
+        >
+          <TierManagementForm groups={gradeGroups} setGroups={setGradeGroups} gradeConfigs={gradeConfigs} onClose={() => setShowTierDrawer(false)} />
+        </SideDrawer>
+
+        <DeleteConfirmationModal
+          isOpen={!!subjectToDelete}
+          onClose={() => setSubjectToDelete(null)}
+          name={subjectToDelete?.name || ""}
+          onConfirm={onConfirmDeleteSubject}
         />
-      </SideDrawer>
 
-      <SideDrawer
-        isOpen={showTierDrawer}
-        onClose={() => setShowTierDrawer(false)}
-        title="Group Grades"
-        subtitle="Organize your grades into groups like Primary, Secondary, or High School."
-      >
-        <TierManagementForm groups={gradeGroups} setGroups={setGradeGroups} gradeConfigs={gradeConfigs} onClose={() => setShowTierDrawer(false)} />
-      </SideDrawer>
-
-      <DeleteConfirmationModal
-        isOpen={!!subjectToDelete}
-        onClose={() => setSubjectToDelete(null)}
-        name={subjectToDelete?.name || ""}
-        onConfirm={onConfirmDeleteSubject}
-      />
-
-      <DeleteConfirmationModal
-        isOpen={!!gradeToDelete}
-        onClose={() => setGradeToDelete(null)}
-        name={gradeToDelete?.grade || ""}
-        onConfirm={onConfirmDeleteGrade}
-      />
-    </div>
+        <DeleteConfirmationModal
+          isOpen={!!gradeToDelete}
+          onClose={() => setGradeToDelete(null)}
+          name={gradeToDelete?.grade || ""}
+          onConfirm={onConfirmDeleteGrade}
+        />
+      </div>
     </CurriculumErrorBoundary>
   );
 };
@@ -1918,7 +1918,7 @@ const SubjectForm = ({ onClose, onSubmit, initialData }: {
         <div className="grid grid-cols-2 gap-4">
           <FormGroup label="Subject Code" placeholder="e.g. POL-101" value={code} onChange={setCode} />
           <div className="space-y-2.5 group">
-            <label className="text-[13px] font-bold text-[#B0AFA8] px-1 group-focus-within:text-foreground transition-colors">Subject Area</label>
+            <label className="text-[length:var(--font-size-label)] font-[var(--font-weight-label)] text-[var(--text-color-label)] px-1 group-focus-within:text-foreground transition-colors">Subject Area</label>
             <AppDropdown
               options={ACADEMIC_AREAS}
               value={department}
@@ -1929,7 +1929,7 @@ const SubjectForm = ({ onClose, onSubmit, initialData }: {
             {department && (
               <div className="flex gap-2 mt-2 px-1 items-start">
                 <span className="material-symbols-outlined text-[14px] text-primary mt-0.5">info</span>
-                <p className="text-[11px] text-[#B0AFA8] font-medium leading-relaxed">
+                <p className="text-[length:var(--font-size-small)] text-[var(--text-color-body-muted)] font-medium leading-relaxed">
                   <span className="text-primary font-bold">{department} includes:</span>{" "}
                   {department === "Mathematics" ? "Algebra, Geometry, Calculus, Statistics" :
                     department === "Science" ? "Physics, Chemistry, Biology, Environmental Science" :
@@ -1946,7 +1946,7 @@ const SubjectForm = ({ onClose, onSubmit, initialData }: {
         </div>
 
         <div className="space-y-3 group">
-          <label className="text-[13px] font-bold text-[#B0AFA8] px-1 group-focus-within:text-foreground transition-colors">Category Type</label>
+          <label className="text-[length:var(--font-size-label)] font-[var(--font-weight-label)] text-[var(--text-color-label)] px-1 group-focus-within:text-foreground transition-colors">Category Type</label>
           <AppDropdown
             options={["Core (Mandatory)", "Elective (Optional)", "Language", "Co-Scholastic (Arts/Sports)"]}
             value={category === "Core" ? "Core (Mandatory)" : category === "Elective" ? "Elective (Optional)" : category}
@@ -1956,10 +1956,10 @@ const SubjectForm = ({ onClose, onSubmit, initialData }: {
         </div>
       </div>
       <div className="p-8 border-t border-slate-50 bg-[#FBFBFA] flex gap-3">
-        <button onClick={onClose} className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors">Cancel</button>
+        <button onClick={onClose} className="flex-1 h-12 rounded-xl text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-[var(--text-color-body-muted)] hover:text-foreground transition-colors">Cancel</button>
         <button
           onClick={() => onSubmit({ name, code, department, category })}
-          className="flex-[2] btn-primary h-12 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
+          className="flex-[2] btn-primary h-12 rounded-xl text-[length:var(--font-size-input)] font-[var(--font-weight-input)] shadow-lg shadow-primary/20 transition-all active:scale-95"
         >
           {initialData ? "Update Subject" : "Create Subject"}
         </button>
@@ -2003,13 +2003,13 @@ const DeleteConfirmationModal = ({ isOpen, onClose, name, onConfirm }: {
 
               <div className="space-y-2">
                 <h3 className="text-[20px] font-bold text-foreground tracking-tight">Delete this subject?</h3>
-                <p className="text-[13px] text-[#444441] leading-relaxed">
+                <p className="text-[length:var(--font-size-input)] text-[#444441] leading-relaxed">
                   Permanently remove <span className="font-bold text-foreground">{name}</span> from the library. This will affect all grade templates.
                 </p>
               </div>
 
               <div className="space-y-3">
-                <p className="text-[11px] font-bold text-[#B0AFA8] capitalize tracking-normal">
+                <p className="text-[length:var(--font-size-small)] font-[var(--font-weight-label)] text-[var(--text-color-label)] capitalize tracking-normal">
                   Type <span className="text-foreground">{name}</span> to confirm
                 </p>
                 <input
@@ -2017,13 +2017,13 @@ const DeleteConfirmationModal = ({ isOpen, onClose, name, onConfirm }: {
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
                   placeholder={name}
-                  className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[14px] px-6 text-center text-[14px] font-bold text-foreground focus:border-red-500/50 focus:ring-4 focus:ring-red-500/5 outline-none transition-all"
+                  className="w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[14px] px-6 text-center text-[length:var(--font-size-body)] font-[var(--font-weight-input)] text-foreground focus:border-red-500/50 focus:ring-4 focus:ring-red-500/5 outline-none transition-all"
                 />
               </div>
             </div>
 
             <div className="p-6 bg-red-50/30 border-t border-red-50 flex gap-3">
-              <button onClick={onClose} className="flex-1 h-12 rounded-2xl text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors">
+              <button onClick={onClose} className="flex-1 h-12 rounded-2xl text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-[var(--text-color-label)] hover:text-foreground transition-colors">
                 Cancel
               </button>
               <button
@@ -2072,7 +2072,7 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: {
             <input
               type="text"
               placeholder="Search subjects..."
-              className="w-full h-11 pl-10 pr-4 bg-[#F7F8F4] border border-slate-200 rounded-xl text-[13px] outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all"
+              className="w-full h-10 pl-10 pr-4 bg-[#F7F8F4] border border-slate-200 rounded-xl text-[length:var(--font-size-input)] outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 transition-all"
               value={formSearch}
               onChange={(e) => setFormSearch(e.target.value)}
             />
@@ -2097,7 +2097,7 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: {
                       cat === "Elective" ? "bg-blue-400" :
                         cat === "Language" ? "bg-amber-400" : "bg-purple-400"
                   )} />
-                  <span className="text-[10px] font-medium text-[#B0AFA8]">{cat}</span>
+                  <span className="text-[length:var(--font-size-small)] font-medium text-[var(--text-color-label)]">{cat}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {catSubjects.map(s => (
@@ -2130,10 +2130,10 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: {
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className={cn(
-                          "text-[13px] font-semibold truncate leading-tight transition-colors",
+                          "text-[length:var(--font-size-input)] font-[var(--font-weight-input)] truncate leading-tight transition-colors",
                           selectedSubjects.includes(s.id) ? "text-foreground" : "text-[#444441] group-hover/item:text-foreground"
                         )}>{s.name}</span>
-                        <span className="text-[10px] text-[#B0AFA8] font-medium tracking-wide">{s.code}</span>
+                        <span className="text-[length:var(--font-size-small)] text-[var(--text-color-label)] font-medium tracking-wide">{s.code}</span>
                       </div>
                     </label>
                   ))}
@@ -2147,14 +2147,14 @@ const GradeConfigForm = ({ subjects, onClose, onSubmit, initialData }: {
       <div className="p-8 border-t border-slate-50 bg-[#FBFBFA] flex gap-3">
         <button
           onClick={onClose}
-          className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
+          className="flex-1 h-12 rounded-xl text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-[var(--text-color-label)] hover:text-foreground transition-colors"
         >
           Cancel
         </button>
         <button
           onClick={() => onSubmit({ grade, subjects: selectedSubjects })}
           disabled={selectedSubjects.length === 0}
-          className="flex-[2] btn-primary h-12 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
+          className="flex-[2] btn-primary h-12 rounded-xl text-[length:var(--font-size-input)] font-[var(--font-weight-input)] shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
         >
           {initialData ? "Update Template" : "Save Template"}
         </button>
@@ -2303,11 +2303,11 @@ const MappingForm = ({ subjects, teachers, mappings, initialData, isAdditional, 
 
       </div>
       <div className="p-8 border-t border-slate-50 bg-[#FBFBFA] flex gap-3">
-        <button onClick={onClose} className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors">Cancel</button>
+        <button onClick={onClose} className="flex-1 h-12 rounded-xl text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-[var(--text-color-body-muted)] hover:text-foreground transition-colors">Cancel</button>
         <button
           onClick={() => isFormValid && onSubmit({ grade, section, subjectId, teacherId, hoursPerWeek: 4, isAdditional })}
           disabled={!isFormValid}
-          className="flex-[2] btn-primary h-12 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+          className="flex-[2] btn-primary h-12 rounded-xl text-[length:var(--font-size-input)] font-[var(--font-weight-input)] shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
         >
           {initialData?.id ? "Update Mapping" : "Confirm Assignment"}
         </button>
@@ -2383,7 +2383,7 @@ const TierManagementForm = ({ groups, setGroups }: {
                         setGroups(newGroups);
                       }}
                     />
-                    <span className="text-[10px] font-medium text-[#B0AFA8] mt-1">Tier Name</span>
+                    <span className="text-[length:var(--font-size-small)] font-medium text-[var(--text-color-label)] mt-1">Tier Name</span>
                   </div>
                 </div>
 
@@ -2459,7 +2459,7 @@ const TierManagementForm = ({ groups, setGroups }: {
             className="w-full h-12 rounded-xl text-[#B0AFA8] hover:text-primary transition-all flex items-center justify-center gap-2 group"
           >
             <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">add</span>
-            <span className="text-[13px] font-semibold">Define New Academic Tier</span>
+            <span className="text-[length:var(--font-size-input)] font-[var(--font-weight-input)]">Define New Academic Tier</span>
           </button>
         </div>
       </div>
@@ -2477,7 +2477,7 @@ const FormGroup = ({ label, type = "text", placeholder, options, value, onChange
   icon?: string;
 }) => (
   <div className="space-y-2.5 group">
-    <label className="text-[13px] font-bold text-[#B0AFA8] px-1 group-focus-within:text-foreground transition-colors">
+    <label className="text-[length:var(--font-size-label)] font-[var(--font-weight-label)] text-[var(--text-color-label)] px-1 group-focus-within:text-foreground transition-colors">
       {label}
     </label>
     <div className="relative">
@@ -2513,7 +2513,7 @@ const FormGroup = ({ label, type = "text", placeholder, options, value, onChange
             value={value}
             onChange={(e) => onChange && onChange(e.target.value)}
             className={cn(
-              "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white",
+              "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[length:var(--font-size-body)] font-[var(--font-weight-input)] text-foreground placeholder-[var(--text-color-label)] transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white",
               icon ? "pl-12 pr-6" : "px-6"
             )}
           />

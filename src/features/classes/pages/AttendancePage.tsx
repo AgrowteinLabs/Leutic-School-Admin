@@ -9,6 +9,7 @@ import { AppDatePicker } from "../../../components/AppDatePicker";
 import { StatCard } from "../../../components/StatCard";
 import { TablePagination } from "../../../components/TablePagination";
 import { cn } from "../../../lib/utils";
+import { PDSButton } from "../../../components/pds/PDSButton";
 
 export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const { tab } = useParams();
@@ -246,7 +247,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                     placeholder={activeTab === 'students' ? "Find student..." : "Search staff..."}
                     value={searchTerm}
                     onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                    className="relative w-full h-full bg-transparent border-none outline-none pl-11 pr-4 text-[14px] font-medium text-foreground placeholder-[#B0AFA8] z-10"
+                    className="relative w-full h-full bg-transparent border-none outline-none pl-11 pr-4 text-[14px] font-medium text-foreground placeholder-[#B0AFA8] placeholder:font-medium z-10"
                   />
                 </div>
 
@@ -525,9 +526,14 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 )}
               </div>
 
-              <button onClick={() => setShowSuccess(false)} className="w-full h-14 bg-secondary text-white rounded-2xl text-[15px] font-black transition-all active:scale-95 shadow-lg shadow-secondary/20 hover:bg-secondary/90">
+              <PDSButton 
+                variant="primary" 
+                size="xl" 
+                className="w-full"
+                onClick={() => setShowSuccess(false)}
+              >
                 Acknowledge
-              </button>
+              </PDSButton>
             </motion.div>
           </div>
         )}

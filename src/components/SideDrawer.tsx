@@ -50,9 +50,9 @@ export const SideDrawer = ({
               </button>
 
               <div className="flex flex-col pr-12">
-                <h2 className="text-2xl font-bold text-foreground tracking-tight leading-tight">{title}</h2>
+                <h2 className="text-[length:var(--font-size-h3)] font-bold text-foreground tracking-tight leading-tight">{title}</h2>
                 {subtitle && (
-                  <p className="text-[13px] font-medium text-[#B0AFA8] mt-2 leading-relaxed max-w-[90%]">{subtitle}</p>
+                  <p className="text-[length:var(--font-size-input)] font-medium text-[var(--text-color-body-muted)] mt-2 leading-relaxed max-w-[90%]">{subtitle}</p>
                 )}
               </div>
             </div>

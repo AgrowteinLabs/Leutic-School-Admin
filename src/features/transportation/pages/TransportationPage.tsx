@@ -45,12 +45,13 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
         {/* Left Sidebar - Roster/Details */}
         <div className="w-96 border-r border-slate-100 flex flex-col overflow-hidden">
             <div className="p-6 border-b border-slate-50">
-                <div className="relative">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8]">search</span>
-                    <input
-                        className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl py-3 pl-12 pr-4 text-[13px] font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                        placeholder="Search Bus or Route..."
-                    />
+                <div className="relative group h-10">
+                  <div className="absolute inset-0 bg-[#F7F8F4] border border-slate-100 rounded-[12px] transition-all group-focus-within:border-primary/50 group-focus-within:ring-4 group-focus-within:ring-primary/5 group-focus-within:bg-white overflow-hidden pointer-events-none" />
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-primary transition-colors text-[18px] z-20">search</span>
+                  <input
+                    className="relative w-full h-full bg-transparent border-none outline-none pl-12 pr-4 text-[13px] font-semibold text-foreground placeholder-[#B0AFA8] z-10"
+                    placeholder="Search Bus or Route..."
+                  />
                 </div>
             </div>
 

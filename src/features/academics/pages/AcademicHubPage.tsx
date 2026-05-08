@@ -6,6 +6,7 @@ import { cn } from "../../../lib/utils";
 import { ExaminationsPage } from "../../examinations/pages/ExaminationsPage";
 import { ProgramsPage } from "../../programs/pages/ProgramsPage";
 import { AcademicSetupPage } from "../../academic-setup/pages/AcademicSetupPage";
+import { PDSButton } from "../../../components/pds/PDSButton";
 
 export const AcademicHubPage = () => {
   const navigate = useNavigate();

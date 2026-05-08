@@ -5,361 +5,266 @@ import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
 import successAnimation from "../../../assets/animations/success.json";
-import { AppDropdown } from "../../../components/AppDropdown";
-import { AppDatePicker } from "../../../components/AppDatePicker";
+import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
+import { PDSButton } from "../../../components/pds/PDSButton";
+import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 
 export const EnrollStudentPage = () => {
     const navigate = useNavigate();
-    const [step, setStep] = useState(1);
-    const [guardianRelation, setGuardianRelation] = useState("");
-
-    const steps = [
-        { id: 1, title: "Student", subtitle: "Personal details" },
-        { id: 2, title: "Guardians", subtitle: "Parental info" },
-        { id: 3, title: "Academic", subtitle: "Logistics & mapping" },
-    ];
-
+    const [activeStep, setActiveStep] = useState(1);
     const [showSuccess, setShowSuccess] = useState(false);
+
+    // Step 1 State
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [rollNo, setRollNo] = useState("");
+    const [dob, setDob] = useState<Date | null>(null);
+    const [gender, setGender] = useState("Male");
+    const [bloodGroup, setBloodGroup] = useState("");
+    const [adhaar, setAdhaar] = useState("");
+
+    // Step 2 State
+    const [fatherName, setFatherName] = useState("");
+    const [fatherMobile, setFatherMobile] = useState("");
+    const [fatherEmail, setFatherEmail] = useState("");
+    const [fatherOccupation, setFatherOccupation] = useState("");
+    
+    const [motherName, setMotherName] = useState("");
+    const [motherMobile, setMotherMobile] = useState("");
+    const [motherEmail, setMotherEmail] = useState("");
+    const [motherOccupation, setMotherOccupation] = useState("");
+
+    const [guardianName, setGuardianName] = useState("");
+    const [guardianRelation, setGuardianRelation] = useState("");
+    const [specifyRelation, setSpecifyRelation] = useState("");
+    const [guardianContact, setGuardianContact] = useState("");
+
+    // Step 3 State
+    const [admissionGrade, setAdmissionGrade] = useState("");
+    const [academicSession, setAcademicSession] = useState("2025-26");
+    const [busRoute, setBusRoute] = useState("Not Required");
+    const [admissionNo, setAdmissionNo] = useState("");
+    const [address, setAddress] = useState("");
 
     const handleFinalize = () => {
         setShowSuccess(true);
     };
 
+    const steps = [
+        { id: 1, title: "Student Identity", subtitle: "Personal details and identification", icon: "face", color: "text-primary", bg: "bg-primary/10" },
+        { id: 2, title: "Family & Guardians", subtitle: "Parental info and emergency contacts", icon: "family_restroom", color: "text-emerald-600", bg: "bg-emerald-50" },
+        { id: 3, title: "Academic & Logistics", subtitle: "Mapping to grades and transportation", icon: "school", color: "text-indigo-600", bg: "bg-indigo-50" },
+    ];
+
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white font-sans">
+        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB] font-sans">
             <TopBar
                 title="Enroll Student"
                 subtitle="Complete institutional registration for new admissions"
                 actions={
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="btn-text px-4 py-2 rounded-[10px] text-[13px] transition-all"
-                        >
-                            Cancel
-                        </button>
+                    <div className="flex items-center gap-3">
+                        <PDSButton variant="text" onClick={() => navigate(-1)}>Cancel</PDSButton>
+                        <PDSButton variant="primary" icon="how_to_reg" onClick={handleFinalize} disabled={activeStep < 3}>Complete Enrollment</PDSButton>
                     </div>
                 }
             />
 
-            <div className="flex-1 overflow-y-auto no-scrollbar relative">
-                <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-12">
-                    {/* Minimal Stepper */}
-                    <div className="mb-16">
-                        <div className="flex items-center justify-between relative max-w-sm mx-auto">
-                            <div className="absolute top-[11px] left-0 right-0 h-[2px] bg-slate-100 -z-10" />
-                            <motion.div
-                                className="absolute top-[11px] left-0 h-[2px] bg-foreground -z-10 origin-left"
-                                initial={{ width: "0%" }}
-                                animate={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
-                                transition={{ duration: 0.5, ease: "easeInOut" }}
-                            />
+            <div className="flex-1 overflow-y-auto no-scrollbar">
+                <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-10">
+                    
+                    {/* Unified Matured UI Container with Accordion Stepper */}
+                    <div className="bg-white border border-slate-100 rounded-[32px] shadow-sm shadow-slate-100/50 overflow-visible relative z-10 flex flex-col">
+                        
+                        {steps.map((step, index) => {
+                            const isExpanded = activeStep === step.id;
+                            const isCompleted = activeStep > step.id;
 
-                            {steps.map((s) => {
-                                const isActive = step === s.id;
-                                const isCompleted = step > s.id;
-
-                                return (
-                                    <div key={s.id} className="flex flex-col items-center gap-4 relative bg-white px-4">
-                                        <motion.div
-                                            className={cn(
-                                                "size-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 z-10",
-                                                isActive ? "bg-foreground text-white shadow-md shadow-slate-900/10" :
-                                                    isCompleted ? "bg-foreground text-white" : "bg-white border-2 border-slate-100 text-[#B0AFA8]"
-                                            )}
-                                            animate={isActive ? { scale: 1.2 } : { scale: 1 }}
-                                        >
-                                            {isCompleted ? <span className="material-symbols-outlined text-[14px]">check</span> : s.id}
-                                        </motion.div>
-                                        <div className="text-center absolute top-10 w-32 -ml-16 left-1/2">
-                                            <p className={cn(
-                                                "text-[13px] font-bold transition-colors duration-300",
-                                                isActive || isCompleted ? "text-foreground" : "text-[#B0AFA8]"
-                                            )}>{s.title}</p>
-                                            <p className="text-[11px] text-[#B0AFA8] font-medium mt-0.5">{s.subtitle}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="min-h-[400px] mt-20">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={step}
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -8 }}
-                                transition={{ duration: 0.4, ease: "easeOut" }}
-                            >
-                                {step === 1 && (
-                                    <div className="space-y-8">
-                                        <div className="flex items-center gap-6 pb-8 border-b border-slate-50">
-                                            <div className="size-24 rounded-3xl bg-[#F7F8F4] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-[#B0AFA8] hover:border-primary hover:text-primary transition-all cursor-pointer">
-                                                <span className="material-symbols-outlined text-2xl">add_a_photo</span>
-                                                <span className="text-[10px] font-semibold">Upload</span>
-                                            </div>
-                                            <div>
-                                                <h4 className="text-foreground font-bold text-lg">Student Profile Photo</h4>
-                                                <p className="text-[#B0AFA8] text-sm">Clear, passport-sized photo for institutional records.</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-                                            <FormGroup label="First Name" placeholder="e.g. Rahul" />
-                                            <FormGroup label="Last Name" placeholder="e.g. Sharma" />
-                                            <FormGroup label="Roll Number" placeholder="e.g. 1024" />
-                                            <FormGroup label="Date of Birth" type="date" placeholder="DD / MM / YYYY" icon="calendar_today" maxDate={new Date()} />
-                                            <FormGroup label="Gender" type="chips" options={["Male", "Female", "Other"]} />
-                                            <FormGroup label="Blood Group" type="select" options={["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]} optional searchable />
-                                            <FormGroup label="Adhaar / National ID" placeholder="XXXX-XXXX-XXXX" />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {step === 2 && (
-                                    <div className="space-y-12">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-                                            {/* Father's Info */}
-                                            <div className="space-y-8">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="size-8 rounded-xl bg-accent/50 text-foreground flex items-center justify-center">
-                                                        <span className="material-symbols-outlined text-[18px]">person</span>
-                                                    </div>
-                                                    <h5 className="text-[15px] font-bold text-foreground tracking-tight">Father's Information</h5>
-                                                </div>
-                                                <div className="space-y-8">
-                                                    <FormGroup label="Father's Full Name" placeholder="e.g. Suresh Sharma" />
-                                                    <FormGroup label="Email Address" placeholder="suresh.s@example.com" icon="mail" />
-                                                    <FormGroup label="Mobile Number" placeholder="+91 XXXXX XXXXX" icon="call" />
-                                                    <FormGroup label="Occupation" placeholder="e.g. Senior Architect" />
-                                                </div>
-                                            </div>
-
-                                            {/* Mother's Info */}
-                                            <div className="space-y-8 md:border-l md:border-slate-100 md:pl-10">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="size-8 rounded-xl bg-accent/50 text-foreground flex items-center justify-center">
-                                                        <span className="material-symbols-outlined text-[18px]">person_3</span>
-                                                    </div>
-                                                    <h5 className="text-[15px] font-bold text-foreground tracking-tight">Mother's Information</h5>
-                                                </div>
-                                                <div className="space-y-8">
-                                                    <FormGroup label="Mother's Full Name" placeholder="e.g. Priya Sharma" />
-                                                    <FormGroup label="Email Address" placeholder="priya.s@example.com" icon="mail" />
-                                                    <FormGroup label="Mobile Number" placeholder="+91 XXXXX XXXXX" icon="call" />
-                                                    <FormGroup label="Occupation" placeholder="e.g. Content Lead" />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Guardian Info */}
-                                        <div className="space-y-8 pt-10 border-t border-slate-100">
-                                            <div className="flex items-center gap-4">
-                                                <div className="size-10 rounded-2xl bg-foreground/5 text-foreground flex items-center justify-center">
-                                                    <span className="material-symbols-outlined text-[20px]">family_restroom</span>
-                                                </div>
-                                                <div>
-                                                    <h5 className="text-[16px] font-bold text-foreground tracking-tight">Guardian / Emergency Contact</h5>
-                                                    <p className="text-[13px] text-[#B0AFA8] font-medium mt-0.5">Assigned contact person for safety protocols</p>
-                                                </div>
-                                            </div>
+                            return (
+                                <div key={step.id} className="flex flex-col">
+                                    {/* Section Header - Interactive */}
+                                    <button 
+                                        onClick={() => setActiveStep(step.id)}
+                                        className={cn(
+                                            "w-full text-left p-10 flex items-center justify-between transition-all outline-none group",
+                                            isExpanded ? "bg-slate-50/40" : "hover:bg-slate-50/50",
+                                            index === 0 && "rounded-t-[31px]",
+                                            index !== 0 && "border-t border-slate-50"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-6">
                                             <div className={cn(
-                                                "grid grid-cols-1 gap-x-10 gap-y-8 transition-all duration-300",
-                                                guardianRelation === "Other" ? "md:grid-cols-4" : "md:grid-cols-3"
+                                                "size-12 rounded-[20px] flex items-center justify-center transition-all duration-500",
+                                                isExpanded ? step.bg : "bg-slate-100",
+                                                isExpanded ? step.color : "text-slate-400"
                                             )}>
-                                                <FormGroup label="Full Name" placeholder="Full Legal Name" />
-                                                <FormGroup
-                                                    label="Relationship"
-                                                    type="select"
-                                                    options={["Father", "Mother", "Grandparent", "Sibling", "Aunt", "Uncle", "Legal Guardian", "Other"]}
-                                                    searchable
-                                                    value={guardianRelation}
-                                                    onChange={setGuardianRelation}
-                                                />
-                                                {guardianRelation === "Other" && (
-                                                    <FormGroup label="Specify Relation" placeholder="e.g. Neighbor / Cousin" />
-                                                )}
-                                                <FormGroup label="Contact Number" placeholder="+91 XXXXX XXXXX" icon="call" />
+                                                <span className="material-symbols-outlined text-[24px]">
+                                                    {isCompleted ? "check_circle" : step.icon}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <h3 className={cn(
+                                                    "font-bold text-[length:var(--font-size-h3)] tracking-tight transition-colors",
+                                                    isExpanded ? "text-foreground" : "text-slate-500"
+                                                )}>
+                                                    {step.title}
+                                                </h3>
+                                                <p className="text-[length:var(--font-size-input)] font-medium text-[var(--text-color-body-muted)] mt-0.5">{step.subtitle}</p>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
+                                        
+                                        {!isExpanded && (
+                                            <div className="flex items-center gap-4">
+                                                {isCompleted && <span className="text-[11px] font-bold text-emerald-600 px-3 py-1.5 bg-emerald-50 rounded-full tracking-wider uppercase">Completed</span>}
+                                                <span className="material-symbols-outlined text-slate-300 group-hover:text-slate-400 transition-colors">expand_more</span>
+                                            </div>
+                                        )}
+                                    </button>
 
-                                {step === 3 && (
-                                    <div className="space-y-8">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-                                            <FormGroup label="Admission Grade" type="select" options={["9th Grade", "10th Grade", "11th Grade", "12th Grade"]} searchable />
-                                            <FormGroup label="Academic Session" type="select" options={["2025-26", "2024-25"]} />
-                                            <FormGroup label="Admission Number" placeholder="Auto-generated: OA-2024-XXX" disabled />
-                                            <FormGroup label="Bus Transportation" type="select" options={["Not Required", "Route A - North", "Route B - Central", "Route C - Suburban"]} searchable />
-                                            <div className="col-span-full">
-                                                <div className="space-y-2 group">
-                                                    <label className="text-[12px] font-bold text-[#B0AFA8] tracking-tight group-focus-within:text-foreground transition-colors px-1">Residential Address</label>
-                                                    <textarea
-                                                        className="w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] px-6 py-4 outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] min-h-[120px] transition-all no-scrollbar"
-                                                        placeholder="Enter full residential address..."
-                                                    />
+                                    {/* Section Content - Expandable */}
+                                    <AnimatePresence initial={false}>
+                                        {isExpanded && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.5, ease: [0.04, 0.62, 0.23, 0.98] }}
+                                                style={{ overflow: isExpanded ? "visible" : "hidden" }}
+                                            >
+                                                <div className="p-10 pt-4 space-y-12">
+                                                    {/* Step 1: Student Identity */}
+                                                    {step.id === 1 && (
+                                                        <div className="flex flex-col lg:flex-row gap-16">
+                                                            <div className="shrink-0">
+                                                                <div className="size-40 rounded-[40px] bg-[#F7F8F4] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 text-[#B0AFA8] hover:border-primary hover:text-primary transition-all cursor-pointer group">
+                                                                    <span className="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">add_a_photo</span>
+                                                                    <span className="text-[11px] font-bold uppercase tracking-wider">Student Photo</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                                <PDSFormGroup label="First Name" placeholder="e.g. Rahul" value={firstName} onChange={setFirstName} />
+                                                                <PDSFormGroup label="Last Name" placeholder="e.g. Sharma" value={lastName} onChange={setLastName} />
+                                                                <PDSFormGroup label="Roll Number" placeholder="e.g. 1024" value={rollNo} onChange={setRollNo} />
+                                                                <PDSFormGroup label="Date of Birth" type="date" placeholder="DD / MM / YYYY" value={dob} onChange={setDob} maxDate={new Date()} />
+                                                                <PDSFormGroup label="Gender" type="chips" options={["Male", "Female", "Other"]} value={gender} onChange={setGender} />
+                                                                <PDSFormGroup label="Blood Group" type="select" options={["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]} optional searchable value={bloodGroup} onChange={setBloodGroup} />
+                                                                <PDSFormGroup label="Adhaar / National ID" placeholder="XXXX-XXXX-XXXX" value={adhaar} onChange={setAdhaar} className="md:col-span-2" />
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Step 2: Family & Guardians */}
+                                                    {step.id === 2 && (
+                                                        <div className="space-y-16">
+                                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+                                                                {/* Father Info */}
+                                                                <div className="space-y-10">
+                                                                    <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
+                                                                        <span className="material-symbols-outlined text-slate-400 text-[20px]">person</span>
+                                                                        <h5 className="text-[15px] font-bold text-foreground tracking-tight">Father's Information</h5>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 gap-y-8">
+                                                                        <PDSFormGroup label="Full Name" placeholder="Legal Name" value={fatherName} onChange={setFatherName} />
+                                                                        <div className="grid grid-cols-2 gap-8">
+                                                                            <PDSFormGroup label="Mobile" placeholder="+91 XXXX" icon="call" value={fatherMobile} onChange={setFatherMobile} />
+                                                                            <PDSFormGroup label="Email" placeholder="suresh.s@example.com" icon="mail" value={fatherEmail} onChange={setFatherEmail} />
+                                                                        </div>
+                                                                        <PDSFormGroup label="Occupation" placeholder="e.g. Senior Architect" value={fatherOccupation} onChange={setFatherOccupation} />
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Mother Info */}
+                                                                <div className="space-y-10">
+                                                                    <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
+                                                                        <span className="material-symbols-outlined text-slate-400 text-[20px]">person_3</span>
+                                                                        <h5 className="text-[15px] font-bold text-foreground tracking-tight">Mother's Information</h5>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 gap-y-8">
+                                                                        <PDSFormGroup label="Full Name" placeholder="Legal Name" value={motherName} onChange={setMotherName} />
+                                                                        <div className="grid grid-cols-2 gap-8">
+                                                                            <PDSFormGroup label="Mobile" placeholder="+91 XXXX" icon="call" value={motherMobile} onChange={setMotherMobile} />
+                                                                            <PDSFormGroup label="Email" placeholder="priya.s@example.com" icon="mail" value={motherEmail} onChange={setMotherEmail} />
+                                                                        </div>
+                                                                        <PDSFormGroup label="Occupation" placeholder="e.g. Content Lead" value={motherOccupation} onChange={setMotherOccupation} />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Emergency Guardian */}
+                                                            <div className="space-y-10 pt-10 border-t border-slate-100">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="size-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
+                                                                        <span className="material-symbols-outlined text-[18px]">family_restroom</span>
+                                                                    </div>
+                                                                    <h5 className="text-[15px] font-bold text-foreground">Emergency Guardian / Contact</h5>
+                                                                </div>
+                                                                <div className={cn(
+                                                                    "grid grid-cols-1 gap-10 transition-all duration-300",
+                                                                    guardianRelation === "Other" ? "md:grid-cols-4" : "md:grid-cols-3"
+                                                                )}>
+                                                                    <PDSFormGroup label="Guardian Name" placeholder="Full Name" value={guardianName} onChange={setGuardianName} />
+                                                                    <PDSFormGroup 
+                                                                        label="Relationship" 
+                                                                        type="select" 
+                                                                        options={["Father", "Mother", "Grandparent", "Sibling", "Aunt", "Uncle", "Legal Guardian", "Other"]} 
+                                                                        value={guardianRelation} 
+                                                                        onChange={setGuardianRelation} 
+                                                                        searchable 
+                                                                    />
+                                                                    {guardianRelation === "Other" && (
+                                                                        <PDSFormGroup label="Specify Relation" placeholder="e.g. Cousin" value={specifyRelation} onChange={setSpecifyRelation} />
+                                                                    )}
+                                                                    <PDSFormGroup label="Guardian Contact" placeholder="+91 XXXX" icon="call" value={guardianContact} onChange={setGuardianContact} />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Step 3: Academic Logistics */}
+                                                    {step.id === 3 && (
+                                                        <div className="space-y-12">
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                                                <PDSFormGroup label="Admission Grade" type="select" options={["9th Grade", "10th Grade", "11th Grade", "12th Grade"]} value={admissionGrade} onChange={setAdmissionGrade} searchable />
+                                                                <PDSFormGroup label="Academic Session" type="select" options={["2025-26", "2024-25"]} value={academicSession} onChange={setAcademicSession} />
+                                                                <PDSFormGroup label="Admission Number" placeholder="Auto-generated: OA-2024-XXX" value={admissionNo} onChange={setAdmissionNo} disabled />
+                                                                <PDSFormGroup label="Bus Transportation" type="select" options={["Not Required", "Route A", "Route B", "Route C"]} value={busRoute} onChange={setBusRoute} searchable />
+                                                            </div>
+                                                            <PDSFormGroup label="Residential Address" type="textarea" placeholder="Enter full residential address..." value={address} onChange={setAddress} rows={3} />
+                                                        </div>
+                                                    )}
+
+                                                    {/* Section Actions */}
+                                                    <div className="flex justify-end pt-8 border-t border-slate-100">
+                                                        {step.id < 3 ? (
+                                                            <PDSButton variant="primary" className="px-12 h-10" onClick={() => setActiveStep(step.id + 1)}>
+                                                                Save & Continue
+                                                            </PDSButton>
+                                                        ) : (
+                                                            <PDSButton variant="primary" className="px-12 h-10" onClick={handleFinalize}>
+                                                                Finalize Enrollment
+                                                            </PDSButton>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            );
+                        })}
 
-                            </motion.div>
-                        </AnimatePresence>
+                        {/* Silhouette Maintainer */}
+                        <div className="h-10 bg-white rounded-b-[32px] pointer-events-none" />
                     </div>
                 </div>
             </div>
 
-            {/* Navigation Actions - Fixed at bottom */}
-            <div className="bg-white border-t border-slate-100 py-5 px-6 lg:px-10 z-20">
-                <div className="max-w-[1400px] mx-auto flex items-center justify-between">
-                    <button
-                        onClick={() => setStep(prev => Math.max(1, prev - 1))}
-                        className={cn(
-                            "btn-text px-8 h-10 rounded-xl text-[13px] font-bold transition-all",
-                            step === 1 && "opacity-0 pointer-events-none"
-                        )}
-                    >
-                        Back
-                    </button>
-
-                    <button
-                        onClick={() => step < 3 ? setStep(prev => prev + 1) : handleFinalize()}
-                        className="btn-primary px-10 h-10 rounded-xl text-[13px] font-bold transition-all shadow-lg active:scale-95 flex items-center gap-2 group"
-                    >
-                        {step === 3 ? "Complete Enrollment" : "Next Step"}
-                        {step < 3 && (
-                            <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                        )}
-                    </button>
-                </div>
-            </div>
-
-            {/* Success Modal */}
-            <AnimatePresence>
-                {showSuccess && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => navigate("/students")}
-                            className="absolute inset-0 bg-foreground/40 backdrop-blur-sm cursor-pointer"
-                        />
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-white rounded-[40px] p-12 max-w-lg w-full relative z-10 shadow-2xl text-center"
-                        >
-                            <div className="mb-8 relative">
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
-                                    className="size-32 mx-auto relative z-10"
-                                >
-                                    <Lottie animationData={successAnimation} loop={false} className="w-full h-full" />
-                                </motion.div>
-                                <motion.div
-                                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0, 0.3] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="absolute inset-0 size-32 bg-[#EAF2D7] rounded-full mx-auto"
-                                />
-                            </div>
-
-                            <h3 className="text-[24px] font-bold text-[#3D6B2C] tracking-tight mb-2">Student Enrolled!</h3>
-                            <p className="text-[#B0AFA8] text-[15px] font-medium leading-relaxed mb-10 px-4">
-                                Registration for the new academic session has been completed successfully.
-                            </p>
-
-                            <button
-                                onClick={() => navigate("/directory/students")}
-                                className="btn-primary w-full h-10 rounded-xl text-[13px] font-bold"
-                            >
-                                View Student Records
-                            </button>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
-
-const FormGroup = ({ label, placeholder, icon, type = "input", options = [], searchable = false, disabled = false, optional = false, uppercase = false, maxDate, value: propsValue, onChange: propsOnChange }: any) => {
-    const [localValue, setLocalValue] = useState("");
-    const selectedValue = propsValue !== undefined ? propsValue : localValue;
-    const setSelectedValue = propsOnChange || setLocalValue;
-
-    return (
-        <div className="space-y-2 group">
-            <label className={cn(
-                "text-[12px] font-bold transition-colors px-1 flex items-center justify-between tracking-tight",
-                "text-[#B0AFA8] group-focus-within:text-foreground"
-            )}>
-                {label}
-                {optional && <span className="text-[10px] text-[#B0AFA8] font-medium normal-case tracking-normal opacity-60">Optional</span>}
-            </label>
-            <div className="relative">
-                {icon && type === "input" && (
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px] group-focus-within:text-primary transition-colors z-10">
-                        {icon}
-                    </span>
-                )}
-                {type === "input" && (
-                    <input
-                        disabled={disabled}
-                        className={cn(
-                            "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white",
-                            icon ? "pl-12 pr-6" : "px-6",
-                            disabled && "opacity-50 cursor-not-allowed",
-                            uppercase && "uppercase placeholder:normal-case"
-                        )}
-                        placeholder={placeholder}
-                    />
-                )}
-                {type === "date" && (
-                    <AppDatePicker
-                        value={selectedValue ? new Date(selectedValue) : null}
-                        onChange={(d) => setSelectedValue(d.toISOString())}
-                        placeholder={placeholder}
-                        icon={icon}
-                        maxDate={maxDate}
-                    />
-                )}
-                {type === "select" && (
-                    <AppDropdown
-                        options={options}
-                        value={selectedValue}
-                        onChange={setSelectedValue}
-                        placeholder={placeholder}
-                        searchable={searchable}
-                        icon={icon}
-                    />
-                )}
-                {type === "chips" && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                        {options.map((opt: string) => (
-                            <button
-                                key={opt}
-                                onClick={() => setSelectedValue(opt)}
-                                className={cn(
-                                    "px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all border-2",
-                                    selectedValue === opt
-                                        ? "bg-foreground text-white border-foreground shadow-lg shadow-slate-900/10 scale-105"
-                                        : "bg-white border-slate-100 text-[#B0AFA8] hover:border-slate-200"
-                                )}
-                            >
-                                {opt}
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </div>
+            <PDSSuccessModal 
+                show={showSuccess}
+                title="Student Enrolled!"
+                description="Registration for the new academic session has been completed successfully."
+                buttonText="View Student Records"
+                onClose={() => navigate("/directory/students")}
+            />
         </div>
     );
 };

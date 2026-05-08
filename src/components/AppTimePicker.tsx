@@ -102,7 +102,7 @@ export const AppTimePicker = ({
           value={inputValue}
           readOnly
           placeholder={placeholder}
-          className="w-full h-full bg-transparent outline-none text-[13px] font-bold text-foreground pl-10 pr-4 z-10 cursor-pointer"
+          className="w-full h-full bg-transparent outline-none text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-foreground placeholder-[#B0AFA8] placeholder:font-medium pl-10 pr-4 z-10 cursor-pointer"
         />
       </div>
 
@@ -126,7 +126,7 @@ export const AppTimePicker = ({
                     data-value={h}
                     onClick={() => updateTime(h, m, period)}
                     className={cn(
-                      "w-full px-3 py-1.5 rounded-lg text-[13px] font-bold text-left transition-all relative group",
+                      "w-full px-3 py-1.5 rounded-lg text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-left transition-all relative group",
                       h12 === h ? "text-foreground" : "text-[#B0AFA8] hover:bg-[#F7F8F4] hover:text-foreground"
                     )}
                   >
@@ -149,7 +149,7 @@ export const AppTimePicker = ({
                     data-value={min}
                     onClick={() => updateTime(h12, min, period)}
                     className={cn(
-                      "w-full px-3 py-1.5 rounded-lg text-[13px] font-bold text-left transition-all relative group",
+                      "w-full px-3 py-1.5 rounded-lg text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-left transition-all relative group",
                       m === min ? "text-foreground" : "text-[#B0AFA8] hover:bg-[#F7F8F4] hover:text-foreground"
                     )}
                   >
@@ -172,7 +172,7 @@ export const AppTimePicker = ({
                     data-value={p}
                     onClick={() => updateTime(h12, m, p)}
                     className={cn(
-                      "w-full px-3 py-1.5 rounded-lg text-[13px] font-bold text-left transition-all relative group",
+                      "w-full px-3 py-1.5 rounded-lg text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-left transition-all relative group",
                       period === p ? "text-foreground" : "text-[#B0AFA8] hover:bg-[#F7F8F4] hover:text-foreground"
                     )}
                   >

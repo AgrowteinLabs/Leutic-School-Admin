@@ -301,7 +301,7 @@ export const StudentsPage = ({
                     search
                   </span>
                   <input
-                    className="input-base pl-11 pr-4 w-full"
+                    className="input-base pl-11 pr-4 w-full placeholder:font-medium"
                     placeholder="Search by name, grade, or ID..."
                     type="text"
                     value={searchTerm}

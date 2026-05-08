@@ -120,6 +120,9 @@ export const Sidebar = () => {
                         <NavSectionHeader label="Insights" />
                         <NavItem icon="hub" label="Community" path="/community" active={isActive("/community")} />
                         <NavItem icon="monitoring" label="Reports" path="/reports" active={isActive("/reports")} />
+
+                        <NavSectionHeader label="System" />
+                        <NavItem icon="settings" label="Settings" path="/settings" active={isActive("/settings")} />
                     </nav>
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none z-10" />

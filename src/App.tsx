@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
+import { useEffect } from "react";
 import { DashboardPage } from "./features/dashboard/pages/DashboardPage";
 import { CommunityPage } from "./features/community/pages/CommunityPage";
 import { StudentProfilePage } from "./features/students/pages/StudentProfilePage";
@@ -27,8 +28,17 @@ import { CurriculumPage } from "./features/curriculum/pages/CurriculumPage";
 import { AcademicSetupPage } from "./features/academic-setup/pages/AcademicSetupPage";
 
 import { AddExaminationPage } from "./features/examinations/pages/AddExaminationPage";
+import { AddProgramPage } from "./features/programs/pages/AddProgramPage";
+import { SettingsPage } from "./features/settings/pages/SettingsPage";
 
 function App() {
+  useEffect(() => {
+    const savedFontSize = localStorage.getItem('pds-font-size') || 'theme-small';
+    const themes = ['theme-small', 'theme-medium', 'theme-large', 'theme-xl'];
+    themes.forEach(t => document.documentElement.classList.remove(t));
+    document.documentElement.classList.add(savedFontSize);
+  }, []);
+
   return (
     <div className="bg-white text-foreground font-sans h-screen flex overflow-hidden">
       <Sidebar />
@@ -40,6 +50,13 @@ function App() {
           <Route path="/classes/:id" element={<ClassDetailsPage />} />
           <Route path="/attendance/:tab?" element={<AttendancePage />} />
           <Route path="/students/:id" element={<StudentProfilePage />} />
+          
+          {/* Specific Academic Routes (Higher Priority) */}
+          <Route path="/academics/exams/add" element={<AddExaminationPage />} />
+          <Route path="/academics/programs/add" element={<AddProgramPage />} />
+          <Route path="/academics/exams/:id" element={<ExamDetailsPage />} />
+          
+          {/* Hub and General Routes */}
           <Route path="/academics/:tab?/:sub?" element={<AcademicHubPage />} />
           <Route path="/directory/:tab?" element={<DirectoryPage />} />
           <Route path="/curriculum/:tab?" element={<CurriculumPage />} />
@@ -55,10 +72,9 @@ function App() {
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/know-your-student" element={<KnowYourStudentPage />} />
-          <Route path="/academic-setup" element={<AcademicSetupPage />} />
-          <Route path="/examinations/add" element={<AddExaminationPage />} />
-          <Route path="/examinations/:id" element={<ExamDetailsPage />} />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

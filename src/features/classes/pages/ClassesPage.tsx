@@ -4,12 +4,15 @@ import { ClassCard } from "../../dashboard/components/ClassCard";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { useState } from "react";
 import { cn } from "../../../lib/utils";
+import { TablePagination } from "../../../components/TablePagination";
 
 
 export const ClassesPage = () => {
   const navigate = useNavigate();
   const [selectedGrade, setSelectedGrade] = useState("");
   const [selectedSection, setSelectedSection] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [classes] = useState([
     {
       grade: "Grade 10",
@@ -85,37 +88,26 @@ export const ClassesPage = () => {
         title="Classes"
         subtitle="Overview of all active grade levels and sections."
         actions={
-          <>
-            <button className="btn-outline h-10 px-6 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all">
-              <span className="material-symbols-outlined text-lg">
-                file_download
-              </span>
-              Export List
-            </button>
-            <button
-              onClick={() => navigate("/classes/create")}
-              className="btn-primary h-10 px-6 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30"
-            >
-              <span className="material-symbols-outlined text-sm">
-                add_circle
-              </span>
-              New Class
-            </button>
-          </>
+          <button className="btn-outline h-10 px-6 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all">
+            <span className="material-symbols-outlined text-lg">
+              file_download
+            </span>
+            Export List
+          </button>
         }
       />
 
       <div className="flex-1 overflow-y-auto no-scrollbar">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8 space-y-8">
           {/* Flat Architectural Search and Filters */}
-          <div className="bg-white p-3 rounded-[18px] border border-slate-100 flex flex-wrap gap-3 items-center shadow-none focus-within:shadow-none">
+          <div className="flex flex-wrap gap-3 items-center py-2">
             <div className="flex-1 min-w-[350px]">
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-primary transition-colors text-lg">
                   search
                 </span>
                 <input
-                  className="w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] pl-11 pr-4 h-12 text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white focus:shadow-none outline-none transition-all"
+                  className="w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] pl-11 pr-4 h-10 text-[14px] font-medium text-foreground placeholder-[#B0AFA8] placeholder:font-medium focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white focus:shadow-none outline-none transition-all"
                   placeholder="Search classes, teachers, or schedules..."
                   type="text"
                 />
@@ -144,6 +136,16 @@ export const ClassesPage = () => {
                   tune
                 </span>
               </button>
+
+              <button
+                onClick={() => navigate("/classes/create")}
+                className="btn-primary h-10 px-6 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30 ml-auto"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  add_circle
+                </span>
+                New Class
+              </button>
             </div>
           </div>
 
@@ -158,40 +160,17 @@ export const ClassesPage = () => {
             ))}
           </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between py-10 border-t border-slate-100">
-            <p className="text-xs text-[#B0AFA8] font-semi-bold">
-              Showing {classes.length} of 42 entries
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                className="size-10 flex items-center justify-center rounded-[10px] border border-slate-100 bg-white text-[#B0AFA8] hover:border-primary/20 hover:text-primary transition-all disabled:opacity-30"
-                disabled
-              >
-                <span className="material-symbols-outlined text-lg">
-                  chevron_left
-                </span>
-              </button>
-              {[1, 2, 3].map((page) => (
-                <button
-                  key={page}
-                  className={cn(
-                    "size-10 flex items-center justify-center rounded-[10px] text-xs font-black transition-all border",
-                    page === 1
-                      ? "bg-primary border-primary text-foreground shadow-lg shadow-primary/20"
-                      : "bg-white border-slate-100 text-[#B0AFA8] hover:border-primary/20 hover:text-primary"
-                  )}
-                >
-                  {page}
-                </button>
-              ))}
-              <button className="size-10 flex items-center justify-center rounded-[10px] border border-slate-100 bg-white text-[#B0AFA8] hover:border-primary/20 hover:text-primary transition-all">
-                <span className="material-symbols-outlined text-lg">
-                  chevron_right
-                </span>
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            totalItems={classes.length}
+            itemsPerPage={itemsPerPage}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={(count) => {
+              setItemsPerPage(count);
+              setCurrentPage(1);
+            }}
+            itemName="classes"
+          />
         </div>
       </div>
     </div>

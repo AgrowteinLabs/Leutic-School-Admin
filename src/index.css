@@ -53,6 +53,55 @@
         /* #1565C0 */
     }
 
+    /* Typography Foundation (Small / Default) */
+    :root, .theme-small {
+        --font-size-label: 12px;
+        --font-size-input: 13px;
+        --font-size-body: 14px;
+        --font-size-h3: 18px;
+        --font-size-small: 11px;
+        --font-weight-label: 700;
+        --font-weight-input: 600;
+        --text-color-label: #B0AFA8;
+        --text-color-body-muted: #B0AFA8;
+    }
+
+    .theme-medium {
+        --font-size-label: 13px;
+        --font-size-input: 15px;
+        --font-size-body: 16px;
+        --font-size-h3: 20px;
+        --font-size-small: 12px;
+        --font-weight-label: 700;
+        --font-weight-input: 600;
+        --text-color-label: #71717A;
+        --text-color-body-muted: #71717A;
+    }
+
+    .theme-large {
+        --font-size-label: 14px;
+        --font-size-input: 17px;
+        --font-size-body: 18px;
+        --font-size-h3: 22px;
+        --font-size-small: 13px;
+        --font-weight-label: 800;
+        --font-weight-input: 700;
+        --text-color-label: #64748B;
+        --text-color-body-muted: #64748B;
+    }
+
+    .theme-xl {
+        --font-size-label: 15px;
+        --font-size-input: 19px;
+        --font-size-body: 20px;
+        --font-size-h3: 26px;
+        --font-size-small: 14px;
+        --font-weight-label: 800;
+        --font-weight-input: 700;
+        --text-color-label: #1E293B;
+        --text-color-body-muted: #1E293B;
+    }
+
     .dark {
         --background: 196 31% 12%;
         --foreground: 0 0% 100%;
@@ -91,6 +140,13 @@
 
     body {
         @apply bg-background text-foreground font-sans;
+    }
+
+    /* Global Placeholder Scaling */
+    input::placeholder, textarea::placeholder {
+        font-size: var(--font-size-input);
+        font-weight: var(--font-weight-input);
+        transition: font-size 0.2s ease, font-weight 0.2s ease;
     }
 }
 
@@ -143,25 +199,6 @@
 
     .btn-secondary:hover {
         background: #D9EA85;
-    }
-
-    /* Danger — red bg, white text */
-    .btn-danger {
-        @apply btn-base;
-        background: #dc2626; /* red-600 */
-        color: #ffffff;
-        border: none;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-
-    .btn-danger:hover {
-        background: #b91c1c; /* red-700 */
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(185, 28, 28, 0.15);
-    }
-
-    .btn-danger:active {
-        transform: translateY(0) scale(0.98);
     }
 
     /* Danger — red bg, white text */
