@@ -24,6 +24,9 @@ import { StaffProfilePage } from "./features/settings/pages/StaffProfilePage";
 import { DriverProfilePage } from "./features/transportation/pages/DriverProfilePage";
 import { FeesPage } from "./features/finance/pages/FeesPage";
 import { CurriculumPage } from "./features/curriculum/pages/CurriculumPage";
+import { AcademicSetupPage } from "./features/academic-setup/pages/AcademicSetupPage";
+
+import { AddExaminationPage } from "./features/examinations/pages/AddExaminationPage";
 
 function App() {
   return (
@@ -37,7 +40,7 @@ function App() {
           <Route path="/classes/:id" element={<ClassDetailsPage />} />
           <Route path="/attendance/:tab?" element={<AttendancePage />} />
           <Route path="/students/:id" element={<StudentProfilePage />} />
-          <Route path="/academics" element={<AcademicHubPage />} />
+          <Route path="/academics/:tab?/:sub?" element={<AcademicHubPage />} />
           <Route path="/directory/:tab?" element={<DirectoryPage />} />
           <Route path="/curriculum/:tab?" element={<CurriculumPage />} />
           <Route path="/directory/students/add" element={<EnrollStudentPage />} />
@@ -53,6 +56,8 @@ function App() {
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/know-your-student" element={<KnowYourStudentPage />} />
+          <Route path="/academic-setup" element={<AcademicSetupPage />} />
+          <Route path="/examinations/add" element={<AddExaminationPage />} />
           <Route path="/examinations/:id" element={<ExamDetailsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

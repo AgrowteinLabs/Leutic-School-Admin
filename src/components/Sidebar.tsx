@@ -107,7 +107,7 @@ export const Sidebar = () => {
 
                         <NavSectionHeader label="Management" />
                         <NavItem icon="event_available" label="Attendance" path="/attendance" active={isActive("/attendance")} />
-                        <NavItem icon="school" label="Academics" path="/academics" active={isActive("/academics")} />
+                        <NavItem icon="school" label="Academics" path="/academics/exams" active={location.pathname.startsWith("/academics")} />
                         <NavItem icon="menu_book" label="Curriculum" path="/curriculum" active={isActive("/curriculum")} />
                         <NavItem icon="badge" label="Student & Staff" path="/directory" active={isActive("/directory")} />
 

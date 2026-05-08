@@ -10,8 +10,8 @@ export const ExaminationsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const [exams] = useState([
     {
       id: "EX-2024-001",
-      title: "Mid-Term Examination 2024",
-      type: "Major",
+      title: "Periodic Test 2 (PT-2)",
+      type: "Periodic Test (PT)",
       status: "Completed",
       date: "Oct 12 - Oct 20, 2024",
       classes: ["Grade 10", "Grade 11", "Grade 12"],
@@ -20,32 +20,32 @@ export const ExaminationsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     },
     {
       id: "EX-2024-002",
-      title: "Science Mock Test",
-      type: "Assessment",
+      title: "First Quarterly Examination",
+      type: "Quarterly",
       status: "In Progress",
-      date: "Nov 05, 2024",
-      classes: ["Grade 10A", "Grade 10B"],
-      subjects: 1,
+      date: "Nov 05 - Nov 15, 2024",
+      classes: ["All Grades"],
+      subjects: 8,
       avgScore: null,
     },
     {
       id: "EX-2024-003",
-      title: "Annual Sports Quiz",
-      type: "Quiz",
+      title: "Unit Test - 3",
+      type: "Unit Test",
       status: "Upcoming",
-      date: "Nov 15, 2024",
-      classes: ["All Grades"],
+      date: "Dec 10, 2024",
+      classes: ["Grade 6", "Grade 7", "Grade 8"],
       subjects: 1,
       avgScore: null,
     },
     {
       id: "EX-2024-004",
-      title: "Mathematics Olympiad",
-      type: "Competition",
+      title: "Board Mock Examination",
+      type: "Mock Test",
       status: "Upcoming",
-      date: "Dec 02, 2024",
-      classes: ["Grade 9", "Grade 10", "Grade 11", "Grade 12"],
-      subjects: 1,
+      date: "Jan 15, 2025",
+      classes: ["Grade 10", "Grade 12"],
+      subjects: 6,
       avgScore: null,
     },
   ]);
@@ -75,7 +75,10 @@ export const ExaminationsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 <span className="material-symbols-outlined text-[20px]">upload_file</span>
                 Bulk Marks Upload
               </button>
-              <button className="btn-primary h-11 px-6 rounded-[14px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/10">
+              <button 
+                onClick={() => navigate("/examinations/add")}
+                className="btn-primary h-11 px-6 rounded-[14px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/10"
+              >
                 <span className="material-symbols-outlined text-[20px]">add_circle</span>
                 New Examination
               </button>
@@ -125,18 +128,27 @@ export const ExaminationsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 <h3 className="text-foreground text-[16px] font-bold tracking-tight">Exam Schedule</h3>
                 <p className="text-[11px] font-bold text-[#B0AFA8] mt-0.5">Manage and track assessment cycles</p>
               </div>
-              <div className="flex gap-2 p-1 bg-[#F7F8F4] rounded-xl border border-slate-100">
-                {["All", "Major Exams", "Mock Tests"].map((f) => (
-                  <button
-                    key={f}
-                    className={cn(
-                      "px-4 py-1.5 rounded-lg text-[11px] font-black transition-all",
-                      f === "All" ? "bg-white text-secondary shadow-sm" : "text-[#B0AFA8] hover:text-foreground"
-                    )}
-                  >
-                    {f}
-                  </button>
-                ))}
+              <div className="flex items-center gap-4">
+                <div className="flex gap-2 p-1 bg-[#F7F8F4] rounded-xl border border-slate-100">
+                  {["All", "Periodic Tests", "Major Exams", "Internal"].map((f) => (
+                    <button
+                      key={f}
+                      className={cn(
+                        "px-4 py-1.5 rounded-lg text-[11px] font-black transition-all",
+                        f === "All" ? "bg-white text-secondary shadow-sm" : "text-[#B0AFA8] hover:text-foreground"
+                      )}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+                <button 
+                  onClick={() => navigate("/examinations/add")}
+                  className="h-9 px-4 rounded-lg bg-primary text-white text-[12px] font-bold flex items-center gap-2 hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
+                >
+                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  Create Exam
+                </button>
               </div>
             </div>
 

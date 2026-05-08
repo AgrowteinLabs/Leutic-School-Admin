@@ -10,6 +10,7 @@ interface AppDatePickerProps {
   icon?: string;
   maxDate?: Date;
   height?: string;
+  placement?: "top" | "bottom";
 }
 
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -23,6 +24,7 @@ export const AppDatePicker = ({
   icon = "calendar_today",
   maxDate,
   height = "h-12",
+  placement = "bottom",
 }: AppDatePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -129,11 +131,14 @@ export const AppDatePicker = ({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            initial={{ opacity: 0, y: placement === "top" ? 10 : -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            exit={{ opacity: 0, y: placement === "top" ? 10 : -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-[calc(100%+8px)] left-0 bg-white border border-slate-100 rounded-[24px] shadow-2xl p-5 z-50 w-72 origin-top"
+            className={cn(
+              "absolute left-0 bg-white border border-slate-100 rounded-[24px] shadow-2xl p-5 z-[100] w-72",
+              placement === "top" ? "bottom-[calc(100%+8px)] origin-bottom" : "top-[calc(100%+8px)] origin-top"
+            )}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
