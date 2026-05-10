@@ -4,6 +4,8 @@ import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { motion, AnimatePresence } from "framer-motion";
+import { AppDatePicker } from "../../../components/AppDatePicker";
+import { AppTimePicker } from "../../../components/AppTimePicker";
 
 interface Post {
     id: number;
@@ -382,7 +384,63 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const activeTab = tab || "feed";
     const [activeCategory, setActiveCategory] = useState<"all" | "school" | "interschool" | "events">("all");
     const [expandedModerationId, setExpandedModerationId] = useState<number | null>(null);
+    const [postContent, setPostContent] = useState("");
+    const [postCategory, setPostCategory] = useState("Academic");
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [isAudienceMenuOpen, setIsAudienceMenuOpen] = useState(false);
+    const [audienceSearch, setAudienceSearch] = useState("");
+    const [selectedAudiences, setSelectedAudiences] = useState<string[]>(["School-wide"]);
+    const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
+    const [attachments, setAttachments] = useState<{ id: string, type: 'image' | 'file' | 'location' | 'event' | 'poll', name: string, url?: string, detail?: string }[]>([]);
+    const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
+    const [eventDetails, setEventDetails] = useState({ title: '', date: '', time: '', venue: '', rsvp: false, buttonText: '', buttonLink: '' });
+    const [isAdvancedEventOpen, setIsAdvancedEventOpen] = useState(false);
+    const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
+
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'file') => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const newAttachment = {
+                id: Math.random().toString(36).substr(2, 9),
+                type,
+                name: file.name,
+                url: URL.createObjectURL(file)
+            };
+            setAttachments([...attachments, newAttachment]);
+        }
+        e.target.value = "";
+    };
+
+    const addSpecialAttachment = (type: 'location' | 'event' | 'poll') => {
+        const newAtt = {
+            id: Math.random().toString(36).substr(2, 9),
+            type,
+            name: type === 'location' ? 'Main Campus, High School Wing' :
+                type === 'event' ? 'New Institutional Event' : 'Community Poll',
+            detail: type === 'location' ? 'Block A, Floor 2' :
+                type === 'event' ? 'Configure Event Details Below' : 'Add Poll Options Below'
+        };
+        setAttachments([...attachments, newAtt]);
+    };
+
+    const removeAttachment = (id: string) => {
+        setAttachments(attachments.filter(a => a.id !== id));
+    };
+
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Auto-expanding textarea logic
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = '0px';
+            const scrollHeight = textareaRef.current.scrollHeight;
+            textareaRef.current.style.height = isExpanded ? `${Math.max(scrollHeight, 80)}px` : '32px';
+        }
+    }, [postContent, isExpanded]);
 
     // Reset expansion states and scroll position when switching tabs to prevent animation clashes and carryover
     useEffect(() => {
@@ -883,6 +941,564 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         transition={{ duration: 0.3, ease: "easeOut" }}
                                     >
                                         <div className="space-y-12">
+                                            {/* Intelligent Expanding Create Post */}
+                                            <motion.div
+                                                layout
+                                                className={cn(
+                                                    "bg-white border border-slate-100 rounded-[24px] transition-all relative z-[60]",
+                                                    (!isAudienceMenuOpen && !isAttachmentMenuOpen) && "overflow-hidden"
+                                                )}
+                                            >
+                                                <div className={cn("transition-all", isExpanded ? "p-8" : "p-5 px-6")}>
+                                                    <div className="flex items-start gap-5">
+                                                        <div className="size-10 rounded-2xl overflow-hidden border border-slate-100 flex-shrink-0">
+                                                            <img src="/Avatar/Male Avatar Age45.png" className="size-full object-cover" />
+                                                        </div>
+                                                        <div className="flex-1 space-y-4">
+                                                            <textarea
+                                                                ref={textareaRef}
+                                                                onFocus={() => setIsExpanded(true)}
+                                                                value={postContent}
+                                                                onChange={(e) => setPostContent(e.target.value)}
+                                                                placeholder="Share an update publicly..."
+                                                                className="w-full bg-transparent border-none outline-none resize-none text-[14px] text-brand-navy placeholder:text-muted-gray/40 pt-1.5 leading-relaxed transition-all no-scrollbar overflow-hidden"
+                                                            />
+
+                                                            {/* Full-Width Attachment Previews */}
+                                                            {attachments.length > 0 && (
+                                                                <div className="space-y-4 py-2 relative z-50 overflow-visible">
+                                                                    {attachments.map(att => (
+                                                                        <motion.div
+                                                                            initial={{ opacity: 0, y: 10 }}
+                                                                            animate={{ opacity: 1, y: 0 }}
+                                                                            key={att.id}
+                                                                            className="relative group w-full"
+                                                                        >
+                                                                            {att.type === 'image' ? (
+                                                                                <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50">
+                                                                                    <img src={att.url} className="size-full object-cover" />
+                                                                                </div>
+                                                                            ) : att.type === 'file' ? (
+                                                                                <div className="w-full rounded-2xl border border-slate-100 shadow-sm bg-white hover:border-primary/20 transition-all flex items-center gap-4 p-4">
+                                                                                    <div className="size-12 rounded-xl bg-red-50 flex items-center justify-center border border-red-100 text-red-500 shadow-inner">
+                                                                                        <span className="material-symbols-outlined text-[24px]">pdf_ux</span>
+                                                                                    </div>
+                                                                                    <div className="flex-1 min-w-0">
+                                                                                        <span className="text-[12px] font-bold text-brand-navy truncate block">{att.name}</span>
+                                                                                        <span className="text-[10px] font-medium text-muted-gray/40 uppercase tracking-tight">Institutional Document</span>
+                                                                                    </div>
+                                                                                    <span className="material-symbols-outlined text-muted-gray/20">download</span>
+                                                                                </div>
+                                                                            ) : att.type === 'location' ? (
+                                                                                <div className="w-full rounded-2xl border border-slate-100 shadow-sm bg-white flex items-center gap-4 p-4">
+                                                                                    <div className="size-12 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100 text-blue-500 shadow-inner">
+                                                                                        <span className="material-symbols-outlined text-[24px]">map</span>
+                                                                                    </div>
+                                                                                    <div className="flex-1 min-w-0">
+                                                                                        <span className="text-[12px] font-bold text-brand-navy truncate block">{att.name}</span>
+                                                                                        <span className="text-[10px] font-medium text-muted-gray/40">{att.detail}</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : att.type === 'event' ? (
+                                                                                <div className="p-8 bg-slate-50/30 rounded-[28px] border border-slate-50/50 space-y-8 relative z-[70]">
+                                                                                    {/* Header: Minimal & Institutional */}
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <div className="flex items-center gap-3">
+                                                                                            <div className="size-10 rounded-2xl bg-slate-50 flex items-center justify-center text-brand-navy/60">
+                                                                                                <span className="material-symbols-outlined text-[20px]">calendar_month</span>
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <h4 className="text-[13px] font-bold text-brand-navy">Event Configuration</h4>
+                                                                                                <p className="text-[10px] text-muted-gray/60 font-medium">Define schedule and institutional details</p>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <button 
+                                                                                            onClick={() => setEventDetails({...eventDetails, rsvp: !eventDetails.rsvp})}
+                                                                                            className={cn(
+                                                                                                "flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold transition-all border",
+                                                                                                eventDetails.rsvp 
+                                                                                                    ? "bg-primary/5 border-primary/20 text-primary" 
+                                                                                                    : "bg-white border-slate-100 text-muted-gray/60 hover:bg-slate-50"
+                                                                                            )}
+                                                                                        >
+                                                                                            <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                                                                                            {eventDetails.rsvp ? "RSVP Enabled" : "Enable RSVP"}
+                                                                                        </button>
+                                                                                    </div>
+
+                                                                                    {/* Etched Grid: App Pickers & Ghost Inputs */}
+                                                                                    <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                                                                                        <div className="group relative space-y-2">
+                                                                                            <div className="flex items-center justify-between px-1">
+                                                                                                <label className="text-[10px] font-bold text-brand-navy/40">Event Title</label>
+                                                                                                <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">edit_note</span>
+                                                                                            </div>
+                                                                                            <input 
+                                                                                                type="text"
+                                                                                                placeholder="e.g. Annual Sports Meet"
+                                                                                                value={eventDetails.title}
+                                                                                                onChange={e => setEventDetails({ ...eventDetails, title: e.target.value })}
+                                                                                                className="w-full bg-transparent border-b border-slate-100 py-2.5 text-[12px] font-bold text-brand-navy outline-none placeholder:text-muted-gray/30 focus:border-primary/30 transition-all"
+                                                                                            />
+                                                                                        </div>
+
+                                                                                        <div className="group relative space-y-2">
+                                                                                            <div className="flex items-center justify-between px-1">
+                                                                                                <label className="text-[10px] font-bold text-brand-navy/40">Venue / Location</label>
+                                                                                                <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">location_on</span>
+                                                                                            </div>
+                                                                                            <input 
+                                                                                                type="text"
+                                                                                                placeholder="e.g. Main Auditorium"
+                                                                                                value={eventDetails.venue}
+                                                                                                onChange={e => setEventDetails({ ...eventDetails, venue: e.target.value })}
+                                                                                                className="w-full bg-transparent border-b border-slate-100 py-2.5 text-[12px] font-bold text-brand-navy outline-none placeholder:text-muted-gray/30 focus:border-primary/30 transition-all"
+                                                                                            />
+                                                                                        </div>
+
+                                                                                        <div className="group relative space-y-2">
+                                                                                            <div className="flex items-center justify-between px-1">
+                                                                                                <label className="text-[10px] font-bold text-brand-navy/40">Event Date</label>
+                                                                                                <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">event</span>
+                                                                                            </div>
+                                                                                            <AppDatePicker 
+                                                                                                height="h-10"
+                                                                                                value={eventDetails.date ? new Date(eventDetails.date) : null}
+                                                                                                onChange={(date) => setEventDetails({ ...eventDetails, date: date.toISOString().split('T')[0] })}
+                                                                                            />
+                                                                                        </div>
+
+                                                                                        <div className="group relative space-y-2">
+                                                                                            <div className="flex items-center justify-between px-1">
+                                                                                                <label className="text-[10px] font-bold text-brand-navy/40">Start Time</label>
+                                                                                                <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">schedule</span>
+                                                                                            </div>
+                                                                                            <AppTimePicker 
+                                                                                                value={eventDetails.time || "09:00"}
+                                                                                                onChange={(time) => setEventDetails({ ...eventDetails, time })}
+                                                                                            />
+                                                                                        </div>
+
+                                                                                        {/* Advanced Options Toggle */}
+                                                                                        <div className="col-span-2 pt-2">
+                                                                                            <button 
+                                                                                                onClick={() => setIsAdvancedEventOpen(!isAdvancedEventOpen)}
+                                                                                                className="flex items-center gap-2 text-[10px] font-bold text-muted-gray/40 hover:text-brand-navy transition-all px-1"
+                                                                                            >
+                                                                                                <span className={cn(
+                                                                                                    "material-symbols-outlined text-[16px] transition-transform",
+                                                                                                    isAdvancedEventOpen && "rotate-90"
+                                                                                                )}>chevron_right</span>
+                                                                                                Advanced Options (CTA Button)
+                                                                                            </button>
+
+                                                                                            <AnimatePresence>
+                                                                                                {isAdvancedEventOpen && (
+                                                                                                    <motion.div 
+                                                                                                        initial={{ height: 0, opacity: 0 }}
+                                                                                                        animate={{ height: 'auto', opacity: 1 }}
+                                                                                                        exit={{ height: 0, opacity: 0 }}
+                                                                                                        className="overflow-hidden"
+                                                                                                    >
+                                                                                                        <div className="grid grid-cols-2 gap-x-8 gap-y-6 pt-6 border-t border-slate-50 mt-4">
+                                                                                                            <div className="group relative space-y-2">
+                                                                                                                <div className="flex items-center justify-between px-1">
+                                                                                                                    <label className="text-[10px] font-bold text-brand-navy/40">Button Text</label>
+                                                                                                                    <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">smart_button</span>
+                                                                                                                </div>
+                                                                                                                <input 
+                                                                                                                    type="text"
+                                                                                                                    placeholder="e.g. Register Now"
+                                                                                                                    value={eventDetails.buttonText}
+                                                                                                                    onChange={e => setEventDetails({ ...eventDetails, buttonText: e.target.value })}
+                                                                                                                    className="w-full bg-transparent border-b border-slate-100 py-2.5 text-[12px] font-bold text-brand-navy outline-none placeholder:text-muted-gray/30 focus:border-primary/30 transition-all"
+                                                                                                                />
+                                                                                                            </div>
+
+                                                                                                            <div className="group relative space-y-2">
+                                                                                                                <div className="flex items-center justify-between px-1">
+                                                                                                                    <label className="text-[10px] font-bold text-brand-navy/40">Action Link (https)</label>
+                                                                                                                    <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">link</span>
+                                                                                                                </div>
+                                                                                                                <input 
+                                                                                                                    type="url"
+                                                                                                                    placeholder="https://example.com"
+                                                                                                                    value={eventDetails.buttonLink}
+                                                                                                                    onChange={e => setEventDetails({ ...eventDetails, buttonLink: e.target.value })}
+                                                                                                                    className="w-full bg-transparent border-b border-slate-100 py-2.5 text-[12px] font-bold text-brand-navy outline-none placeholder:text-muted-gray/30 focus:border-primary/30 transition-all"
+                                                                                                                />
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </motion.div>
+                                                                                                )}
+                                                                                            </AnimatePresence>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : att.type === 'poll' ? (
+                                                                                <div className="p-8 bg-amber-50/10 rounded-[28px] border border-amber-100/20 space-y-8 relative z-[70]">
+                                                                                    {/* Header: Minimal & Insight-Focused */}
+                                                                                    <div className="flex items-center justify-between">
+                                                                                        <div className="flex items-center gap-3">
+                                                                                            <div className="size-10 rounded-2xl bg-slate-50 flex items-center justify-center text-amber-600/60">
+                                                                                                <span className="material-symbols-outlined text-[20px]">ballot</span>
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <h4 className="text-[13px] font-bold text-brand-navy">Interactive Poll</h4>
+                                                                                                <p className="text-[10px] text-muted-gray/60 font-medium">Gather community feedback and insights</p>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+
+                                                                                    <div className="space-y-6">
+                                                                                        {/* Poll Question Area */}
+                                                                                        <div className="group relative space-y-2">
+                                                                                            <div className="flex items-center justify-between px-1">
+                                                                                                <label className="text-[10px] font-bold text-brand-navy/40">Poll Question</label>
+                                                                                                <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-amber-500/40 transition-colors">help_outline</span>
+                                                                                            </div>
+                                                                                            <input 
+                                                                                                type="text"
+                                                                                                placeholder="What would you like to ask the community?"
+                                                                                                className="w-full bg-transparent border-b border-amber-100/50 py-3 text-[13px] font-bold text-brand-navy outline-none placeholder:text-muted-gray/30 focus:border-amber-500/30 transition-all"
+                                                                                            />
+                                                                                        </div>
+
+                                                                                        {/* Etched Options List */}
+                                                                                        <div className="space-y-4">
+                                                                                            <label className="text-[10px] font-bold text-brand-navy/40 px-1">Poll Options</label>
+                                                                                            <div className="grid grid-cols-1 gap-3">
+                                                                                                {pollOptions.map((opt, idx) => (
+                                                                                                    <div key={idx} className="group flex items-center gap-4 relative">
+                                                                                                        <div className="size-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-[11px] font-bold text-amber-600/40 group-focus-within:bg-amber-50 group-focus-within:border-amber-100 transition-all">{idx + 1}</div>
+                                                                                                        <input
+                                                                                                            type="text"
+                                                                                                            placeholder={`Option ${idx + 1}...`}
+                                                                                                            className="flex-1 bg-transparent border-b border-slate-100 py-2 text-[12px] font-bold text-brand-navy outline-none placeholder:text-muted-gray/20 focus:border-amber-500/20 transition-all"
+                                                                                                            value={opt}
+                                                                                                            onChange={e => {
+                                                                                                                const newOpts = [...pollOptions];
+                                                                                                                newOpts[idx] = e.target.value;
+                                                                                                                setPollOptions(newOpts);
+                                                                                                            }}
+                                                                                                        />
+                                                                                                        {idx > 1 && (
+                                                                                                            <button onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== idx))} className="size-8 rounded-full flex items-center justify-center text-muted-gray/20 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100">
+                                                                                                                <span className="material-symbols-outlined text-[18px]">close</span>
+                                                                                                            </button>
+                                                                                                        )}
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                            <button
+                                                                                                onClick={() => setPollOptions([...pollOptions, ''])}
+                                                                                                className="mt-4 px-4 py-2 border border-dashed border-amber-200/60 rounded-xl text-[10px] font-bold text-amber-600/60 hover:bg-amber-50 hover:border-amber-500/40 transition-all flex items-center gap-2"
+                                                                                            >
+                                                                                                <span className="material-symbols-outlined text-[16px]">add</span>
+                                                                                                Add Another Option
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : null}
+                                                                            <button
+                                                                                onClick={() => removeAttachment(att.id)}
+                                                                                className="absolute -top-2 -right-2 size-8 bg-white border border-slate-100 rounded-full flex items-center justify-center text-muted-gray hover:text-red-500 shadow-xl opacity-0 group-hover:opacity-100 transition-all z-10"
+                                                                            >
+                                                                                <span className="material-symbols-outlined text-[16px]">close</span>
+                                                                            </button>
+                                                                        </motion.div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <AnimatePresence>
+                                                        {isExpanded && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: 'auto', opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                className={cn(
+                                                                    "relative z-10",
+                                                                    (!isAudienceMenuOpen && !isAttachmentMenuOpen) && "overflow-hidden"
+                                                                )}
+                                                            >
+                                                                <div className="mt-6 pt-6 border-t border-slate-50 space-y-4">
+                                                                    {/* Row 1: Attachments & Targeting */}
+                                                                    <div className="flex items-center justify-between">
+                                                                        {/* Surgical Expanding Smart-Add Menu */}
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <button
+                                                                                onClick={() => setIsAttachmentMenuOpen(!isAttachmentMenuOpen)}
+                                                                                className={cn(
+                                                                                    "size-9 rounded-full flex items-center justify-center transition-all",
+                                                                                    isAttachmentMenuOpen
+                                                                                        ? "bg-primary text-white rotate-45 shadow-lg shadow-primary/20"
+                                                                                        : "bg-transparent text-brand-navy/50 hover:text-brand-navy hover:bg-slate-50"
+                                                                                )}
+                                                                            >
+                                                                                <span className="material-symbols-outlined text-[20px]">add</span>
+                                                                            </button>
+
+                                                                            <AnimatePresence>
+                                                                                {isAttachmentMenuOpen && (
+                                                                                    <motion.div
+                                                                                        initial={{ width: 0, opacity: 0 }}
+                                                                                        animate={{ width: 'auto', opacity: 1 }}
+                                                                                        exit={{ width: 0, opacity: 0 }}
+                                                                                        className="flex items-center gap-1.5 overflow-hidden"
+                                                                                    >
+                                                                                        <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'image')} />
+                                                                                        <input type="file" ref={fileInputRef} className="hidden" accept=".pdf,.doc,.docx" onChange={(e) => handleFileChange(e, 'file')} />
+
+                                                                                        <button
+                                                                                            onClick={() => imageInputRef.current?.click()}
+                                                                                            className="size-9 rounded-full hover:bg-slate-50 flex items-center justify-center text-muted-gray/60 transition-all border border-transparent hover:border-slate-100"
+                                                                                            title="Add Image"
+                                                                                        >
+                                                                                            <span className="material-symbols-outlined text-[20px]">image</span>
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={() => fileInputRef.current?.click()}
+                                                                                            className="size-9 rounded-full hover:bg-slate-50 flex items-center justify-center text-muted-gray/60 transition-all border border-transparent hover:border-slate-100"
+                                                                                            title="Attach PDF/File"
+                                                                                        >
+                                                                                            <span className="material-symbols-outlined text-[20px]">description</span>
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={() => addSpecialAttachment('location')}
+                                                                                            className="size-9 rounded-full hover:bg-slate-50 flex items-center justify-center text-muted-gray/60 transition-all border border-transparent hover:border-slate-100"
+                                                                                            title="Add Location"
+                                                                                        >
+                                                                                            <span className="material-symbols-outlined text-[20px]">location_on</span>
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={() => addSpecialAttachment('event')}
+                                                                                            className="size-9 rounded-full hover:bg-slate-50 flex items-center justify-center text-muted-gray/60 transition-all border border-transparent hover:border-slate-100"
+                                                                                            title="Schedule Event"
+                                                                                        >
+                                                                                            <span className="material-symbols-outlined text-[20px]">calendar_today</span>
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={() => addSpecialAttachment('poll')}
+                                                                                            className="size-9 rounded-full hover:bg-slate-50 flex items-center justify-center text-muted-gray/60 transition-all border border-transparent hover:border-slate-100"
+                                                                                            title="Create Poll"
+                                                                                        >
+                                                                                            <span className="material-symbols-outlined text-[20px]">ballot</span>
+                                                                                        </button>
+                                                                                    </motion.div>
+                                                                                )}
+                                                                            </AnimatePresence>
+
+                                                                            <div className="w-px h-6 bg-slate-100 mx-1" />
+
+                                                                            <div className="relative">
+                                                                                <button
+                                                                                    onClick={() => setIsAudienceMenuOpen(!isAudienceMenuOpen)}
+                                                                                    className={cn(
+                                                                                        "flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold transition-all",
+                                                                                        (selectedAudiences.length > 0 || selectedClasses.length > 0)
+                                                                                            ? "bg-brand-navy/5 text-brand-navy"
+                                                                                            : "bg-slate-50 text-muted-gray hover:bg-slate-100"
+                                                                                    )}
+                                                                                >
+                                                                                    <span className="material-symbols-outlined text-[16px]">
+                                                                                        {selectedAudiences.includes('Global') ? 'public' : 'groups'}
+                                                                                    </span>
+                                                                                    {selectedAudiences.length === 1 && selectedClasses.length === 0
+                                                                                        ? `Post to ${selectedAudiences[0]}`
+                                                                                        : `Post to ${selectedAudiences.length + selectedClasses.length} Groups`}
+                                                                                    <span className={cn(
+                                                                                        "material-symbols-outlined text-[16px] transition-transform duration-300",
+                                                                                        isAudienceMenuOpen && "rotate-180"
+                                                                                    )}>
+                                                                                        expand_more
+                                                                                    </span>
+                                                                                </button>
+
+                                                                                {/* Refined Searchable Audience Menu */}
+                                                                                <AnimatePresence>
+                                                                                    {isAudienceMenuOpen && (
+                                                                                        <motion.div
+                                                                                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                                                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                                                            className="absolute top-full left-0 mt-3 w-[320px] bg-white rounded-3xl shadow-2xl shadow-brand-navy/20 border border-slate-100 flex flex-col z-[100] overflow-hidden"
+                                                                                            style={{ maxHeight: '400px' }}
+                                                                                        >
+                                                                                            {/* Search Header */}
+                                                                                            <div className="p-4 border-b border-slate-50 bg-slate-50/50">
+                                                                                                <div className="relative">
+                                                                                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-muted-gray/40">search</span>
+                                                                                                    <input
+                                                                                                        autoFocus
+                                                                                                        type="text"
+                                                                                                        placeholder="Search groups or classes..."
+                                                                                                        value={audienceSearch}
+                                                                                                        onChange={(e) => setAudienceSearch(e.target.value)}
+                                                                                                        className="w-full bg-white border border-slate-200 rounded-xl py-2 pl-10 pr-4 text-[12px] outline-none focus:border-brand-navy/20 transition-all"
+                                                                                                    />
+                                                                                                </div>
+                                                                                            </div>
+
+                                                                                            <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                                                                                                {/* Broad Groups Section */}
+                                                                                                <div className="space-y-2">
+                                                                                                    <span className="text-[10px] font-bold text-brand-navy/30 uppercase tracking-widest px-1">Institutional Groups</span>
+                                                                                                    <div className="space-y-1">
+                                                                                                        {[
+                                                                                                            { id: 'Global', label: 'Global (All Schools)' },
+                                                                                                            { id: 'School-wide', label: 'Our School (All People)' },
+                                                                                                            { id: 'Faculty', label: 'Faculty & Teachers' },
+                                                                                                            { id: 'Parents', label: 'Parents' },
+                                                                                                            { id: 'Students', label: 'Students' }
+                                                                                                        ].filter(opt => opt.label.toLowerCase().includes(audienceSearch.toLowerCase())).map(opt => {
+                                                                                                            const isActive = selectedAudiences.includes(opt.id);
+                                                                                                            return (
+                                                                                                                <button
+                                                                                                                    key={opt.id}
+                                                                                                                    onClick={() => {
+                                                                                                                        if (selectedAudiences.includes(opt.id)) {
+                                                                                                                            setSelectedAudiences(selectedAudiences.filter(a => a !== opt.id));
+                                                                                                                        } else {
+                                                                                                                            setSelectedAudiences([...selectedAudiences, opt.id]);
+                                                                                                                        }
+                                                                                                                    }}
+                                                                                                                    className={cn(
+                                                                                                                        "w-full flex items-center justify-between p-2.5 rounded-xl transition-all group",
+                                                                                                                        isActive ? "bg-brand-navy/5" : "hover:bg-slate-50"
+                                                                                                                    )}
+                                                                                                                >
+                                                                                                                    <div className="flex items-center gap-3">
+                                                                                                                        <div className={cn("size-4 rounded-md border flex items-center justify-center transition-all", isActive ? "bg-brand-navy border-brand-navy" : "border-slate-200 group-hover:border-slate-300")}>
+                                                                                                                            {isActive && <span className="material-symbols-outlined text-[12px] text-[#D9EA85]">check</span>}
+                                                                                                                        </div>
+                                                                                                                        <span className={cn("text-[11px] font-bold", isActive ? "text-brand-navy" : "text-muted-gray")}>{opt.label}</span>
+                                                                                                                    </div>
+                                                                                                                </button>
+                                                                                                            );
+                                                                                                        })}
+                                                                                                    </div>
+                                                                                                </div>
+
+                                                                                                {/* Custom Class Section */}
+                                                                                                <div className="space-y-2">
+                                                                                                    <div className="flex items-center justify-between px-1">
+                                                                                                        <span className="text-[10px] font-bold text-brand-navy/30 uppercase tracking-widest">Custom Class Selection</span>
+                                                                                                        <button
+                                                                                                            onClick={() => {
+                                                                                                                const allCls = ["10A", "10B", "9A", "9C", "8B", "7A"];
+                                                                                                                if (selectedClasses.length === allCls.length) {
+                                                                                                                    setSelectedClasses([]);
+                                                                                                                } else {
+                                                                                                                    setSelectedClasses(allCls);
+                                                                                                                }
+                                                                                                            }}
+                                                                                                            className="text-[9px] font-bold text-primary hover:underline"
+                                                                                                        >
+                                                                                                            {selectedClasses.length === 6 ? "Unselect All" : "Select All"}
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                    <div className="space-y-1">
+                                                                                                        {["10A", "10B", "9A", "9C", "8B", "7A"].filter(cls => cls.toLowerCase().includes(audienceSearch.toLowerCase())).map(cls => {
+                                                                                                            const isActive = selectedClasses.includes(cls);
+                                                                                                            return (
+                                                                                                                <button
+                                                                                                                    key={cls}
+                                                                                                                    onClick={() => {
+                                                                                                                        if (selectedClasses.includes(cls)) {
+                                                                                                                            setSelectedClasses(selectedClasses.filter(c => c !== cls));
+                                                                                                                        } else {
+                                                                                                                            setSelectedClasses([...selectedClasses, cls]);
+                                                                                                                        }
+                                                                                                                    }}
+                                                                                                                    className={cn(
+                                                                                                                        "w-full flex items-center justify-between p-2.5 rounded-xl transition-all group",
+                                                                                                                        isActive ? "bg-primary/5" : "hover:bg-slate-50"
+                                                                                                                    )}
+                                                                                                                >
+                                                                                                                    <div className="flex items-center gap-3">
+                                                                                                                        <div className={cn("size-4 rounded-md border flex items-center justify-center transition-all", isActive ? "bg-primary border-primary" : "border-slate-200 group-hover:border-slate-300")}>
+                                                                                                                            {isActive && <span className="material-symbols-outlined text-[12px] text-white">check</span>}
+                                                                                                                        </div>
+                                                                                                                        <span className={cn("text-[11px] font-bold", isActive ? "text-primary" : "text-muted-gray")}>Grade {cls}</span>
+                                                                                                                    </div>
+                                                                                                                </button>
+                                                                                                            );
+                                                                                                        })}
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+
+                                                                                            <div className="p-4 border-t border-slate-50">
+                                                                                                <button
+                                                                                                    onClick={() => setIsAudienceMenuOpen(false)}
+                                                                                                    className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-[11px] font-bold hover:bg-black transition-all shadow-lg shadow-slate-900/10"
+                                                                                                >
+                                                                                                    Apply Selection
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </motion.div>
+                                                                                    )}
+                                                                                </AnimatePresence>
+                                                                            </div>
+
+                                                                            <select
+                                                                                value={postCategory}
+                                                                                onChange={(e) => setPostCategory(e.target.value)}
+                                                                                className="bg-slate-50 border-none rounded-xl px-3 py-1.5 text-[11px] font-bold text-muted-gray outline-none cursor-pointer hover:bg-slate-100 transition-all"
+                                                                            >
+                                                                                <option>Academic</option>
+                                                                                <option>Events</option>
+                                                                                <option>Campus</option>
+                                                                            </select>
+                                                                        </div>
+
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Row 2: Final Actions */}
+                                                                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-50/50">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setIsExpanded(false);
+                                                                            setPostContent("");
+                                                                            setAttachments([]);
+                                                                            setEventDetails({ title: '', date: '', time: '', venue: '', rsvp: false });
+                                                                            setPollOptions(['', '']);
+                                                                        }}
+                                                                        className="px-5 py-2 rounded-xl text-[12px] font-bold text-muted-gray hover:bg-slate-50 transition-all"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                    <PDSButton
+                                                                        variant="primary"
+                                                                        size="sm"
+                                                                        disabled={(!postContent.trim() && attachments.length === 0) || (selectedAudiences.length === 0 && selectedClasses.length === 0)}
+                                                                        onClick={() => {
+                                                                            console.log("Posting:", { postContent, postCategory, selectedAudiences, selectedClasses, attachments, eventDetails, pollOptions });
+                                                                            setPostContent("");
+                                                                            setIsExpanded(false);
+                                                                            setSelectedAudiences(["School-wide"]);
+                                                                            setSelectedClasses([]);
+                                                                            setAttachments([]);
+                                                                            setEventDetails({ title: '', date: '', time: '', venue: '', rsvp: false });
+                                                                            setPollOptions(['', '']);
+                                                                            setIsAudienceMenuOpen(false);
+                                                                        }}
+                                                                        className="px-8 rounded-xl h-10 shadow-lg shadow-primary/10"
+                                                                    >
+                                                                        Publish Post
+                                                                    </PDSButton>
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            </motion.div>
+
                                             {/* Category Filters */}
                                             <div className="flex items-center gap-3 border-b border-slate-50 pb-8 mb-8 overflow-x-auto no-scrollbar">
                                                 {["all", "institutional", "faculty", "student", "parent", "class"].map((cat) => {
@@ -1135,7 +1751,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         <div className="space-y-10 sticky top-16">
                                             <div className="p-8 rounded-[32px] bg-tertiary-light">
                                                 <h3 className="font-bold text-brand-navy/40 uppercase tracking-widest mb-8 text-[10px]">Moderation Insights</h3>
-                                                
+
                                                 <div className="space-y-8">
                                                     <div className="group">
                                                         <div className="flex items-center justify-between mb-3">
