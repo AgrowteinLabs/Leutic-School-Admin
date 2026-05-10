@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Activity Feed - Variant</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,100..1000&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: {
+                    "primary": "#D9EA85", // Lime
+                    "secondary": "#152328", // Dark
+                    "tertiary": "#FAF6E9", // Cream
+                    "surface": "#F2F4F5", // Light gray for backgrounds
+                },
+                fontFamily: {
+                    "display": ["DM Sans", "sans-serif"]
+                },
+                borderRadius: { "3xl": "1.75rem", "4xl": "2.25rem" },
+                boxShadow: {
+                    "soft": "0 4px 20px -2px rgba(21, 35, 40, 0.05)",
+                    "glow": "0 0 15px rgba(217, 234, 133, 0.3)"
+                }
+            },
+        },
+    }
+</script>
+<style>
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .material-symbols-outlined.filled {
+        font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body { -webkit-tap-highlight-color: transparent; }
+</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-white text-secondary font-display antialiased">
+<div class="relative flex min-h-screen flex-col w-full max-w-md mx-auto bg-white overflow-hidden border-x border-gray-50">
+<header class="sticky top-0 z-50 bg-white/95 backdrop-blur-xl px-5 py-4 border-b border-gray-50/50">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3.5">
+<div class="relative group">
+<div class="w-[46px] h-[46px] rounded-full p-[2px] bg-gradient-to-tr from-secondary to-primary cursor-pointer">
+<div class="w-full h-full rounded-full border-2 border-white bg-gray-200 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBSdeLVPSnc40flPGcmddadsZPMJlJVGosTPOtSAcSbVpkheIk51yU5whfo2SDZGAGU8r9s5nkv8YOdTCpAzzYjHsPaDC70Kjkl9HqThhFyGKWpEhShfEfmjVDlF04tldiZwEHE0Tc2-hUEQkkykUmiTPGnVkv0oN_leritQ7PPnbAtpjZqbS9alROeTZcInYceh0VOXcfpl18RTqbyYvvgbXFaL5_DM-08IUWiO3-Ep0RSGIUJ0SriciCc1I-TIdt76F304C_zZA');"></div>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-secondary text-primary text-[9px] font-bold px-1.5 py-0.5 rounded-md border-2 border-white shadow-sm">
+                        Lvl 5
+                    </div>
+</div>
+<div class="flex flex-col">
+<span class="text-xs text-gray-400 font-medium tracking-wide">Good Morning,</span>
+<h1 class="text-secondary text-xl font-bold tracking-tight">Abhishek</h1>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center bg-tertiary px-3 py-1.5 rounded-full gap-1.5 border border-[#EAE5D5]">
+<span class="material-symbols-outlined filled text-secondary text-[18px]">bolt</span>
+<span class="text-secondary text-xs font-bold font-mono">850</span>
+</div>
+<button class="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-50 transition-colors">
+<span class="material-symbols-outlined text-secondary text-[26px]">notifications</span>
+<span class="absolute top-2.5 right-3 w-2 h-2 bg-primary rounded-full ring-2 ring-white"></span>
+</button>
+</div>
+</div>
+</header>
+<!-- <div class="pt-2 pb-2 pl-5 overflow-hidden">
+<div class="flex gap-4 overflow-x-auto hide-scrollbar pr-5 pb-2">
+<div class="flex flex-col items-center gap-2 shrink-0 group cursor-pointer">
+<div class="w-[76px] h-[76px] rounded-[24px] border border-gray-100 flex items-center justify-center bg-gray-50 text-gray-400 group-hover:bg-primary/20 group-hover:text-secondary group-hover:border-primary/50 transition-all duration-300">
+<span class="material-symbols-outlined text-[32px]">add</span>
+</div>
+<span class="text-[11px] font-semibold text-secondary">My Story</span>
+</div>
+<div class="flex flex-col items-center gap-2 shrink-0 cursor-pointer group">
+<div class="w-[76px] h-[76px] p-[3px] rounded-[24px] border-[2px] border-primary group-hover:scale-105 transition-transform">
+<div class="w-full h-full rounded-[18px] bg-cover bg-center shadow-inner" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuByoP9f6okYJqqqPbfOzzn9e8rohrG73npWzYZ2Msyu_dw5kSe0pa7--oIh2gPX9ICJdPgKSpBe_9M7pPSbQnGBTc0rUXveMZy-A9KDsiAvI-lQWb74rZt2UL8rGKriY4XEfMGAAcCD-z8JGBaGlXNwlQO1w1FRRP5PCh0KdM3I38nfzLKfIbugxOntk3GNOMur3PYysWTo9ml-4MpQm-ghlCr7LyWtePzCasblV29dOmREsWeFj0DlLJlCxdfI1Caj8BDp6WtSZA');"></div>
+</div>
+<span class="text-[11px] font-medium text-gray-600">Principal</span>
+</div>
+<div class="flex flex-col items-center gap-2 shrink-0 cursor-pointer group">
+<div class="w-[76px] h-[76px] p-[3px] rounded-[24px] border-[2px] border-blue-400 group-hover:scale-105 transition-transform">
+<div class="w-full h-full rounded-[18px] bg-cover bg-center shadow-inner" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDrct-yKJIRRypHLTVdq2yS9vUlGbvB3LT7WO9fKjgjTP52zFTLpaTuLBewy4nc_B8tifU76z84M1qlcUe2R9CdDPtW4fI6Dp1fiizRuJvaRkrsNo6fMDSszR13xIqiAolfy5kvjdcM9Wo68Hv14W2REmTvxfOn_hbncA3zkf3zkq3AjmtGjBmBpbuXHXKHyyLFBx32D51mEuY0eEjTnAXEVT3SGY99d_o10cClXOMxiDgXYxBtHcqb6WqN5coyZKwK-22EO2g-lw');"></div>
+</div>
+<span class="text-[11px] font-medium text-gray-600">Sports</span>
+</div>
+<div class="flex flex-col items-center gap-2 shrink-0 cursor-pointer group">
+<div class="w-[76px] h-[76px] p-[3px] rounded-[24px] border-[2px] border-gray-100 group-hover:scale-105 transition-transform">
+<div class="w-full h-full rounded-[18px] bg-cover bg-center shadow-inner" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBBsgsNsvXVh-L0GMPmSs3QxEplzQkPKJSC1LYOqa--U3h_RDFmHUlgA1Oemsra0EX64eV8koc7S3JuE9lfQ1DJS5IJPHm_1fb-B9REXejQheIA2h43vh1qEfBCRieWCaEVwuXGS3VNloSxmD6ZlXc7xP7paRDNPgKYvjFHjV6Hbwad7FLKop3OHJzoLn3qiGUEJPLJGC--o0E_d7kUiJjmNXv4vmVAC31nxeFYAMb8VXq9dBY1o7v8UCSWfNFoGszjWY2kZvkGYw');"></div>
+</div>
+<span class="text-[11px] font-medium text-gray-600">Sci Fair</span>
+</div>
+<div class="flex flex-col items-center gap-2 shrink-0 cursor-pointer group">
+<div class="w-[76px] h-[76px] p-[3px] rounded-[24px] border-[2px] border-gray-100 group-hover:scale-105 transition-transform">
+<div class="w-full h-full rounded-[18px] bg-cover bg-center shadow-inner" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBsTKzN3z7v_ZAdo0TTgOvKe8-msIBK6MXLrnUD-3mEDQN-6m50GfBRkcLALmyYQpPlws3iD8MC4jFVrNJS1I2HLM_-M84asX-JHv5fIIow9CQrD2jmcidj0pGtyJFcTZTZ0yiv0vJiehPHfQALkO-DmYz5W1NJO9GeNTzo_efFwN1y1N09cnhtVBQPqTSfC2_BkmR1Cz-mbtxD7FfEFbc2Nw_BCIXgNQ9F4Nvyymc1FRNdncwRGL7WsK1sqMiGoEHspiAEOWigcw');"></div>
+</div>
+<span class="text-[11px] font-medium text-gray-600">Art Club</span>
+</div>
+</div>
+</div> -->
+
+
+
+<div class="sticky top-[78px] z-40 bg-white/90 backdrop-blur-md pb-1 pt-1 border-b border-gray-50">
+<div class="flex gap-2.5 px-5 py-3 overflow-x-auto hide-scrollbar">
+<button class="px-5 py-2.5 rounded-full bg-secondary text-primary text-[13px] font-bold tracking-wide shadow-lg shadow-secondary/10 whitespace-nowrap active:scale-95 transition-transform">
+                Feed
+            </button>
+<button class="px-5 py-2.5 rounded-full bg-gray-50 text-gray-600 border border-gray-100 text-[13px] font-semibold whitespace-nowrap hover:bg-tertiary hover:border-primary/30 hover:text-secondary active:scale-95 transition-all">
+                My School
+            </button>
+<button class="px-5 py-2.5 rounded-full bg-gray-50 text-gray-600 border border-gray-100 text-[13px] font-semibold whitespace-nowrap hover:bg-tertiary hover:border-primary/30 hover:text-secondary active:scale-95 transition-all">
+                Inter-School
+            </button>
+<button class="px-5 py-2.5 rounded-full bg-gray-50 text-gray-600 border border-gray-100 text-[13px] font-semibold whitespace-nowrap hover:bg-tertiary hover:border-primary/30 hover:text-secondary active:scale-95 transition-all">
+                Events
+            </button>
+</div>
+</div>
+<main class="flex flex-col gap-5 px-5 pt-4 pb-28">
+<article class="bg-white rounded-[32px] shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden group">
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-2xl bg-secondary flex items-center justify-center text-primary rotate-3 group-hover:rotate-0 transition-transform duration-300">
+<span class="material-symbols-outlined text-[24px]">school</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="text-[15px] font-bold text-secondary tracking-tight">My School</h3>
+<span class="material-symbols-outlined filled text-blue-500 text-[16px]">verified</span>
+</div>
+<p class="text-[11px] font-medium text-gray-400">2h ago • Official Announcement</p>
+</div>
+</div>
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-50 text-gray-400">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="px-5 pb-3">
+<p class="text-secondary text-[15px] leading-relaxed font-medium">
+                    The annual <span class="text-blue-600 font-bold">#ScienceFair</span> registration is officially OPEN! Show us your innovation. 🚀
+                </p>
+</div>
+<div class="px-2">
+<div class="relative w-full aspect-[4/3] rounded-[24px] overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBtkQTCSPiBrCjzaM12bKmdZc9EU5AHNfcDEkgGXuZwZLuea9KEbET-2nWqliCKxy2uOyBaWnctYVdg8Lh_mGgkRF7pCqd6iD35saElZTg_twMIwXFB_5kEjVoLZVs8MWETjLnSRFdI9MDDr4SYz5eJ9T4z9sglOpDYMgu8B5y3Yk-8UxcclfmHM4PYeDXplP_6J3YvVn0RIr6_wHnYMs2TRkX7xkNMBhOCWqya1297DkgayS37bRR2WcMSe3IcYJe2kJ1CnlMDOg');"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-5">
+<button class="w-full bg-white/20 backdrop-blur-md border border-white/30 text-white py-3 rounded-2xl text-[13px] font-bold hover:bg-white hover:text-secondary transition-all flex items-center justify-center gap-2 group/btn">
+                            Register Now 
+                            <span class="material-symbols-outlined text-[16px] group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 text-gray-500 hover:text-primary transition-colors group/act">
+<span class="material-symbols-outlined text-[22px] group-hover/act:filled group-hover/act:text-primary transition-all">bolt</span>
+<span class="text-xs font-bold">1.2k</span>
+</button>
+<button class="flex items-center gap-2 text-gray-500 hover:text-secondary transition-colors">
+<span class="material-symbols-outlined text-[20px]">mode_comment</span>
+<span class="text-xs font-bold">45</span>
+</button>
+</div>
+<button class="text-gray-400 hover:text-secondary"><span class="material-symbols-outlined text-[20px]">share</span></button>
+</div>
+
+</article>
+
+<article class="bg-white rounded-[32px] shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+
+  <!-- Header -->
+  <div class="p-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-secondary flex items-center justify-center text-primary">
+        <span class="material-symbols-outlined text-[24px]">campaign</span>
+      </div>
+      <div>
+        <div class="flex items-center gap-1.5">
+          <h3 class="text-[15px] font-bold text-secondary">Letuic</h3>
+          <span class="material-symbols-outlined filled text-blue-500 text-[16px]">
+            verified
+          </span>
+        </div>
+        <p class="text-[11px] font-medium text-gray-400">
+          Official Announcement • Just now
+        </p>
+      </div>
+    </div>
+
+    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-50 text-gray-400">
+      <span class="material-symbols-outlined">more_horiz</span>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="px-5 pb-4 tracking-tight">
+    <h2 class="text-[18px] font-bold text-secondary leading-snug mb-2">
+      🚀 Inter-School Hackathon 2025
+    </h2>
+
+    <p class="text-[15px] text-secondary/80 leading-relaxed mb-4 tracking-tight">
+      We are excited to announce that <span class="font-bold">Letuic</span> is hosting an
+      <span class="font-semibold">Inter-School Hackathon</span> aimed at encouraging
+      innovation, collaboration, and problem-solving among students.
+    </p>
+
+    <div class="bg-tertiary border border-[#EAE5D5] rounded-[20px] p-4 space-y-2">
+      <p class="text-[13px] text-secondary">
+        🧩 <span class="font-bold">Who can participate:</span> Students from Grades 8–12
+      </p>
+      <p class="text-[13px] text-secondary">
+        💡 <span class="font-bold">Themes:</span> Technology, AI, Sustainability, Education
+      </p>
+      <p class="text-[13px] text-secondary">
+        🏫 <span class="font-bold">Mode:</span> Inter-School Team Participation
+      </p>
+      <p class="text-[13px] text-secondary">
+        🏆 <span class="font-bold">Rewards:</span> Certificates, Prizes & Recognition
+      </p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="px-4 pb-4 flex items-center justify-between">
+    <span class="text-[11px] text-gray-400 font-medium">
+      Registration details coming soon
+    </span>
+
+    <button class="flex items-center gap-1 text-secondary hover:text-primary transition-colors">
+      <span class="material-symbols-outlined text-[20px]">share</span>
+    </button>
+  </div>
+
+</article>
+
+
+<!-- <article class="bg-white rounded-[32px] shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden group tracking-tight">
+
+  Header
+  <div class="p-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-white rotate-2 group-hover:rotate-0 transition-transform">
+        <span class="material-symbols-outlined text-[22px]">newspaper</span>
+      </div>
+      <div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-2xl bg-secondary flex items-center justify-center text-primary rotate-3 group-hover:rotate-0 transition-transform duration-300">
+<span class="material-symbols-outlined text-[24px]">newspaper</span>
+</div>
+      <div>
+        <h3 class="text-[15px] font-bold text-secondary">School News Desk</h3>
+        <p class="text-[11px] font-medium text-gray-400">
+          Today • Campus News
+        </p>
+      </div>
+    </div>
+    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-50 text-gray-400">
+      <span class="material-symbols-outlined">more_horiz</span>
+    </button>
+  </div>
+
+  Title + Excerpt
+  <div class="px-5 pb-3">
+    <h2 class="text-[18px] font-bold text-secondary leading-snug mb-2">
+      New Digital Library Opens for Students 📚
+    </h2>
+    <p class="text-secondary/80 text-[14px] leading-relaxed">
+      The school has officially launched its new digital library, giving students
+      access to thousands of e-books, journals, and learning resources anytime,
+      anywhere.
+    </p>
+  </div>
+
+  Hero Image
+  <div class="px-2">
+    <div class="relative w-full aspect-[16/9] rounded-[24px] overflow-hidden">
+      <div
+        class="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
+        style="background-image:url('https://images.unsplash.com/photo-1524995997946-a1c2e315a42f');">
+      </div>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-4">
+        <span class="bg-white/90 text-secondary text-[11px] font-bold px-3 py-1.5 rounded-full">
+          FEATURED
+        </span>
+      </div>
+    </div>
+  </div>
+
+  Footer Actions
+  <div class="p-4 flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <button class="flex items-center gap-2 text-gray-500 hover:text-primary transition-colors group">
+        <span class="material-symbols-outlined text-[22px] group-hover:filled">
+          bolt
+        </span>
+        <span class="text-xs font-bold">842</span>
+      </button>
+      <button class="flex items-center gap-2 text-gray-500 hover:text-secondary transition-colors">
+        <span class="material-symbols-outlined text-[20px]">
+          mode_comment
+        </span>
+        <span class="text-xs font-bold">29</span>
+      </button>
+    </div>
+
+    <button class="flex items-center gap-1 text-gray-400 hover:text-secondary transition-colors">
+      <span class="material-symbols-outlined text-[20px]">share</span>
+    </button>
+  </div>
+
+</article> -->
+<article class="bg-white rounded-[32px] shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100 p-5">
+
+  <!-- Header -->
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-11 h-11 rounded-2xl bg-secondary flex items-center justify-center text-primary rotate-0 group-hover:rotate-0 transition-transform duration-300">
+<span class=" text-[24px] font-bold">L</span>
+    </div>
+    <div>
+      <h3 class="text-[14px] font-bold text-secondary flex items-center gap-1">
+        Letuic
+        <span class="material-symbols-outlined filled text-blue-500 text-[14px]">
+          verified
+        </span>
+      </h3>
+      <p class="text-[11px] text-gray-400">
+        Chemistry Quiz • Just now
+      </p>
+    </div>
+  </div>
+
+  <!-- Question -->
+  <p class="text-[16px] font-semibold text-secondary mb-4 leading-snug">
+    Where was the <span class="font-bold">15<sup>th</sup> International Sand Art Festival 2025</span> inaugurated in India?
+  </p>
+
+  <!-- Options -->
+  <div class="space-y-2.5">
+
+    <!-- Correct Answer -->
+    <button class="relative w-full group overflow-hidden rounded-xl border border-primary/40 bg-primary/5 transition-all">
+      <div class="absolute top-0 left-0 h-full bg-primary/30 w-full"></div>
+      <div class="relative z-10 flex justify-between items-center px-4 py-3.5">
+        <span class="text-[14px] font-bold text-secondary">Odisha</span>
+        <span class="material-symbols-outlined text-secondary text-[18px]">
+          check_circle
+        </span>
+      </div>
+    </button>
+
+    <button class="relative w-full group overflow-hidden rounded-xl border border-gray-100 bg-white hover:border-gray-300 transition-all">
+      <div class="relative z-10 flex items-center px-4 py-3.5">
+        <span class="text-[14px] font-medium text-gray-600">Maharashtra</span>
+      </div>
+    </button>
+
+    <button class="relative w-full group overflow-hidden rounded-xl border border-gray-100 bg-white hover:border-gray-300 transition-all">
+      <div class="relative z-10 flex items-center px-4 py-3.5">
+        <span class="text-[14px] font-medium text-gray-600">Gujarat</span>
+      </div>
+    </button>
+
+    <button class="relative w-full group overflow-hidden rounded-xl border border-gray-100 bg-white hover:border-gray-300 transition-all">
+      <div class="relative z-10 flex items-center px-4 py-3.5">
+        <span class="text-[14px] font-medium text-gray-600">Karnataka</span>
+      </div>
+    </button>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="mt-4 flex justify-between items-center text-[11px] text-gray-400 font-medium px-1">
+    <span>Correct Answer: Odisha</span>
+    <span>Current Affairs • 2025</span>
+  </div>
+
+</article>
+
+
+<article class="bg-white rounded-[32px] shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+<div class="p-4 flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-full p-0.5 border border-gray-200">
+<div class="w-full h-full rounded-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAbY13Vy1KjvTc0Lj6b4rgs5dFF-avwymkU2hHUDwG68aGmKvFvZ9J9TMVXiGm_V4T-hl_1lEPwN_HojlhDAWdPdln4YvTJ16TfZF_TC3-Dwck8u2dHJ1woPRWUoa3flIDVDgdykA3DijPZafVomA1BFp3izr8fdpSJfsJ87Csck2eihXt7hr6qm1XuTse1TMMJAhBtS_TtBaHaCcuVjclIDji_o9acv9LpzfHr9N2pMiC84s2YMTbcB591rU3IcZ06O8dGRDog3w');"></div>
+</div>
+<div>
+<h3 class="text-[15px] font-bold text-secondary">Jayalakshmi</h3>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="text-[11px] font-semibold text-gray-400">Grade 11</span>
+<span class="w-1 h-1 rounded-full bg-gray-300"></span>
+<span class="text-[10px] bg-tertiary px-2 py-0.5 rounded-md text-secondary border border-[#EAE5D5] font-bold uppercase tracking-wider">Debate</span>
+</div>
+</div>
+</div>
+<div class="text-[10px] font-bold text-gray-300">14m ago</div>
+</div>
+<div class="px-5">
+<p class="text-secondary text-[15px] leading-relaxed mb-3 tracking-tight">Just finished our prep for the inter-school quiz competition! Feeling confident about the finals. Wish us luck! 😤📚</p>
+<div class="grid grid-cols-2 gap-2 mb-4 rounded-[24px] overflow-hidden">
+<div class="h-44 bg-gray-100 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDHlTwHZaKZ5FmAZvMPPx_5UnxM_Ik28Lj9lJvjCMtU30LyzXrYVy0r8HfG_HMpev8qLj3tggEFFkKmt74iMDRLLi5MuOFkuaxYKaQHEgKlZr1ezh0CfVvJxzmvNoUQMxZGLKY41GbeawvQjmT1Vqo10mP3TtJUrqF3et4Kb0_zvt2FxWNoOTJ5LhHU6H9j5QRkCtZtaNb4caN35jKSv429nFcdt3MOYC3A0mQ1jU5sA93ZTjpI9F2TWbpIKTETj7w2flTUNbg4kQ');"></div>
+<div class="h-44 bg-gray-100 bg-cover bg-center relative group/img" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCyz76enEL0MszWXi1GSRU14LRX8-xAphR1Kv7dCpV-tLQCDuy8QnpD4l2j6_MkfI3rLrWiXiG84OpCjVAGlrCFe2_zny8V96ZqjY4w1L1fnAtzuV1FdpwHifEfJwj0erSCOByUHjzq0oUTmLZ8mHfM5-lPTL_jXOCJNW9_uhLVh4BJoJrlIGDsg8TUW_EdAgRyvxQ5V58pdENgthhBJYfA2uW8u6btmy7txoI6yhanY5oKOoRwgkmDNUnnPvUkoLDwNsCsScEJMg');">
+<div class="absolute inset-0 bg-black/10 group-hover/img:bg-transparent transition-colors"></div>
+</div>
+</div>
+</div>
+<div class="px-4 pb-4">
+<div class="bg-gray-50 rounded-[20px] p-1.5 flex items-center gap-1.5">
+<button class="flex-1 bg-secondary hover:bg-secondary/90 text-primary py-3 rounded-[16px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] group/aura shadow-lg shadow-secondary/10">
+<span class="material-symbols-outlined filled text-[20px] group-hover/aura:scale-110 transition-transform">bolt</span>
+<span class="font-bold text-sm">Boost Aura</span>
+</button>
+<button class="w-[50px] h-[46px] rounded-[16px] hover:bg-white hover:shadow-sm text-gray-500 hover:text-secondary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[22px]">mode_comment</span>
+</button>
+<button class="w-[50px] h-[46px] rounded-[16px] hover:bg-white hover:shadow-sm text-gray-500 hover:text-secondary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[22px]">share</span>
+</button>
+</div>
+<div class="mt-2.5 px-2 flex items-center gap-2">
+<div class="flex -space-x-1.5">
+<div class="w-5 h-5 rounded-full border border-white bg-gray-200"></div>
+<div class="w-5 h-5 rounded-full border border-white bg-gray-300"></div>
+<div class="w-5 h-5 rounded-full border border-white bg-gray-400"></div>
+</div>
+<span class="text-[11px] font-medium text-gray-400">Ajay and 48 others boosted this</span>
+</div>
+</div>
+</article>
+<article class="bg-tertiary rounded-[32px] border border-[#E8E1CD] overflow-hidden relative">
+<div class="absolute top-0 right-0">
+<div class="bg-secondary text-primary px-4 py-1.5 rounded-bl-[20px] text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">public</span> Inter-School
+                </div>
+</div>
+<div class="p-5">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-xl bg-white p-1 shadow-sm">
+<div class="w-full h-full rounded-lg bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAqJEQdv6hF4VzkiO4wyyAzRtEe4-bed_lreSkvEaDALpp9KuCdSh7nKqKz34q4PIpAoP3vK7KoWbOiq9FtJh35JEo7TAagpyBH-Gh35CkVCJDrWk0lu1Arod1OJlliO4U5pAl0CTuLhSvjzkvubUfINHsLIG2Um6nxqzh7DRSjhj4zUA8p7quJDX7AeD7h22IAluiaVePHo71tVSgKoBjW4qUYUQVh3Zx8S-QzVzBBbjquH-BpqfSuLRHvv7Wv3hwHPZP806ZuQQ');"></div>
+</div>
+<div>
+<h3 class="text-[15px] font-bold text-secondary">St. Mary's HSS</h3>
+<p class="text-[11px] text-gray-500 font-medium">@st_marys</p>
+</div>
+</div>
+<div class="relative z-10">
+<h4 class="text-[20px] font-bold text-secondary leading-tight mb-2 font-display">Regional Basketball Finals 🏆</h4>
+<p class="text-sm text-secondary/70 mb-5 leading-relaxed">
+                        St. Mary's is hosting the finals this Friday! Food trucks, music &amp; intense matches.
+                    </p>
+<div class="bg-white/60 backdrop-blur-sm border border-white rounded-[24px] p-3 flex items-center gap-3 mb-4 shadow-sm">
+<div class="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+<span class="material-symbols-outlined text-[24px]">sports_basketball</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-[12px] font-bold text-secondary uppercase tracking-wide truncate">Friday, 12th Oct</p>
+<p class="text-[11px] text-gray-500 truncate">5:00 PM - 9:00 PM • Main Court</p>
+</div>
+<button class="h-9 px-4 rounded-xl bg-secondary text-white text-xs font-bold active:scale-95 transition-transform">
+                            View
+                        </button>
+</div>
+<div class="flex items-center justify-between pt-3 border-t border-secondary/5">
+<div class="flex items-center gap-2">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full ring-2 ring-tertiary bg-gray-200 bg-cover" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCytz6Jm8M7P4pzM0pkia64N_qBCO0eZmAWcsEKGn8NPOFgpnNhfhaNb9z-YSM2t2-6e2L28P_USY_M9ELAZu067OZqdoOwANU_dP1c1X58lcQfuvwebYR4pMij7W0yq5rRqG4IB3vGk-izb71m7QTsfEZqIvM4AAIMPeNKOXm6JXTMHc3Aib8axaUSmqCcqfasXi9CkiRSZ1w7domQ-M-xI9aIyV2ERnJP5SogjwLwN9yBTINnkBACWkN3jINjo6IMD1V8dVufdQ')"></div>
+<div class="w-6 h-6 rounded-full ring-2 ring-tertiary bg-gray-200 bg-cover" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAsa9OH4h0BCH5tWz7bRgnqNUVkuSSpQT5sURCxjFDLA-6MRCEHQNZfkfNb9nVchu8bQazj9A68nFA12wAoDgExqHj4aVOQRH8t0c322hB83L8Yx5zRLvVPar4sWzGE0rKq4tD0bnpYwFUdZrkF1h2HpmUePov0DGEmN_g7Fda-zHujqrOnltymca0ecnDSYMWlVTPJPdLUNpbnpFq6nKAjl2lJkAi4w1cwechOnA6tHBzy5pWIQYkfX8TTYHUvvZRptGAq8evHzw')"></div>
+</div>
+<span class="text-[11px] font-bold text-secondary">+230 going</span>
+</div>
+<button class="flex items-center gap-1 text-secondary/60 hover:text-secondary">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+</div>
+</div>
+</div>
+<div class="absolute -bottom-10 -right-10 w-40 h-40 bg-secondary/5 rounded-full blur-2xl"></div>
+</article>
+<article class="bg-white rounded-[32px] shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-gray-100 p-5">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+<span class="material-symbols-outlined text-[22px]">psychology</span>
+</div>
+<div>
+<h3 class="text-[14px] font-bold text-secondary flex items-center gap-1">Prashanth <span class="bg-gray-100 text-gray-500 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">Teacher</span></h3>
+<p class="text-[11px] text-gray-400">Quick Poll • 15m ago</p>
+</div>
+</div>
+<p class="text-[15px] font-semibold text-secondary mb-4 leading-snug">For next week's field trip, which science museum do you prefer?</p>
+<div class="space-y-2.5">
+<button class="relative w-full group overflow-hidden rounded-xl border border-primary/40 bg-primary/5 transition-all">
+<div class="absolute top-0 left-0 h-full bg-primary/30 w-[65%] group-hover:bg-primary/40 transition-colors"></div>
+<div class="relative z-10 flex justify-between items-center px-4 py-3.5">
+<span class="text-[13px] font-bold text-secondary">National Science Centre</span>
+<span class="text-[13px] font-bold text-secondary">65%</span>
+</div>
+</button>
+<button class="relative w-full group overflow-hidden rounded-xl border border-gray-100 bg-white hover:border-gray-300 transition-all">
+<div class="absolute top-0 left-0 h-full bg-gray-100 w-[35%] group-hover:bg-gray-200 transition-colors"></div>
+<div class="relative z-10 flex justify-between items-center px-4 py-3.5">
+<span class="text-[13px] font-medium text-gray-600">Space &amp; Astronomy Museum</span>
+<span class="text-[13px] font-bold text-gray-400">35%</span>
+</div>
+</button>
+</div>
+<div class="mt-3 flex justify-between items-center text-[11px] text-gray-400 font-medium px-1">
+<span>Total 142 votes</span>
+<span>Ends in 2 days</span>
+</div>
+</article>
+<div class="flex flex-col items-center justify-center py-6 gap-3">
+<div class="w-8 h-8 rounded-full border-2 border-gray-100 border-t-primary animate-spin"></div>
+<p class="text-xs text-gray-400 font-medium">Fetching more updates...</p>
+</div>
+</main>
+<div class="fixed bottom-24 right-5 z-50">
+<button class="w-14 h-14 bg-secondary text-primary rounded-[20px] shadow-lg shadow-secondary/20 flex items-center justify-center hover:scale-110 active:scale-95 transition-all group">
+<span class="material-symbols-outlined text-[32px] group-hover:rotate-90 transition-transform duration-300">add</span>
+</button>
+</div>
+<nav class="fixed bottom-0 w-full max-w-md bg-white/95 backdrop-blur-xl border-t border-gray-100 pb-safe pt-2 px-6 z-40">
+<div class="flex items-center justify-between pb-6">
+<button class="flex flex-col items-center gap-1.5 p-2 w-16">
+<div class="w-12 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined filled text-secondary text-[24px]">home</span>
+</div>
+</button>
+<button class="flex flex-col items-center gap-1.5 p-2 w-16 group">
+<div class="w-12 h-8 rounded-full flex items-center justify-center group-hover:bg-gray-50 transition-colors">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-secondary text-[24px]">search</span>
+</div>
+</button>
+<div class="w-8"></div> 
+<button class="flex flex-col items-center gap-1.5 p-2 w-16 group">
+<div class="w-12 h-8 rounded-full flex items-center justify-center group-hover:bg-gray-50 transition-colors">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-secondary text-[24px]">chat_bubble</span>
+</div>
+</button>
+<button class="flex flex-col items-center gap-1.5 p-2 w-16 group">
+<div class="w-12 h-8 rounded-full flex items-center justify-center group-hover:bg-gray-50 transition-colors">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-secondary text-[24px]">person</span>
+</div>
+</button>
+</div>
+</nav>
+</div>
+<script>
+    // Simple interactions for demo feel
+    document.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Ripple or feedback could go here
+        });
+    });
+</script>
+
+</body></html>

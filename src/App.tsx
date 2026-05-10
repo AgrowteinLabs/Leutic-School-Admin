@@ -70,7 +70,7 @@ function App() {
           <Route path="/staff/:id" element={<StaffProfilePage />} />
           <Route path="/drivers/:id" element={<DriverProfilePage />} />
           <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/community" element={<CommunityPage />} />
+          <Route path="/community/:tab?" element={<CommunityPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/know-your-student" element={<KnowYourStudentPage />} />

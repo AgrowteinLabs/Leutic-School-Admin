@@ -51,6 +51,13 @@
         /* #B45309 */
         --info: 213 82% 42%;
         /* #1565C0 */
+
+        --tertiary: 46 44% 95%;
+        /* #FAF6E9 cream */
+        --tertiary-light: 46 60% 98%;
+        /* #FDFBF4 lighter cream */
+        --tertiary-border: 46 20% 88%;
+        /* #EAE5D5 beige */
     }
 
     /* Typography Foundation (Small / Default) */

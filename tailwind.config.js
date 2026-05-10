@@ -58,6 +58,9 @@ export default {
         "status-warning": "#B45309",
         "status-error":   "#B91C1C",
         "status-info":    "#1565C0",
+        tertiary:         "#FAF6E9",
+        "tertiary-light":  "#FDFBF4",
+        "tertiary-border": "#EAE5D5",
         /* Legacy aliases kept for backward compat */
         "pale-lime-legacy": "#dbe890",
         "dark-blue-grey":   "#152328",
