@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
-import { motion } from "framer-motion";
+
 
 export const SettingsPage = () => {
     const [fontSize, setFontSize] = useState(localStorage.getItem('pds-font-size') || 'theme-small');

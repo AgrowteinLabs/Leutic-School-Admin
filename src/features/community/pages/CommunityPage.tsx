@@ -9,7 +9,7 @@ import { AppTimePicker } from "../../../components/AppTimePicker";
 
 interface Post {
     id: number;
-    type: "announcement" | "competition" | "qa";
+    type: "announcement" | "competition" | "qa" | "poll";
     author: string;
     role: string;
     avatar: string;
@@ -25,6 +25,9 @@ interface Post {
         date?: string;
         tags?: string[];
         upvotes?: number;
+        isVoted?: boolean;
+        totalVotes?: number;
+        pollOptions?: { label: string; votes: number; color?: string }[];
     };
 }
 
@@ -252,7 +255,7 @@ export const CommunityPost = ({ post }: { post: Post }) => {
                         <div className="flex justify-between items-center text-[10px] text-muted-gray font-semibold  px-1">
                             <div className="flex items-center gap-2">
                                 <span className="material-symbols-outlined text-[14px]">how_to_vote</span>
-                                <span>{post.metadata.totalVotes + (hasVoted && selectedOption ? 1 : 0)} institutional Votes</span>
+                                <span>{(post.metadata?.totalVotes || 0) + (hasVoted && selectedOption ? 1 : 0)} institutional Votes</span>
                             </div>
                             <span>{hasVoted ? "Selection Locked" : "Ends in 48h"}</span>
                         </div>
@@ -841,7 +844,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                         }
                                                     });
 
-                                                    return root.map((rootNode, idx) => (
+                                                    return root.map((rootNode) => (
                                                         <div key={rootNode.id} className="relative">
                                                             {/* Horizontal Connector to main thread line */}
                                                             <div className="absolute left-[-24px] top-[22px] w-[24px] h-[1px] bg-slate-100 z-0" />
@@ -1466,7 +1469,8 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                             setIsExpanded(false);
                                                                             setPostContent("");
                                                                             setAttachments([]);
-                                                                            setEventDetails({ title: '', date: '', time: '', venue: '', rsvp: false });
+                                                                            setEventDetails({ title: '', date: '', time: '', venue: '', rsvp: false, buttonText: '', buttonLink: '' });
+                                                                            setIsAdvancedEventOpen(false);
                                                                             setPollOptions(['', '']);
                                                                         }}
                                                                         className="px-5 py-2 rounded-xl text-[12px] font-bold text-muted-gray hover:bg-slate-50 transition-all"
@@ -1484,7 +1488,8 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                             setSelectedAudiences(["School-wide"]);
                                                                             setSelectedClasses([]);
                                                                             setAttachments([]);
-                                                                            setEventDetails({ title: '', date: '', time: '', venue: '', rsvp: false });
+                                                                            setEventDetails({ title: '', date: '', time: '', venue: '', rsvp: false, buttonText: '', buttonLink: '' });
+                                                                            setIsAdvancedEventOpen(false);
                                                                             setPollOptions(['', '']);
                                                                             setIsAudienceMenuOpen(false);
                                                                         }}
@@ -1632,7 +1637,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                             Approve
                                                                         </PDSButton>
                                                                         <PDSButton
-                                                                            variant="tertiary"
+                                                                            variant="ghost"
                                                                             size="sm"
                                                                             icon="cancel"
                                                                             onClick={(e) => { e.stopPropagation(); }}

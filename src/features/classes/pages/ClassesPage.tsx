@@ -3,7 +3,6 @@ import { TopBar } from "../../../components/Header";
 import { ClassCard } from "../../dashboard/components/ClassCard";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { useState } from "react";
-import { cn } from "../../../lib/utils";
 import { TablePagination } from "../../../components/TablePagination";
 
 

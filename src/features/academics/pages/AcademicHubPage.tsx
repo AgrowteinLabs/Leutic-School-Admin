@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { TopBar } from "../../../components/Header";
@@ -6,7 +5,6 @@ import { cn } from "../../../lib/utils";
 import { ExaminationsPage } from "../../examinations/pages/ExaminationsPage";
 import { ProgramsPage } from "../../programs/pages/ProgramsPage";
 import { AcademicSetupPage } from "../../academic-setup/pages/AcademicSetupPage";
-import { PDSButton } from "../../../components/pds/PDSButton";
 
 export const AcademicHubPage = () => {
   const navigate = useNavigate();

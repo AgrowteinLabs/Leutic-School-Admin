@@ -11,6 +11,7 @@ interface AppDatePickerProps {
   maxDate?: Date;
   height?: string;
   placement?: "top" | "bottom";
+  className?: string;
 }
 
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -25,6 +26,7 @@ export const AppDatePicker = ({
   maxDate,
   height = "h-10",
   placement = "bottom",
+  className,
 }: AppDatePickerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -104,7 +106,8 @@ export const AppDatePicker = ({
         className={cn(
           "w-full bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center cursor-pointer hover:border-slate-200 transition-all relative overflow-hidden outline-none group",
           height,
-          isOpen && "border-primary/50 ring-4 ring-primary/5 bg-white"
+          isOpen && "border-primary/50 ring-4 ring-primary/5 bg-white",
+          className
         )}
       >
         {icon && (

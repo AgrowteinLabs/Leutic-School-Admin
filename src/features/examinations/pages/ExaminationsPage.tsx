@@ -163,7 +163,7 @@ export const ExaminationsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 <AppDropdown
                   icon="filter_list"
                   placeholder="All Categories"
-                  value={selectedCategory}
+                  value={selectedCategory || "All Categories"}
                   onChange={setSelectedCategory}
                   options={["All Categories", "Periodic Test (PT)", "Quarterly", "Half Yearly", "Annual", "Mock Test"]}
                   height="h-10"

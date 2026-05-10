@@ -25,7 +25,7 @@ import { StaffProfilePage } from "./features/settings/pages/StaffProfilePage";
 import { DriverProfilePage } from "./features/transportation/pages/DriverProfilePage";
 import { FeesPage } from "./features/finance/pages/FeesPage";
 import { CurriculumPage } from "./features/curriculum/pages/CurriculumPage";
-import { AcademicSetupPage } from "./features/academic-setup/pages/AcademicSetupPage";
+
 
 import { AddExaminationPage } from "./features/examinations/pages/AddExaminationPage";
 import { AddProgramPage } from "./features/programs/pages/AddProgramPage";

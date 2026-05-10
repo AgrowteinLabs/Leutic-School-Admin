@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { cn } from "../../../lib/utils";
 import { StatCard } from "../../../components/StatCard";
 import { TopBar } from "../../../components/Header";
 import { PDSButton } from "../../../components/pds/PDSButton";
@@ -19,6 +18,8 @@ export const ExamDetailsPage = () => {
   const examData = {
     title: "Mid-Term Examination 2024",
     id: id || "EX-2024-001",
+    date: "Academic Year 2024 - 2025",
+    type: "Mid-Term Assessment",
     status: "Completed",
     totalClasses: 8,
     classesPublished: 6,

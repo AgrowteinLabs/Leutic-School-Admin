@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import Lottie from "lottie-react";
-import successAnimation from "../../../assets/animations/success.json";
 import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";

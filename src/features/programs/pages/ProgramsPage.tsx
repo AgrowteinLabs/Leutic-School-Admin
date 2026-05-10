@@ -141,7 +141,7 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 <AppDropdown
                   icon="tune"
                   placeholder="Filter Category"
-                  value={selectedCategory}
+                  value={selectedCategory || "All Categories"}
                   onChange={setSelectedCategory}
                   options={categories}
                   height="h-10"

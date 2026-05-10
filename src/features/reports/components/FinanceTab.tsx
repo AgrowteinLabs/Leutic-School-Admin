@@ -126,7 +126,7 @@ export const FinanceTab = () => (
           <YAxis 
             dataKey="stage" 
             type="category" 
-            tick={{ fontSize: 11, fontBold: "700", fill: "#444441" }}
+            tick={{ fontSize: 11, fontWeight: "700", fill: "#444441" }}
             width={100}
             axisLine={false}
             tickLine={false}
