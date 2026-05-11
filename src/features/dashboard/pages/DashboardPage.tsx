@@ -152,44 +152,56 @@ export const DashboardPage = () => {
                                                 color: "text-[#1565C0]",
                                                 isMenu: true,
                                                 options: [
-                                                    { label: "Student", path: "/directory/enroll-student", icon: Backpack },
-                                                    { label: "Teacher", path: "/directory/add-staff", icon: BookUser },
-                                                    { label: "Driver", path: "/directory/add-driver", icon: IdCard },
+                                                    { label: "Student", path: "/directory/students/add", icon: Backpack },
+                                                    { label: "Teacher", path: "/directory/staff/add", icon: BookUser },
+                                                    { label: "Driver", path: "/directory/drivers/add", icon: IdCard },
                                                     { label: "Bus", path: "/transportation/add-vehicle", icon: TruckIcon },
                                                 ]
                                             },
-                                            { label: "Announcement", icon: Megaphone, color: "text-[#B45309]", path: "/communications?compose=true" },
+                                            { label: "Announcement", icon: Megaphone, color: "text-[#B45309]", path: "/communications/announcements/add" },
                                             { label: "Collect Fee", icon: WalletCards, color: "text-[#3D6B2C]", path: "/finance" },
-                                            { label: "Exam Marks", icon: GraduationCap, color: "text-[#B91C1C]", path: "/academics" },
+                                            { label: "Exam Marks", icon: GraduationCap, color: "text-[#B91C1C]", path: "/academics/marks" },
                                             { label: "Bus Tracker", icon: Bus, color: "text-[#1565C0]", path: "/transportation" },
                                             { label: "Staff Directory", icon: Contact, color: "text-[#444441]", path: "/directory" },
                                         ].map((action, i) => {
                                             if (action.isMenu) {
                                                 return (
                                                     <div key={i} className="group/morph relative min-w-fit">
-                                                        <div className="flex flex-col items-center group cursor-pointer transition-all duration-500 transition-luxury">
-                                                            <div className="h-12 w-12 rounded-[24px] flex items-center justify-center bg-white border border-slate-100 transition-all duration-500 transition-morph group-hover/morph:w-[320px] group-hover/morph:rounded-[22px] group-hover/morph:bg-white relative group-hover/morph:border-primary/30 mb-2.5 overflow-visible">
-                                                                <div className="absolute inset-0 flex items-center justify-center transition-all duration-300 transition-luxury group-hover/morph:opacity-0 group-hover/morph:scale-50">
-                                                                    <action.icon size={22} strokeWidth={2} className={action.color} />
+                                                        <div className="flex flex-col items-center group cursor-pointer transition-all duration-500">
+                                                            <div className="h-12 w-12 rounded-full flex items-center justify-center bg-white border border-slate-100 transition-all duration-500 cubic-bezier(0.19, 1, 0.22, 1) group-hover/morph:w-[380px] group-hover/morph:rounded-full group-hover/morph:bg-white relative group-hover/morph:border-slate-200 mb-2.5 overflow-hidden">
+                                                                {/* Original Icon */}
+                                                                <div className="absolute inset-0 flex items-center justify-center transition-all duration-500 group-hover/morph:opacity-0 group-hover/morph:scale-0 group-hover/morph:rotate-90">
+                                                                    <action.icon size={22} strokeWidth={2.2} className={action.color} />
                                                                 </div>
-                                                                <div className="absolute inset-0 opacity-0 group-hover/morph:opacity-100 transition-opacity duration-200 group-hover/morph:duration-500 transition-luxury flex items-center justify-around px-2 pointer-events-none group-hover/morph:pointer-events-auto">
-                                                                    {action.options?.map((opt) => (
+
+                                                                {/* Fresh Color Content with Integrated Segment Dividers */}
+                                                                <div className="absolute inset-0 opacity-0 group-hover/morph:opacity-100 transition-all duration-500 flex items-center pointer-events-none group-hover/morph:pointer-events-auto">
+                                                                    {[
+                                                                        { ...action.options[0], bg: "bg-emerald-50", hoverBg: "hover:bg-emerald-50/50", text: "text-emerald-600" },
+                                                                        { ...action.options[1], bg: "bg-blue-50", hoverBg: "hover:bg-blue-50/50", text: "text-blue-600" },
+                                                                        { ...action.options[2], bg: "bg-amber-50", hoverBg: "hover:bg-amber-50/50", text: "text-amber-600" },
+                                                                        { ...action.options[3], bg: "bg-indigo-50", hoverBg: "hover:bg-indigo-50/50", text: "text-indigo-600" },
+                                                                    ].map((opt, idx) => (
                                                                         <div
                                                                             key={opt.label}
                                                                             onClick={(e) => { e.stopPropagation(); navigate(opt.path); }}
-                                                                            className="flex flex-col items-center group/item hover:scale-110 transition-all transition-luxury relative pt-0.5"
+                                                                            className={cn(
+                                                                                "flex-1 h-full flex items-center justify-center gap-2 group/item transition-all duration-300 cursor-pointer relative",
+                                                                                opt.hoverBg,
+                                                                                idx < 3 && "border-r border-slate-50"
+                                                                            )}
                                                                         >
-                                                                            <div className="size-10 rounded-full flex items-center justify-center text-[#B0AFA8] group-hover/item:bg-[#EAF2D7] group-hover/item:text-foreground transition-all transition-luxury">
-                                                                                <opt.icon size={20} strokeWidth={2} />
+                                                                            <div className={cn("size-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover/item:scale-110", opt.bg, opt.text)}>
+                                                                                <opt.icon size={16} strokeWidth={2.5} />
                                                                             </div>
-                                                                            <span className="absolute top-[120%] text-[10px] font-semibold text-[#444441] opacity-0 group-hover/morph:opacity-100 transition-all transition-luxury delay-100 whitespace-nowrap">
+                                                                            <span className="text-[10px] font-bold text-foreground opacity-0 group-hover/morph:opacity-100 transition-all duration-500 delay-100 whitespace-nowrap">
                                                                                 {opt.label}
                                                                             </span>
                                                                         </div>
                                                                     ))}
                                                                 </div>
                                                             </div>
-                                                            <span className="text-[11px] font-semibold text-[#B0AFA8] group-hover/morph:opacity-0 transition-all transition-luxury tracking-tight h-4">
+                                                            <span className="text-[11px] font-semibold text-[#B0AFA8] group-hover/morph:opacity-0 transition-all duration-300 tracking-tight h-4">
                                                                 {action.label}
                                                             </span>
                                                         </div>
@@ -299,9 +311,9 @@ export const DashboardPage = () => {
                                             <p className="text-[10px] text-[#B0AFA8] font-medium leading-tight truncate">{item.detail}</p>
                                         </div>
 
-                                        {/* Hover chevron */}
-                                        <div className="size-7 shrink-0 rounded-lg bg-white border border-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0 shadow-sm">
-                                            <span className="material-symbols-outlined text-[14px] text-primary">chevron_right</span>
+                                        {/* Hover premium action */}
+                                        <div className="size-8 shrink-0 rounded-[12px] bg-primary text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0 shadow-lg shadow-primary/20 scale-75 group-hover:scale-100 ring-4 ring-primary/5">
+                                            <span className="material-symbols-outlined text-[18px] font-bold">arrow_forward_ios</span>
                                         </div>
                                     </div>
                                 </div>

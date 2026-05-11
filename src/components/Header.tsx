@@ -23,10 +23,10 @@ export const TopBar = ({
 
     const [allActions, setAllActions] = useState([
         { label: "Create Class", icon: "class", color: "text-[#B45309]", bg: "bg-[#FEF3C7]", path: "/classes/create", description: "New grade levels & sections" },
-        { label: "Enroll Student", icon: "person_add", color: "text-[#1565C0]", bg: "bg-[#DBEAFE]", path: "/directory/enroll-student", description: "Admit new student profile" },
-        { label: "Register Faculty", icon: "badge", color: "text-[#3D6B2C]", bg: "bg-[#EAF2D7]", path: "/directory/add-staff", description: "Onboard teaching staff" },
+        { label: "Enroll Student", icon: "person_add", color: "text-[#1565C0]", bg: "bg-[#DBEAFE]", path: "/directory/students/add", description: "Admit new student profile" },
+        { label: "Register Faculty", icon: "badge", color: "text-[#3D6B2C]", bg: "bg-[#EAF2D7]", path: "/directory/staff/add", description: "Onboard teaching staff" },
         { label: "Mark Attendance", icon: "event_available", color: "text-[#2E7D32]", bg: "bg-[#DCFCE7]", path: "/attendance", description: "Log daily student presence" },
-        { label: "Post Notice", icon: "campaign", color: "text-[#B45309]", bg: "bg-[#FEF3C7]", path: "/communications?compose=true", description: "Broadcast school updates" },
+        { label: "Post Notice", icon: "campaign", color: "text-[#B45309]", bg: "bg-[#FEF3C7]", path: "/communications/announcements/add", description: "Broadcast school updates" },
         { label: "Record Finance", icon: "payments", color: "text-[#3D6B2C]", bg: "bg-[#EAF2D7]", path: "/finance", description: "Manage fee collections" },
         { label: "Add Schedule", icon: "calendar_add_on", color: "text-[#B91C1C]", bg: "bg-[#FEE2E2]", path: "/calendar", description: "Update classroom timings" },
         { label: "Performance Analytics", icon: "monitoring", color: "text-blue-600", bg: "bg-blue-50", description: "Real-time class performance graphs" },
