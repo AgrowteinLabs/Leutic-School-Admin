@@ -122,7 +122,7 @@ export const DashboardPage = () => {
                                 <div className="space-y-6">
                                     <div className="flex-1 max-w-2xl relative">
                                         <div className="ai-border-container ai-border-on-load rounded-[18px]">
-                                            <div className="ai-border-content rounded-[17px] flex items-center gap-3 p-1.5 focus-within:border-primary focus-within:ring-[4px] focus-within:ring-primary/10 transition-all duration-300 group/search">
+                                            <div className="ai-border-content rounded-[17px] flex items-center gap-3 p-1.5 focus-within:shadow-[0_0_20px_rgba(217,234,133,0.2)] transition-all duration-500 group/search border border-transparent focus-within:border-primary/20">
                                                 <div className="pl-4 text-[#B0AFA8] group-focus-within/search:text-primary transition-colors">
                                                     <Search size={18} strokeWidth={2.5} />
                                                 </div>
@@ -134,7 +134,7 @@ export const DashboardPage = () => {
                                                 />
                                                 <button
                                                     onClick={handleSearch}
-                                                    className="btn-primary h-10 px-6 rounded-xl text-[12px] font-bold whitespace-nowrap shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all"
+                                                    className="btn-primary h-10 px-6 rounded-xl text-[12px] font-bold whitespace-nowrap shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all duration-300"
                                                 >
                                                     Get Profile
                                                 </button>

@@ -18,8 +18,9 @@ import { DirectoryPage } from "./features/directory/pages/DirectoryPage";
 import { EnrollStudentPage } from "./features/students/pages/EnrollStudentPage";
 import { AddStaffPage } from "./features/directory/pages/AddStaffPage";
 import { AddDriverPage } from "./features/directory/pages/AddDriverPage";
-import { AddVehiclePage } from "./features/directory/pages/AddVehiclePage";
+import { AddVehiclePage } from "./features/transportation/pages/AddVehiclePage";
 import { CommunicationsHubPage } from "./features/communications/pages/CommunicationsHubPage";
+import { AddNoticePage } from "./features/communications/pages/AddNoticePage";
 import { TransportationHubPage } from "./features/transportation/pages/TransportationHubPage";
 import { StaffProfilePage } from "./features/settings/pages/StaffProfilePage";
 import { DriverProfilePage } from "./features/transportation/pages/DriverProfilePage";
@@ -64,7 +65,8 @@ function App() {
           <Route path="/directory/staff/add" element={<AddStaffPage />} />
           <Route path="/directory/drivers/add" element={<AddDriverPage />} />
           <Route path="/transportation/add-vehicle" element={<AddVehiclePage />} />
-          <Route path="/communications" element={<CommunicationsHubPage />} />
+          <Route path="/communications/announcements/add" element={<AddNoticePage />} />
+          <Route path="/communications/:tab?" element={<CommunicationsHubPage />} />
           <Route path="/transportation" element={<TransportationHubPage />} />
           <Route path="/finance" element={<FeesPage />} />
           <Route path="/staff/:id" element={<StaffProfilePage />} />

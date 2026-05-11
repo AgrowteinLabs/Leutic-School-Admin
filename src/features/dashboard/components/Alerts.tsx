@@ -34,7 +34,7 @@ const AlertItem = ({
 
 export const AlertsSection = ({ className }: { className?: string }) => {
   return (
-    <div className={cn("bg-white border border-slate-100 rounded-2xl flex flex-col h-full overflow-hidden shadow-sm", className)}>
+    <div className={cn("bg-white border border-slate-100 rounded-2xl flex flex-col h-full overflow-hidden", className)}>
       <div className="p-7 pb-0 shrink-0">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-foreground text-[17px] font-semibold tracking-tight">Notifications</h3>

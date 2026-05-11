@@ -270,7 +270,7 @@
     .input-base:focus {
         background: #ffffff;
         border-color: rgba(217, 234, 133, 0.5); /* primary/50 */
-        box-shadow: 0 0 0 4px rgba(217, 234, 133, 0.1);
+        box-shadow: 0 0 15px 2px rgba(217, 234, 133, 0.15);
     }
 
     .input-base::placeholder {
@@ -346,12 +346,17 @@
     transform: translate(-50%, -50%);
     background: conic-gradient(from 0deg,
             transparent 0deg,
-            transparent 150deg,
-            #D9EA85 175deg,
-            #152328 180deg,
-            /* High-contrast focal point */
-            #D9EA85 185deg,
-            transparent 210deg,
+            transparent 100deg,
+            rgba(217, 234, 133, 0.1) 120deg,
+            rgba(217, 234, 133, 0.3) 140deg,
+            #D9EA85 170deg,
+            #A3C639 180deg,
+            #2a4f62 185deg,
+            #A3C639 190deg,
+            #D9EA85 200deg,
+            rgba(217, 234, 133, 0.3) 230deg,
+            rgba(217, 234, 133, 0.1) 250deg,
+            transparent 270deg,
             transparent 360deg);
     animation: ai-rotate 4s linear infinite;
     opacity: 0;

@@ -114,7 +114,7 @@ export const Sidebar = () => {
                         <NavSectionHeader label="Administration" />
                         <NavItem icon="payments" label="Finance" path="/finance" active={isActive("/finance")} />
                         <NavItem icon="mark_chat_unread" label="Messages" path="/communications" active={isActive("/communications")} />
-                        <NavItem icon="directions_bus" label="Bus Tracking" path="/transportation" active={isActive("/transportation")} />
+                        <NavItem icon="directions_bus" label="Transportation" path="/transportation" active={isActive("/transportation")} />
                         <NavItem icon="calendar_today" label="Events" path="/calendar" active={isActive("/calendar")} />
 
                         <NavSectionHeader label="Insights" />

@@ -843,9 +843,10 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             />
 
             {/* Tabs Navigation */}
-            <div className="px-8 border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
-              <div className="flex gap-8 overflow-x-auto no-scrollbar">
-                {[
+            <div className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
+              <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+                <div className="flex gap-8 overflow-x-auto no-scrollbar">
+                  {[
                   { id: "master", label: "Subject Master", icon: "book_4" },
                   { id: "grades", label: "Grade Templates", icon: "account_tree" },
                   { id: "mapping", label: "Teacher Mapping", icon: "assignment_ind" },
@@ -874,13 +875,14 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                       {isActive && (
                         <motion.div
                           layoutId="curriculumTab"
-                          className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full shadow-[0_-2px_8px_rgba(217,234,133,0.4)]"
+                          className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full"
                           transition={{ type: "spring", stiffness: 380, damping: 30 }}
                         />
                       )}
                     </button>
                   );
                 })}
+                </div>
               </div>
             </div>
           </>

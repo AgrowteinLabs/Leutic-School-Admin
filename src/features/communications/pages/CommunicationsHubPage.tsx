@@ -1,24 +1,33 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { CommunicationsPage } from "./CommunicationsPage";
 import { AnnouncementsPage } from "./AnnouncementsPage";
 
 export const CommunicationsHubPage = () => {
+  const { tab } = useParams();
+  const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const shouldCompose = searchParams.get("compose") === "true";
 
-  const [activeTab, setActiveTab] = useState<"messages" | "announcements">(
-    shouldCompose ? "announcements" : "messages"
-  );
+  const activeTab = (tab as "messages" | "announcements") || "messages";
   
   // State to trigger composition in child components
   const [triggerCompose, setTriggerCompose] = useState(shouldCompose ? 1 : 0);
 
   const handleComposeClick = () => {
-    setTriggerCompose(prev => prev + 1);
+    if (activeTab === "announcements") {
+      navigate("/communications/announcements/add");
+    } else {
+      setTriggerCompose(prev => prev + 1);
+    }
+  };
+
+  const setActiveTab = (tabId: string) => {
+    navigate(`/communications/${tabId}`);
   };
 
   return (
@@ -43,35 +52,45 @@ export const CommunicationsHubPage = () => {
         />
 
         {/* Global Hub Design Pattern for Tabbar (Matching Directory/Academics) */}
-        <div className="px-6 lg:px-10 border-b border-slate-100 bg-white">
-          <div className="flex gap-8 overflow-x-auto no-scrollbar">
-            {[
-              { id: "messages", label: "Messages", icon: "forum" },
-              {
-                id: "announcements",
-                label: "Institutional Notices",
-                icon: "campaign",
-              },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={cn(
-                  "flex items-center gap-2 pb-4 text-[13px] font-semibold tracking-tight transition-all relative mt-4 shrink-0",
-                  activeTab === tab.id
-                    ? "text-foreground"
-                    : "text-[#B0AFA8] hover:text-foreground",
-                )}
-              >
-                <span className="material-symbols-outlined text-lg">
-                  {tab.icon}
-                </span>
-                {tab.label}
-                {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full animate-in zoom-in-x duration-300" />
-                )}
-              </button>
-            ))}
+        <div className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
+          <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+            <div className="flex gap-8 overflow-x-auto no-scrollbar">
+              {[
+                { id: "messages", label: "Messages", icon: "forum" },
+                {
+                  id: "announcements",
+                  label: "Institutional Notices",
+                  icon: "campaign",
+                },
+              ].map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={cn(
+                      "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
+                      isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
+                    )}
+                  >
+                    <span 
+                      className={cn("material-symbols-outlined text-[20px] transition-all", isActive ? "text-primary" : "")}
+                      style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                    >
+                      {tab.icon}
+                    </span>
+                    {tab.label}
+                    {isActive && (
+                      <motion.div
+                        layoutId="commHubTabIndicator"
+                        className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

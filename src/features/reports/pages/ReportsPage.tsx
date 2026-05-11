@@ -56,7 +56,7 @@ export const ReportsPage = () => {
       />
 
       {/* Tab Navigation */}
-      <div className="border-b border-slate-100 bg-white sticky top-0 z-30 shrink-0">
+      <div className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
           <div className="flex gap-8 overflow-x-auto no-scrollbar">
             {tabs.map((tab) => {

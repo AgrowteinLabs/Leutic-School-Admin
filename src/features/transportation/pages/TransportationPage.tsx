@@ -1,193 +1,404 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { motion, AnimatePresence } from "framer-motion";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Ultra-Minimal Architectural Bus Pin
+const createCustomIcon = (isActive: boolean) => L.divIcon({
+    className: "custom-marker",
+    html: `<div class="pin-container ${isActive ? 'active' : ''}">
+             <div class="pin-shape">
+               <span class="material-symbols-outlined bus-icon">directions_bus</span>
+             </div>
+             <div class="marker-pulse"></div>
+           </div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+});
+
+// Panning Component - Preserves Zoom Freedom
+const RecenterMap = ({ center, trigger }: { center: [number, number], trigger: number }) => {
+    const map = useMap();
+    const lat = center[0];
+    const lng = center[1];
+
+    useEffect(() => {
+        if (trigger > 0) {
+            map.panTo([lat, lng], { animate: true });
+        }
+    }, [lat, lng, map, trigger]);
+    return null;
+};
+
+// Functional Custom Zoom & Focus Controls
+const MapControls = ({ onRecenter }: { onRecenter: () => void }) => {
+    const map = useMap();
+    return (
+        <div className="absolute bottom-6 right-6 flex flex-col gap-1.5 z-[400]">
+            <button 
+                onClick={(e) => { e.stopPropagation(); onRecenter(); }}
+                className="size-9 rounded-xl bg-white/75 backdrop-blur-2xl border border-slate-100 flex items-center justify-center text-brand-navy hover:bg-white transition-all"
+                title="Recenter on Bus"
+            >
+                <span className="material-symbols-outlined text-[16px]">my_location</span>
+            </button>
+            <div className="h-0.5" />
+            <button 
+                onClick={(e) => { e.stopPropagation(); map.zoomIn(); }}
+                className="size-9 rounded-xl bg-white/75 backdrop-blur-2xl border border-slate-100 flex items-center justify-center text-brand-navy hover:bg-white transition-all"
+            >
+                <span className="material-symbols-outlined text-[16px]">add</span>
+            </button>
+            <button 
+                onClick={(e) => { e.stopPropagation(); map.zoomOut(); }}
+                className="size-9 rounded-xl bg-white/75 backdrop-blur-2xl border border-slate-100 flex items-center justify-center text-brand-navy hover:bg-white transition-all"
+            >
+                <span className="material-symbols-outlined text-[16px]">remove</span>
+            </button>
+        </div>
+    );
+};
 
 export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => {
-  const [activeRoute, setActiveRoute] = useState("RT-01");
+  const [activeRoute, setActiveRoute] = useState("1");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [recenterTrigger, setRecenterTrigger] = useState(0);
+  const searchRef = useRef<HTMLDivElement>(null);
 
-  const buses = [
-    {
-      id: "BT-201",
-      route: "RT-01",
-      driver: "Madan Pal",
-      status: "On Route",
-      speed: "34 km/h",
-      occupancy: "85%",
-      nextStop: "Emerald Housing Soc.",
-      eta: "4 mins",
-      lastUpdate: "Just now",
-      students: 42,
-    },
-    {
-      id: "BT-205",
-      route: "RT-04",
-      driver: "Somesh Rao",
-      status: "Idle",
-      speed: "0 km/h",
-      occupancy: "0%",
-      nextStop: "School Main Gate",
-      eta: "--",
-      lastUpdate: "15 mins ago",
-      students: 0,
-    }
-  ];
+  // Buses starting from 1
+  const buses = Array.from({ length: 32 }, (_, i) => ({
+    id: (i + 1).toString(),
+    route: (i + 1).toString(),
+    driver: i % 2 === 0 ? "Madan Pal" : "Somesh Rao",
+    status: i % 5 === 0 ? "Idle" : "Active",
+    speed: i % 5 === 0 ? "0 km/h" : `${30 + (i % 20)} km/h`,
+    location: i % 2 === 0 ? "Marine Drive, Kochi" : "Kakkanad, Kochi",
+    eta: i % 5 === 0 ? "--" : `${2 + (i % 10)}m`,
+    nextStop: i % 2 === 0 ? "High Court" : "Infopark",
+    coords: i % 2 === 0 ? [9.9816, 76.2763] as [number, number] : [10.0159, 76.3419] as [number, number],
+  }));
+
+  const activeBus = buses.find(b => b.route === activeRoute) || buses[0];
+  const filteredBuses = buses.filter(b => b.id.includes(searchQuery)).slice(0, 5);
+
+  const handleNextBus = () => {
+      const currentIndex = buses.findIndex(b => b.route === activeRoute);
+      const nextIndex = (currentIndex + 1) % buses.length;
+      setActiveRoute(buses[nextIndex].route);
+      setRecenterTrigger(prev => prev + 1);
+  };
+
+  const handlePrevBus = () => {
+      const currentIndex = buses.findIndex(b => b.route === activeRoute);
+      const prevIndex = (currentIndex - 1 + buses.length) % buses.length;
+      setActiveRoute(buses[prevIndex].route);
+      setRecenterTrigger(prev => prev + 1);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+        if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+            setIsSearchOpen(false);
+            setSearchQuery("");
+        }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white">
+    <div className={cn("w-full h-full flex flex-col bg-white relative overflow-hidden")}>
       {!isHubChild && (
         <TopBar
-          title="Bus Map"
-          subtitle="Real-time bus locations and tracking"
+          title="Fleet Tracking"
+          subtitle="Minimal surveillance engine"
         />
       )}
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Roster/Details */}
-        <div className="w-96 border-r border-slate-100 flex flex-col overflow-hidden">
-            <div className="p-6 border-b border-slate-50">
-                <div className="relative group h-10">
-                  <div className="absolute inset-0 bg-[#F7F8F4] border border-slate-100 rounded-[12px] transition-all group-focus-within:border-primary/50 group-focus-within:ring-4 group-focus-within:ring-primary/5 group-focus-within:bg-white overflow-hidden pointer-events-none" />
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-primary transition-colors text-[18px] z-20">search</span>
-                  <input
-                    className="relative w-full h-full bg-transparent border-none outline-none pl-12 pr-4 text-[13px] font-semibold text-foreground placeholder-[#B0AFA8] z-10"
-                    placeholder="Search Bus or Route..."
-                  />
-                </div>
-            </div>
+      <div className="flex-1 relative w-full h-full overflow-hidden bg-[#F0F2F5]">
+        <MapContainer 
+            center={activeBus.coords} 
+            zoom={15} 
+            maxZoom={19}
+            minZoom={12}
+            style={{ height: "100%", width: "100%", zIndex: 0 }}
+            zoomControl={false}
+        >
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            attribution='&copy; OSM'
+            maxZoom={19}
+            maxNativeZoom={19}
+          />
+          <RecenterMap center={activeBus.coords} trigger={recenterTrigger} />
+          
+          {/* Architectural Neighborhood Labels */}
+          {[
+            { name: "Kakkanad", coords: [10.0159, 76.3419] as [number, number] },
+            { name: "Vyttila", coords: [9.9707, 76.3220] as [number, number] },
+            { name: "Edappally", coords: [10.0261, 76.3116] as [number, number] },
+            { name: "Fort Kochi", coords: [9.9658, 76.2421] as [number, number] },
+            { name: "Marine Drive", coords: [9.9816, 76.2763] as [number, number] }
+          ].map(area => (
+            <Marker 
+              key={area.name} 
+              position={area.coords}
+              icon={L.divIcon({
+                className: "area-label-marker",
+                html: `<div class="area-label">${area.name}</div>`,
+                iconSize: [0, 0],
+                iconAnchor: [0, 0]
+              })}
+            />
+          ))}
 
-            <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-4">
-                <h3 className="text-[11px] font-bold text-[#B0AFA8]">Active Fleet</h3>
-                {buses.map(bus => (
-                    <div
-                        key={bus.id}
-                        onClick={() => setActiveRoute(bus.route)}
-                        className={cn(
-                            "p-5 rounded-3xl border transition-all cursor-pointer group",
-                            activeRoute === bus.route ? "bg-secondary border-secondary shadow-xl shadow-secondary/20" : "bg-white border-slate-100 hover:border-primary"
-                        )}
+          {buses.slice(0, 5).map(bus => (
+            <Marker 
+                key={bus.id} 
+                position={bus.coords} 
+                icon={createCustomIcon(activeRoute === bus.route)}
+                eventHandlers={{ click: () => {
+                    setActiveRoute(bus.route);
+                    setRecenterTrigger(prev => prev + 1);
+                } }}
+            />
+          ))}
+          <MapControls onRecenter={() => setRecenterTrigger(prev => prev + 1)} />
+        </MapContainer>
+
+        {/* Minimalist UI Layer */}
+        <div className="absolute inset-0 z-10 pointer-events-none p-8">
+            
+            {/* Expanding Search Bar */}
+            <div className="absolute top-6 left-6 z-30 pointer-events-auto" ref={searchRef}>
+                <motion.div 
+                    initial={false}
+                    animate={{ width: isSearchOpen ? 280 : 48 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="bg-white/75 backdrop-blur-2xl border border-slate-100 rounded-xl h-12 overflow-hidden relative"
+                >
+                    <div 
+                        className="absolute left-0 top-0 h-12 w-12 flex items-center justify-center cursor-pointer text-brand-navy hover:text-primary transition-colors"
+                        onClick={() => setIsSearchOpen(true)}
                     >
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center gap-3">
-                                <div className={cn(
-                                    "size-10 rounded-xl flex items-center justify-center transition-colors",
-                                    activeRoute === bus.route ? "bg-white/10 text-white" : "bg-[#F7F8F4] text-[#B0AFA8] group-hover:bg-primary/10 group-hover:text-primary"
-                                )}>
-                                    <span className="material-symbols-outlined text-[20px]">directions_bus</span>
-                                </div>
-                                <div>
-                                    <h4 className={cn("text-[14px] font-bold transition-colors", activeRoute === bus.route ? "text-white" : "text-foreground")}>
-                                        {bus.id}
-                                    </h4>
-                                    <p className={cn("text-[10px] font-bold", activeRoute === bus.route ? "text-white/40" : "text-[#B0AFA8]")}>
-                                        {bus.route} • {bus.driver}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className={cn(
-                                "px-2 py-0.5 rounded-full text-[9px] font-bold",
-                                bus.status === "On Route" ? "bg-green-500 text-white" : "bg-[#F0F0EC] text-[#B0AFA8]"
-                            )}>
-                                {bus.status}
-                            </div>
-                        </div>
+                        <span className="material-symbols-outlined text-[18px] font-bold">search</span>
+                    </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className={cn("text-[9px] font-bold mb-1", activeRoute === bus.route ? "text-white/40" : "text-[#B0AFA8]")}>Speed</p>
-                                <p className={cn("text-[13px] font-bold", activeRoute === bus.route ? "text-white" : "text-foreground")}>{bus.speed}</p>
-                            </div>
-                            <div>
-                                <p className={cn("text-[9px] font-bold mb-1", activeRoute === bus.route ? "text-white/40" : "text-[#B0AFA8]")}>Students</p>
-                                <p className={cn("text-[13px] font-bold", activeRoute === bus.route ? "text-white" : "text-foreground")}>{bus.students}</p>
-                            </div>
-                        </div>
-
-                        {activeRoute === bus.route && (
-                            <div className="mt-4 pt-4 border-t border-white/10">
-                                <p className="text-[11px] font-bold text-white/60 mb-1">Next Stop</p>
-                                <div className="flex items-center justify-between">
-                                    <p className="text-[12px] font-bold text-white">{bus.nextStop}</p>
-                                    <span className="text-[11px] font-bold text-primary">ETA {bus.eta}</span>
-                                </div>
-                            </div>
+                    <input 
+                        type="text" 
+                        placeholder="Search..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className={cn(
+                            "absolute left-12 top-0 h-12 bg-transparent outline-none text-[13px] font-bold text-brand-navy placeholder:text-muted-gray/40 transition-opacity duration-300",
+                            isSearchOpen ? "opacity-100 w-[220px]" : "opacity-0 w-0"
                         )}
-                    </div>
-                ))}
+                    />
+                </motion.div>
+
+                {/* Suggestions Dropdown - Letuic Signature Style */}
+                <AnimatePresence>
+                    {isSearchOpen && searchQuery && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 6, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                            className="absolute left-0 top-12 w-[280px] bg-white/75 backdrop-blur-3xl border border-slate-100 rounded-xl p-2 overflow-hidden"
+                        >
+                            {filteredBuses.length > 0 ? (
+                                <div className="space-y-0.5">
+                                    {filteredBuses.map(bus => (
+                                        <button
+                                            key={bus.id}
+                                            onClick={() => {
+                                                setActiveRoute(bus.route);
+                                                setRecenterTrigger(prev => prev + 1);
+                                                setIsSearchOpen(false);
+                                                setSearchQuery("");
+                                            }}
+                                            className="w-full flex items-center justify-between p-2.5 rounded-lg hover:bg-white/40 transition-all text-left group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn(
+                                                    "size-8 rounded-lg flex items-center justify-center text-[10px] font-black transition-all",
+                                                    bus.status === "Active" ? "bg-brand-navy text-white" : "bg-slate-100 text-slate-500"
+                                                )}>
+                                                    {bus.id}
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <p className="text-[12px] font-black text-brand-navy leading-none">Bus {bus.id}</p>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <div className={cn("size-1 rounded-full", bus.status === "Active" ? "bg-emerald-500" : "bg-slate-300")} />
+                                                        <span className={cn("text-[9px] font-bold tracking-tight", bus.status === "Active" ? "text-emerald-600" : "text-muted-gray/50")}>
+                                                            {bus.status}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span className="material-symbols-outlined text-[14px] text-slate-300 group-hover:text-brand-navy transition-colors">chevron_right</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-4 text-center text-[11px] font-bold text-muted-gray/40">
+                                    No units found
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
-        </div>
 
-        {/* Live Map Area */}
-        <div className="flex-1 relative bg-[#F0F0EC] overflow-hidden">
-            {/* Mock Map Background */}
-            <div className="absolute inset-0 opacity-40 mix-blend-multiply bg-[url('https://api.mapbox.com/styles/v1/mapbox/light-v10/static/lonlat,zoom/1440x900?access_token=pk.placeholder')] bg-cover bg-center" />
-
-            <div className="absolute inset-0 flex items-center justify-center">
-                 <div className="relative">
-                    <div className="absolute -top-12 -left-12 size-48 bg-primary/20 rounded-full animate-ping" />
-                    <div className="absolute -top-6 -left-6 size-24 bg-primary/40 rounded-full animate-pulse" />
-                    <div className="relative size-12 bg-secondary rounded-full border-4 border-white shadow-2xl flex items-center justify-center text-white z-10">
-                        <span className="material-symbols-outlined text-[20px] animate-bounce">location_on</span>
-                    </div>
-                    {/* Tooltip */}
-                    <div className="absolute top-16 -left-16 bg-white rounded-2xl shadow-2xl p-4 border border-slate-100 min-w-[200px] animate-in slide-in-from-bottom-4 duration-500">
-                         <div className="flex items-center gap-3 mb-2">
-                             <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                                <span className="material-symbols-outlined text-[18px]">bus_alert</span>
-                             </div>
-                             <div>
-                                 <p className="text-[12px] font-bold text-foreground">BT-201 Tracking</p>
-                                 <p className="text-[10px] text-[#B0AFA8] font-bold">On Time</p>
-                             </div>
+            {/* Floating Info Strip - Top Center */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-auto">
+                 <div className="bg-white/75 backdrop-blur-2xl border border-slate-100 rounded-xl px-3 py-1.5 flex items-center gap-6 whitespace-nowrap">
+                     <div className="flex items-center gap-1">
+                         <button onClick={handlePrevBus} className="size-8 rounded-lg hover:bg-white/40 flex items-center justify-center text-muted-gray hover:text-brand-navy transition-all">
+                             <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                         </button>
+                         <div className="flex items-center gap-2.5 px-1">
+                            <div className={cn("size-1.5 rounded-full", activeBus.status === "Active" ? "bg-emerald-500" : "bg-slate-300")} />
+                            <span className="text-[13px] font-black text-brand-navy tracking-tight">Bus {activeBus.id}</span>
                          </div>
-                         <div className="space-y-1">
-                             <div className="flex justify-between text-[11px]">
-                                 <span className="text-[#B0AFA8] font-medium">Location</span>
-                                 <span className="text-foreground font-bold">Outer Ring Rd.</span>
-                             </div>
-                             <div className="flex justify-between text-[11px]">
-                                 <span className="text-[#B0AFA8] font-medium">Speed</span>
-                                 <span className="text-foreground font-bold">42 km/h</span>
-                             </div>
-                         </div>
-                    </div>
+                         <button onClick={handleNextBus} className="size-8 rounded-lg hover:bg-white/40 flex items-center justify-center text-muted-gray hover:text-brand-navy transition-all">
+                             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                         </button>
+                     </div>
+                     <div className="h-3 w-px bg-slate-200" />
+                     <div className="flex items-center gap-2">
+                         <span className="text-[9px] font-bold text-muted-gray/60 tracking-tight">Speed</span>
+                         <span className="text-[13px] font-black text-brand-navy">{activeBus.speed}</span>
+                     </div>
+                     <div className="h-3 w-px bg-slate-200" />
+                     <div className="flex items-center gap-2">
+                         <span className="text-[9px] font-bold text-muted-gray/60 tracking-tight">ETA</span>
+                         <span className="text-[13px] font-black text-brand-navy">{activeBus.eta}</span>
+                     </div>
                  </div>
             </div>
 
-            {/* Map Controls */}
-            <div className="absolute top-6 right-6 flex flex-col gap-2">
-                <button className="size-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-foreground hover:bg-[#F7F8F4] transition-all border border-slate-100">
-                    <span className="material-symbols-outlined">add</span>
-                </button>
-                <button className="size-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-foreground hover:bg-[#F7F8F4] transition-all border border-slate-100">
-                    <span className="material-symbols-outlined">remove</span>
-                </button>
-                <button className="size-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-primary hover:bg-[#F7F8F4] transition-all border border-slate-100 mt-4">
-                    <span className="material-symbols-outlined">my_location</span>
-                </button>
-            </div>
-
-            {/* Safety Stats Overlay */}
-            <div className="absolute bottom-6 left-6 right-6 flex gap-4 overflow-x-auto no-scrollbar">
-                {[
-                    { label: "Active Routes", valueHeader: "12", sub: "All Nominal", icon: "route", color: "text-[#1565C0]" },
-                    { label: "Alerts", valueHeader: "0", sub: "No incidents", icon: "warning", color: "text-green-500" },
-                    { label: "Avg Speed", valueHeader: "28", sub: "km/h", icon: "speed", color: "text-orange-500" },
-                    { label: "Total Students", valueHeader: "482", sub: "Boarded", icon: "groups", color: "text-[#3D6B2C]" },
-                ].map(stat => (
-                    <div key={stat.label} className="bg-white/80 backdrop-blur-md border border-white/50 rounded-3xl p-5 shadow-xl min-w-[200px] flex-1">
-                         <div className="flex items-center gap-3 mb-2">
-                             <span className={cn("material-symbols-outlined text-[20px]", stat.color)}>{stat.icon}</span>
-                             <span className="text-[10px] font-bold text-[#B0AFA8]"> {stat.label}</span>
-                         </div>
-                         <div className="flex items-baseline gap-1">
-                             <span className="text-2xl font-bold text-foreground">{stat.valueHeader}</span>
-                             <span className="text-[12px] font-bold text-[#B0AFA8]">{stat.sub}</span>
-                         </div>
+            {/* Refined Telemetry Card - Bottom Left */}
+            <div className="absolute bottom-6 left-6 w-[220px] pointer-events-auto z-20">
+                <div className="bg-white/75 backdrop-blur-2xl border border-slate-100 rounded-2xl p-4">
+                    <div className="flex items-center justify-between mb-3.5">
+                        <div className="flex items-center gap-2.5">
+                            <div className="size-8 rounded-xl bg-slate-50 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[16px] text-brand-navy">person</span>
+                            </div>
+                            <h4 className="text-[13px] font-black text-brand-navy tracking-tight">{activeBus.driver}</h4>
+                        </div>
+                        <button className="size-7 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-all">
+                            <span className="material-symbols-outlined text-[13px]">call</span>
+                        </button>
                     </div>
-                ))}
+
+                    <div className="space-y-3.5">
+                        <div className="px-0.5">
+                            <p className="text-[8px] font-bold text-muted-gray/60 mb-0.5 tracking-tight">Current location</p>
+                            <p className="text-[13px] font-black text-brand-navy tracking-tight leading-tight">{activeBus.location}</p>
+                        </div>
+
+                        <div className="flex items-center justify-between px-0.5 border-t border-slate-50 pt-3">
+                            <div className="flex flex-col gap-0.5">
+                                <p className="text-[7px] font-bold text-muted-gray/40 leading-none tracking-tighter">Coordinates</p>
+                                <p className="text-[10px] font-black text-brand-navy tracking-tighter">
+                                    {activeBus.coords[0].toFixed(3)}, {activeBus.coords[1].toFixed(3)}
+                                </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-0.5">
+                                <div className="flex items-center gap-1">
+                                    <div className="size-1 bg-emerald-500 rounded-full" />
+                                    <span className="text-[9px] font-black text-emerald-600 tracking-tight">Live</span>
+                                </div>
+                                <span className="text-[8px] font-bold text-muted-gray/30 tracking-tighter">14:15:10</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
       </div>
+
+      <style>{`
+        .custom-marker { position: relative; }
+        .pin-container {
+          position: relative;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .pin-shape {
+          position: relative;
+          width: 24px;
+          height: 24px;
+          background: #64748b;
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1.5px solid white;
+          z-index: 2;
+          transition: all 0.3s ease;
+        }
+        .bus-icon {
+          transform: rotate(45deg);
+          color: white;
+          font-size: 14px !important;
+          font-weight: bold;
+        }
+        .active .pin-shape {
+          background: #0F2328;
+          width: 28px;
+          height: 28px;
+          border-color: #FFD700;
+        }
+        .active .bus-icon {
+          color: #FFD700;
+          font-size: 16px !important;
+        }
+        .marker-pulse {
+          position: absolute;
+          width: 32px;
+          height: 32px;
+          background: rgba(15, 35, 40, 0.2);
+          border-radius: 50%;
+          animation: pulse 2s infinite;
+          opacity: 0;
+          z-index: 1;
+        }
+        .active .marker-pulse {
+          background: rgba(255, 215, 0, 0.3);
+          opacity: 1;
+        }
+        @keyframes pulse {
+          0% { transform: scale(0.8); opacity: 0; }
+          50% { opacity: 0.3; }
+          100% { transform: scale(1.5); opacity: 0; }
+        }
+        
+        .area-label-marker { pointer-events: none; }
+        .area-label {
+          position: absolute;
+          left: 50%;
+          transform: translate(-50%, 8px);
+          font-family: inherit;
+          font-size: 10px;
+          font-weight: 800;
+          color: rgba(15, 35, 40, 0.4);
+          white-space: nowrap;
+          background: rgba(255, 255, 255, 0.6);
+          padding: 2px 8px;
+          border-radius: 10px;
+          backdrop-filter: blur(4px);
+        }
+      `}</style>
     </div>
   );
 };

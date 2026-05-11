@@ -880,19 +880,11 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                     <TopBar
                         title="Community"
                         subtitle="Institutional Hub & Interaction"
-                        actions={
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#FAF6E9]/40 rounded-full border border-[#EAE5D5]/20 mr-2">
-                                    <span className="material-symbols-outlined filled text-brand-navy text-[14px]">bolt</span>
-                                    <span className="text-brand-navy font-bold font-mono text-[11px]">850</span>
-                                </div>
-                                <PDSButton variant="primary" size="sm" icon="add">New Post</PDSButton>
-                            </div>
-                        }
                     />
                     {/* Primary Tabs Navigation */}
-                    <div className="px-10 border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
-                        <div className="flex gap-10 overflow-x-auto no-scrollbar">
+                    <div className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
+                        <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+                            <div className="flex gap-8 overflow-x-auto no-scrollbar">
                             {[
                                 { id: "feed", label: "Timeline", icon: "dashboard" },
                                 { id: "discussion", label: "Q&A Hub", icon: "forum" },
@@ -904,11 +896,11 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         key={t.id}
                                         onClick={() => navigate(`/community/${t.id}`)}
                                         className={cn(
-                                            "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-bold tracking-tight transition-all relative shrink-0",
-                                            isActive ? "text-brand-navy" : "text-muted-gray hover:text-brand-navy"
+                                            "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
+                                            isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
                                         )}
                                     >
-                                        <span className={cn("material-symbols-outlined text-[20px] transition-all", isActive ? "fill-1" : "")}>
+                                        <span className={cn("material-symbols-outlined text-[20px] transition-all", isActive ? "text-primary" : "")} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
                                             {t.icon}
                                         </span>
                                         {t.label}
@@ -918,13 +910,14 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         {isActive && (
                                             <motion.div
                                                 layoutId="communityTab"
-                                                className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full shadow-[0_-2px_10px_rgba(217,234,133,0.5)]"
+                                                className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full"
                                                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
                                             />
                                         )}
                                     </button>
                                 );
                             })}
+                            </div>
                         </div>
                     </div>
                 </>
@@ -1015,12 +1008,12 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                 <p className="text-[10px] text-muted-gray/60 font-medium">Define schedule and institutional details</p>
                                                                                             </div>
                                                                                         </div>
-                                                                                        <button 
-                                                                                            onClick={() => setEventDetails({...eventDetails, rsvp: !eventDetails.rsvp})}
+                                                                                        <button
+                                                                                            onClick={() => setEventDetails({ ...eventDetails, rsvp: !eventDetails.rsvp })}
                                                                                             className={cn(
                                                                                                 "flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold transition-all border",
-                                                                                                eventDetails.rsvp 
-                                                                                                    ? "bg-primary/5 border-primary/20 text-primary" 
+                                                                                                eventDetails.rsvp
+                                                                                                    ? "bg-primary/5 border-primary/20 text-primary"
                                                                                                     : "bg-white border-slate-100 text-muted-gray/60 hover:bg-slate-50"
                                                                                             )}
                                                                                         >
@@ -1036,7 +1029,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                 <label className="text-[10px] font-bold text-brand-navy/40">Event Title</label>
                                                                                                 <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">edit_note</span>
                                                                                             </div>
-                                                                                            <input 
+                                                                                            <input
                                                                                                 type="text"
                                                                                                 placeholder="e.g. Annual Sports Meet"
                                                                                                 value={eventDetails.title}
@@ -1050,7 +1043,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                 <label className="text-[10px] font-bold text-brand-navy/40">Venue / Location</label>
                                                                                                 <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">location_on</span>
                                                                                             </div>
-                                                                                            <input 
+                                                                                            <input
                                                                                                 type="text"
                                                                                                 placeholder="e.g. Main Auditorium"
                                                                                                 value={eventDetails.venue}
@@ -1064,7 +1057,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                 <label className="text-[10px] font-bold text-brand-navy/40">Event Date</label>
                                                                                                 <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">event</span>
                                                                                             </div>
-                                                                                            <AppDatePicker 
+                                                                                            <AppDatePicker
                                                                                                 height="h-10"
                                                                                                 value={eventDetails.date ? new Date(eventDetails.date) : null}
                                                                                                 onChange={(date) => setEventDetails({ ...eventDetails, date: date.toISOString().split('T')[0] })}
@@ -1076,7 +1069,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                 <label className="text-[10px] font-bold text-brand-navy/40">Start Time</label>
                                                                                                 <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">schedule</span>
                                                                                             </div>
-                                                                                            <AppTimePicker 
+                                                                                            <AppTimePicker
                                                                                                 value={eventDetails.time || "09:00"}
                                                                                                 onChange={(time) => setEventDetails({ ...eventDetails, time })}
                                                                                             />
@@ -1084,7 +1077,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                                                                                         {/* Advanced Options Toggle */}
                                                                                         <div className="col-span-2 pt-2">
-                                                                                            <button 
+                                                                                            <button
                                                                                                 onClick={() => setIsAdvancedEventOpen(!isAdvancedEventOpen)}
                                                                                                 className="flex items-center gap-2 text-[10px] font-bold text-muted-gray/40 hover:text-brand-navy transition-all px-1"
                                                                                             >
@@ -1097,7 +1090,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                                                                                             <AnimatePresence>
                                                                                                 {isAdvancedEventOpen && (
-                                                                                                    <motion.div 
+                                                                                                    <motion.div
                                                                                                         initial={{ height: 0, opacity: 0 }}
                                                                                                         animate={{ height: 'auto', opacity: 1 }}
                                                                                                         exit={{ height: 0, opacity: 0 }}
@@ -1109,7 +1102,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                                     <label className="text-[10px] font-bold text-brand-navy/40">Button Text</label>
                                                                                                                     <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">smart_button</span>
                                                                                                                 </div>
-                                                                                                                <input 
+                                                                                                                <input
                                                                                                                     type="text"
                                                                                                                     placeholder="e.g. Register Now"
                                                                                                                     value={eventDetails.buttonText}
@@ -1123,7 +1116,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                                     <label className="text-[10px] font-bold text-brand-navy/40">Action Link (https)</label>
                                                                                                                     <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-primary/40 transition-colors">link</span>
                                                                                                                 </div>
-                                                                                                                <input 
+                                                                                                                <input
                                                                                                                     type="url"
                                                                                                                     placeholder="https://example.com"
                                                                                                                     value={eventDetails.buttonLink}
@@ -1160,7 +1153,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                 <label className="text-[10px] font-bold text-brand-navy/40">Poll Question</label>
                                                                                                 <span className="material-symbols-outlined text-[14px] text-muted-gray/20 group-focus-within:text-amber-500/40 transition-colors">help_outline</span>
                                                                                             </div>
-                                                                                            <input 
+                                                                                            <input
                                                                                                 type="text"
                                                                                                 placeholder="What would you like to ask the community?"
                                                                                                 className="w-full bg-transparent border-b border-amber-100/50 py-3 text-[13px] font-bold text-brand-navy outline-none placeholder:text-muted-gray/30 focus:border-amber-500/30 transition-all"
