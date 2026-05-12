@@ -8,6 +8,7 @@ interface SideDrawerProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   maxWidth?: string;
 }
 
@@ -17,6 +18,7 @@ export const SideDrawer = ({
   title,
   subtitle,
   children,
+  footer,
   maxWidth = "max-w-[500px]"
 }: SideDrawerProps) => {
   return (
@@ -36,7 +38,7 @@ export const SideDrawer = ({
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
             className={cn(
-              "relative w-full bg-[#FBFBFA] shadow-[-20px_0_50px_-10px_rgba(21,35,40,0.1)] h-full flex flex-col overflow-hidden border-l border-white/20",
+              "relative w-full bg-[#FBFBFA] h-full flex flex-col overflow-hidden border-l border-white/20",
               maxWidth
             )}
           >
@@ -44,7 +46,7 @@ export const SideDrawer = ({
             <div className="p-8 pb-8 border-b border-slate-100 relative shrink-0 bg-[#FBFBFA]/80 backdrop-blur-md z-10">
               <button
                 onClick={onClose}
-                className="absolute top-8 right-8 size-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[#B0AFA8] hover:text-foreground transition-all group shadow-sm"
+                className="absolute top-8 right-8 size-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[#B0AFA8] hover:text-foreground transition-all group"
               >
                 <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
               </button>
@@ -61,6 +63,13 @@ export const SideDrawer = ({
             <div className="flex-1 overflow-y-auto no-scrollbar relative">
               {children}
             </div>
+
+            {/* Optional Footer */}
+            {footer && (
+              <div className="shrink-0 p-8 bg-white/80 backdrop-blur-xl border-t border-slate-100 relative z-20">
+                {footer}
+              </div>
+            )}
           </motion.div>
         </div>
       )}

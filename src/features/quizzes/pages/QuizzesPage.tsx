@@ -129,6 +129,8 @@ export const QuizzesPage = () => {
               return (
                 <motion.div
                   key={quiz.id}
+                  layout
+                  onClick={() => navigate(`/academics/quizzes/${quiz.id}`)}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
