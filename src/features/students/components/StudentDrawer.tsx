@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
+import { cn } from "../../../lib/utils";
 
 import { 
   Trophy, 
@@ -9,7 +10,8 @@ import {
   Phone,
   ShieldCheck,
   FileText,
-  MessageSquare
+  MessageSquare,
+  ChevronRight
 } from "lucide-react";
 
 interface StudentDrawerProps {
@@ -43,7 +45,7 @@ const containerVariants: Variants = {
 
 const itemVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 30 } }
+    show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.19, 1, 0.22, 1] } }
 };
 
 export const StudentDrawer = ({ isOpen, onClose, student }: StudentDrawerProps) => {
@@ -65,34 +67,35 @@ export const StudentDrawer = ({ isOpen, onClose, student }: StudentDrawerProps) 
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 35, stiffness: 400 }}
-            className="relative w-full max-w-[500px] bg-[#FBFBFA] shadow-2xl h-full flex flex-col overflow-hidden border-l border-slate-100"
+            className="relative w-full max-w-[460px] bg-white shadow-2xl h-full flex flex-col overflow-hidden border-l border-slate-100"
           >
-            {/* Minimal Header */}
-            <div className="p-8 pb-6 bg-white border-b border-slate-50 relative shrink-0">
+            {/* Minimal Lean Header */}
+            <div className="p-8 pb-8 bg-white border-b border-slate-50 relative shrink-0">
                 <button 
                     onClick={onClose}
-                    className="absolute top-8 right-8 size-10 rounded-full bg-[#FBFBFA] flex items-center justify-center text-[#B0AFA8] hover:text-foreground transition-all group"
+                    className="absolute top-8 right-8 size-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-[#B0AFA8] hover:text-foreground transition-all group"
                 >
                     <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
                 </button>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-5">
                     <div className="relative">
                         <div 
-                            className="size-20 rounded-[24px] bg-cover bg-center border-4 border-[#FBFBFA] shadow-sm"
+                            className="size-16 rounded-[20px] bg-cover bg-center border-2 border-white shadow-sm"
                             style={{ backgroundImage: `url("${student.img}")` }}
                         />
-                        <div className="absolute -bottom-1 -right-1 size-5 rounded-full border-2 border-white bg-primary shadow-sm flex items-center justify-center">
+                        <div className="absolute -bottom-1 -right-1 size-5 rounded-full border-2 border-white bg-primary flex items-center justify-center">
                             <ShieldCheck size={10} className="text-secondary" />
                         </div>
                     </div>
                     <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[9px] font-black text-[#B0AFA8] uppercase tracking-widest">{student.id}</span>
-                            <span className="text-[9px] font-black text-[#3D6B2C] uppercase tracking-widest">Active Enrollment</span>
+                        <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-[10px] font-bold text-[#B0AFA8] tracking-widest">{student.id}</span>
+                            <div className="size-1 rounded-full bg-emerald-500" />
+                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Active Enrollment</span>
                         </div>
-                        <h2 className="text-2xl font-black text-foreground tracking-tight leading-none mb-1">{student.name}</h2>
-                        <p className="text-[13px] font-medium text-[#B0AFA8]">{student.grade} • Section {student.section}</p>
+                        <h2 className="text-xl font-bold text-foreground tracking-tight leading-none mb-1">{student.name}</h2>
+                        <p className="text-[12px] font-medium text-[#B0AFA8]">{student.grade} • Section {student.section}</p>
                     </div>
                 </div>
             </div>
@@ -102,86 +105,85 @@ export const StudentDrawer = ({ isOpen, onClose, student }: StudentDrawerProps) 
                 variants={containerVariants}
                 initial="hidden"
                 animate="show"
-                className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar"
+                className="flex-1 overflow-y-auto p-8 space-y-10 no-scrollbar"
             >
               
-              {/* Intelligence Grid */}
-              <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
-                {/* Main Aura Score */}
-                <div className="col-span-2 p-6 rounded-[24px] bg-white border border-slate-100 shadow-sm group hover:border-primary/30 transition-all">
-                    <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-[0.18em]">Aura Intelligence</h4>
-                        <Trophy size={16} className="text-primary" />
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-black text-foreground tracking-tighter">{student.auraScore}</span>
-                        <span className="text-sm font-bold text-[#B0AFA8]">/ 100</span>
-                    </div>
-                    <div className="mt-4 h-1.5 bg-[#F7F8F4] rounded-full overflow-hidden">
-                        <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${student.auraScore}%` }}
-                            transition={{ duration: 1, ease: "easeOut" }}
-                            className="h-full bg-primary" 
-                        />
-                    </div>
+              {/* Intelligence Section */}
+              <motion.div variants={itemVariants} className="space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-50 pb-2">
+                    <h4 className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-[0.2em]">Key Metrics</h4>
+                    <span className="text-[10px] font-bold text-primary">Intelligence Report</span>
                 </div>
 
-                {/* Sub Stats */}
-                <div className="p-5 rounded-[24px] bg-white border border-slate-100 shadow-sm hover:border-primary/20 transition-all">
-                    <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-[0.18em] mb-3">Attendance</p>
-                    <div className="flex items-center justify-between">
-                        <span className="text-2xl font-black text-foreground">{student.attendanceRate}%</span>
-                        <Calendar size={18} className="text-blue-500 opacity-20" />
-                    </div>
-                </div>
-
-                <div className="p-5 rounded-[24px] bg-white border border-slate-100 shadow-sm hover:border-primary/20 transition-all">
-                    <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-[0.18em] mb-3">GPA Index</p>
-                    <div className="flex items-center justify-between">
-                        <span className="text-2xl font-black text-foreground">{student.gpa}</span>
-                        <GraduationCap size={18} className="text-secondary opacity-20" />
-                    </div>
-                </div>
-              </motion.div>
-
-              {/* Status Insight Card */}
-              <motion.div variants={itemVariants} className="p-6 rounded-[24px] bg-[#F7F8F4] border border-slate-100 relative overflow-hidden group">
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-3">
-                             <div className="size-2 rounded-full bg-primary animate-pulse" />
-                             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#B0AFA8]">Administrative Insight</h4>
+                <div className="grid grid-cols-3 gap-8">
+                    <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <Trophy size={10} className="text-primary" /> Aura
+                        </span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-bold text-foreground tracking-tight">{student.auraScore}</span>
+                            <span className="text-[10px] font-bold text-[#B0AFA8]">/ 100</span>
                         </div>
-                        <p className="text-[14px] font-bold text-foreground leading-snug">
-                            {student.auraScore >= 80 
-                                ? `${student.name} is demonstrating exceptional leadership. Recommend for elite programs.`
-                                : `${student.name} shows a participation decline. Early intervention session suggested.`
-                            }
-                        </p>
                     </div>
-              </motion.div>
-
-              {/* Action Stack */}
-              <motion.div variants={itemVariants} className="space-y-3">
-                <button className="w-full h-14 bg-secondary text-white rounded-[18px] text-[14px] font-black flex items-center justify-center gap-3 hover:bg-primary hover:text-secondary transition-all active:scale-[0.98] shadow-lg shadow-secondary/5">
-                  <Phone size={18} fill="currentColor" strokeWidth={0} />
-                  Contact Guardian
-                </button>
-                <div className="grid grid-cols-2 gap-3">
-                    <button className="h-12 bg-white border border-slate-100 text-foreground rounded-[16px] text-[12px] font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
-                        <FileText size={16} className="opacity-40" />
-                        Records
-                    </button>
-                    <button className="h-12 bg-white border border-slate-100 text-foreground rounded-[16px] text-[12px] font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all shadow-sm">
-                        <MessageSquare size={16} className="opacity-40" />
-                        Quick Chat
-                    </button>
+                    <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <Calendar size={10} className="text-blue-500" /> Attendance
+                        </span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-bold text-foreground tracking-tight">{student.attendanceRate}%</span>
+                        </div>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <GraduationCap size={10} className="text-amber-500" /> GPA
+                        </span>
+                        <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-bold text-foreground tracking-tight">{student.gpa}</span>
+                        </div>
+                    </div>
                 </div>
               </motion.div>
 
-              {/* Footnote */}
-              <motion.div variants={itemVariants} className="pt-10 text-center">
-                <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-[0.2em] opacity-40">Institutional Verification Active</p>
+              {/* Status Insight Section */}
+              <motion.div variants={itemVariants} className="space-y-4">
+                  <h4 className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-[0.2em] border-b border-slate-50 pb-2">Administrative Note</h4>
+                  <div className="bg-[#F7F8F4] p-5 rounded-2xl border border-slate-100/50">
+                    <p className="text-[13px] font-medium text-foreground leading-relaxed">
+                        {student.auraScore >= 80 
+                            ? `${student.name} is a top-tier candidate for leadership roles. Excellent institutional fit.`
+                            : `${student.name} shows minor participation decline. Monitor closely for next session.`
+                        }
+                    </p>
+                  </div>
+              </motion.div>
+
+              {/* Minimal Action List */}
+              <motion.div variants={itemVariants} className="space-y-1">
+                  <h4 className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-[0.2em] mb-4">Direct Actions</h4>
+                  
+                  {[
+                      { label: "Contact Guardian", icon: Phone, detail: student.phone, color: "text-blue-600", bg: "bg-blue-50" },
+                      { label: "View Academic Records", icon: FileText, detail: "Full transcript", color: "text-amber-600", bg: "bg-amber-50" },
+                      { label: "Message Student", icon: MessageSquare, detail: "Direct portal", color: "text-emerald-600", bg: "bg-emerald-50" },
+                  ].map((action, i) => (
+                      <button key={i} className="w-full flex items-center justify-between p-3.5 rounded-xl hover:bg-[#F7F8F4] transition-all group">
+                          <div className="flex items-center gap-4">
+                              <div className={cn("size-9 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110", action.bg, action.color)}>
+                                  <action.icon size={16} />
+                              </div>
+                              <div className="flex flex-col text-left">
+                                  <span className="text-[13px] font-bold text-foreground">{action.label}</span>
+                                  <span className="text-[10px] text-[#B0AFA8] font-medium">{action.detail}</span>
+                              </div>
+                          </div>
+                          <ChevronRight size={14} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                  ))}
+              </motion.div>
+
+              {/* Subtle Footer */}
+              <motion.div variants={itemVariants} className="pt-10 text-center opacity-30">
+                <p className="text-[9px] font-bold text-[#B0AFA8] uppercase tracking-[0.3em]">Verified Institutional Profile</p>
               </motion.div>
 
             </motion.div>
@@ -191,3 +193,5 @@ export const StudentDrawer = ({ isOpen, onClose, student }: StudentDrawerProps) 
     </AnimatePresence>
   );
 };
+
+

@@ -1,12 +1,14 @@
 import { cn } from "../../lib/utils";
 import { AppDatePicker } from "../AppDatePicker";
 import { AppDropdown } from "../AppDropdown";
+import { AppTimePicker } from "../AppTimePicker";
+import { AppDateTimePicker } from "../AppDateTimePicker";
 
 interface PDSFormGroupProps {
   label: string;
   placeholder?: string;
   icon?: string;
-  type?: "input" | "date" | "select" | "textarea" | "chips";
+  type?: "input" | "date" | "select" | "textarea" | "chips" | "datetime";
   options?: string[];
   searchable?: boolean;
   disabled?: boolean;
@@ -52,7 +54,7 @@ export const PDSFormGroup = ({
             {icon}
           </span>
         )}
-        
+
         {type === "input" && (
           <div className="relative h-10">
             <div className={cn(
@@ -106,6 +108,16 @@ export const PDSFormGroup = ({
             onChange={onChange}
             placeholder={placeholder}
             searchable={searchable}
+            icon={icon}
+            className={cn(error && "border-rose-200 bg-rose-50/30")}
+          />
+        )}
+
+        {type === "datetime" && (
+          <AppDateTimePicker
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
             icon={icon}
             className={cn(error && "border-rose-200 bg-rose-50/30")}
           />

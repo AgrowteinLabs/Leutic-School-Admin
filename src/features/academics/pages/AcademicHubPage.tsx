@@ -7,6 +7,7 @@ import { ExaminationsPage } from "../../examinations/pages/ExaminationsPage";
 import { ProgramsPage } from "../../programs/pages/ProgramsPage";
 import { AcademicSetupPage } from "../../academic-setup/pages/AcademicSetupPage";
 import { MarksEntryPage } from "../../examinations/pages/MarksEntryPage";
+import { QuizzesPage } from "../../quizzes/pages/QuizzesPage";
 import { PDSButton } from "../../../components/pds/PDSButton";
 
 export const AcademicHubPage = () => {
@@ -18,6 +19,7 @@ export const AcademicHubPage = () => {
 
   const tabs = [
     { id: "exams", label: "Examinations", icon: "description" },
+    { id: "quizzes", label: "Quiz Lab", icon: "quiz" },
     { id: "marks", label: "Mark Entry", icon: "edit_note" },
     { id: "programs", label: "Special Programs", icon: "rocket_launch" },
     { id: "setup", label: "Academic Year Setup", icon: "settings_suggest" },
@@ -107,6 +109,7 @@ export const AcademicHubPage = () => {
             className="flex-1 flex flex-col overflow-hidden min-h-0"
           >
             {activeTab === "exams" && <ExaminationsPage isHubChild />}
+            {activeTab === "quizzes" && <QuizzesPage isHubChild />}
             {activeTab === "marks" && (
               <MarksEntryPage 
                 isHubChild 

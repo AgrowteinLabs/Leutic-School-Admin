@@ -62,7 +62,7 @@ export const ClassCard = ({
         <div className="space-y-1.5">
           <div className="mb-2">
             <span className={cn(
-              "inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-black  border shadow-sm",
+              "inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-black  border",
               statusType === "risk" ? "bg-red-50 text-red-700 border-red-100" :
                 statusType === "attention" ? "bg-amber-50 text-amber-700 border-amber-100" :
                   "bg-emerald-50 text-emerald-700 border-emerald-100"

@@ -29,6 +29,7 @@ import { CurriculumPage } from "./features/curriculum/pages/CurriculumPage";
 
 
 import { AddExaminationPage } from "./features/examinations/pages/AddExaminationPage";
+import { CreateQuizPage } from "./features/quizzes/pages/CreateQuizPage";
 import { AddProgramPage } from "./features/programs/pages/AddProgramPage";
 import { SettingsPage } from "./features/settings/pages/SettingsPage";
 
@@ -54,6 +55,7 @@ function App() {
           
           {/* Specific Academic Routes (Higher Priority) */}
           <Route path="/academics/exams/add" element={<AddExaminationPage />} />
+          <Route path="/academics/quizzes/add" element={<CreateQuizPage />} />
           <Route path="/academics/programs/add" element={<AddProgramPage />} />
           <Route path="/academics/exams/:id" element={<ExamDetailsPage />} />
           

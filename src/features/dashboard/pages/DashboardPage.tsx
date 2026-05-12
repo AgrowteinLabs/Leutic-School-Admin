@@ -20,6 +20,7 @@ import {
     BookUser,
     IdCard,
     TruckIcon,
+    // HelpCircle
 } from "lucide-react";
 
 export const DashboardPage = () => {
@@ -159,6 +160,7 @@ export const DashboardPage = () => {
                                                 ]
                                             },
                                             { label: "Announcement", icon: Megaphone, color: "text-[#B45309]", path: "/communications/announcements/add" },
+                                            // { label: "Quiz Lab", icon: HelpCircle, color: "text-primary", path: "/academics/quizzes" },
                                             { label: "Collect Fee", icon: WalletCards, color: "text-[#3D6B2C]", path: "/finance" },
                                             { label: "Exam Marks", icon: GraduationCap, color: "text-[#B91C1C]", path: "/academics/marks" },
                                             { label: "Bus Tracker", icon: Bus, color: "text-[#1565C0]", path: "/transportation" },
