@@ -3,18 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
 import {
-  Plus,
-  Search,
-  Clock,
-  FileText,
-  Trophy,
-  MoreVertical,
-  ChevronRight,
-  Filter,
-  Calendar,
-  AlertCircle
+  Plus
 } from "lucide-react";
-import { PDSButton } from "../../../components/pds/PDSButton";
 import { AppDropdown } from "../../../components/AppDropdown";
 
 interface Quiz {
@@ -32,7 +22,7 @@ interface Quiz {
   totalStudents: number;
 }
 
-export const QuizzesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
+export const QuizzesPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 

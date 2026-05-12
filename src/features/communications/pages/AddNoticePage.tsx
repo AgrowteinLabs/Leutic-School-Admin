@@ -5,13 +5,10 @@ import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
-import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import Lottie from "lottie-react";
 import successAnimation from "../../../assets/animations/success.json";
-
 export const AddNoticePage = () => {
   const navigate = useNavigate();
-  const [activeStep, setActiveStep] = useState(1);
 
   const [noticeData, setNoticeData] = useState({
     title: "",

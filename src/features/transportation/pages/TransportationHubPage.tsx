@@ -4,7 +4,6 @@ import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransportationPage } from "./TransportationPage";
-import { DriversPage } from "./DriversPage";
 import { VehiclesPage } from "./VehiclesPage";
 
 export const TransportationHubPage = () => {

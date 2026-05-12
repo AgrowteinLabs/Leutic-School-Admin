@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
@@ -128,7 +128,7 @@ export const VehiclesPage = ({
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [vehicles, setVehicles] = useState([
+  const [vehicles] = useState([
     { id: "01", type: "Standard Bus", regNo: "KL01PC4456", capacity: 42, fuelType: "Diesel", route: "North Coast", status: "Active", expiryCount: 0 },
     { id: "05", type: "Mini Bus", regNo: "KL01TR0112", capacity: 24, fuelType: "CNG", route: "Central Loop", status: "Active", expiryCount: 1 },
     { id: "08", type: "Standard Bus", regNo: "KL07BB9982", capacity: 42, fuelType: "Diesel", route: "East Extension", status: "Idle", expiryCount: 0 },

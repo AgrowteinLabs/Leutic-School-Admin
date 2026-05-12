@@ -109,7 +109,7 @@ export const AcademicHubPage = () => {
             className="flex-1 flex flex-col overflow-hidden min-h-0"
           >
             {activeTab === "exams" && <ExaminationsPage isHubChild />}
-            {activeTab === "quizzes" && <QuizzesPage isHubChild />}
+            {activeTab === "quizzes" && <QuizzesPage />}
             {activeTab === "marks" && (
               <MarksEntryPage 
                 isHubChild 

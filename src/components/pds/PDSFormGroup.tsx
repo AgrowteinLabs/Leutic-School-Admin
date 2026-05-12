@@ -1,7 +1,6 @@
 import { cn } from "../../lib/utils";
 import { AppDatePicker } from "../AppDatePicker";
 import { AppDropdown } from "../AppDropdown";
-import { AppTimePicker } from "../AppTimePicker";
 import { AppDateTimePicker } from "../AppDateTimePicker";
 
 interface PDSFormGroupProps {
@@ -133,7 +132,7 @@ export const PDSFormGroup = ({
                   type="button"
                   onClick={() => {
                     if (Array.isArray(value)) {
-                      if (value.includes(opt)) onChange(value.filter(v => v !== opt));
+                      if (value.includes(opt)) onChange(value.filter((v: string) => v !== opt));
                       else onChange([...value, opt]);
                     } else {
                       onChange(opt);

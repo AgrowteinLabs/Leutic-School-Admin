@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X,
   ChevronRight,
   ChevronLeft,
   Clock,
@@ -10,7 +9,6 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
-  AlertCircle,
   HelpCircle,
   Hash
 } from "lucide-react";
@@ -55,7 +53,7 @@ export const AddQuizDrawer = ({ isOpen, onClose }: { isOpen: boolean; onClose: (
   const addOption = () => {
     setCurrentQuestion(prev => ({
       ...prev,
-      options: [...prev, ""]
+      options: [...prev.options, ""]
     }));
   };
 

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { PDSButton } from "../../../components/pds/PDSButton";

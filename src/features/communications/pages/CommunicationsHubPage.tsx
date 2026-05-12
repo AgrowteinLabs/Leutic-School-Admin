@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
@@ -9,20 +8,12 @@ import { AnnouncementsPage } from "./AnnouncementsPage";
 export const CommunicationsHubPage = () => {
   const { tab } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const shouldCompose = searchParams.get("compose") === "true";
 
   const activeTab = (tab as "messages" | "announcements") || "messages";
   
-  // State to trigger composition in child components
-  const [triggerCompose, setTriggerCompose] = useState(shouldCompose ? 1 : 0);
-
   const handleComposeClick = () => {
     if (activeTab === "announcements") {
       navigate("/communications/announcements/add");
-    } else {
-      setTriggerCompose(prev => prev + 1);
     }
   };
 
@@ -102,7 +93,7 @@ export const CommunicationsHubPage = () => {
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto no-scrollbar">
-            <AnnouncementsPage isHubChild forceCompose={triggerCompose} />
+            <AnnouncementsPage isHubChild />
           </div>
         )}
       </div>

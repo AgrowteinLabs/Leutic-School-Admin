@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo, useMemo, useEffect } from "react";
+import React, { useState, useCallback, memo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
@@ -12,10 +12,7 @@ import {
   CheckCircle2,
   Clock,
   Trophy,
-  Calendar,
-  AlertCircle,
   Check,
-  Shuffle,
   Edit3,
   GripVertical,
   Minus,
@@ -749,7 +746,7 @@ export const CreateQuizPage = () => {
   const [activeQuestionId, setActiveQuestionId] = useState<string>("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"Draft Saved" | "Saving..." | "">("");
+  const [saveStatus, setSaveStatus] = useState<string>("");
 
   // Global Assessment State
   const [quizData, setQuizData] = useState<QuizData>({
@@ -927,10 +924,10 @@ export const CreateQuizPage = () => {
       </div>
 
       <PDSSuccessModal
-        isOpen={showSuccess}
+        show={showSuccess}
         onClose={() => navigate("/academics/quizzes")}
         title="Assessment Published!"
-        message="Your quiz has been successfully broadcasted to the selected student modules. Track performance in the Quiz Lab."
+        description="Your quiz has been successfully broadcasted to the selected student modules. Track performance in the Quiz Lab."
       />
     </div>
   );
