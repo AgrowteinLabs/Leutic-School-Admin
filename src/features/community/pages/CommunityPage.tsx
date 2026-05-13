@@ -144,7 +144,7 @@ export const CommunityPost = ({ post }: { post: Post }) => {
                 <div className="space-y-4">
                     {(post.type === "competition" || post.type === "announcement") && (
                         <h2 className="font-bold text-brand-navy leading-tight tracking-tight" style={{ fontSize: 'var(--font-size-body)' }}>
-                            {post.id === 1 ? "🚀 Annual Science Fair 2025" : post.content.split('\n')[0]}
+                            {post.id === 1 ? "Excellence is not a destination, but a continuous journey." : post.content.split('\n')[0]}
                         </h2>
                     )}
                     <p className="font-medium text-brand-navy/90 leading-relaxed tracking-tight whitespace-pre-wrap" style={{ fontSize: 'var(--font-size-body)' }}>
@@ -153,14 +153,9 @@ export const CommunityPost = ({ post }: { post: Post }) => {
                 </div>
 
                 {post.type === "announcement" && post.image && (
-                    <div className="relative aspect-[4/3] rounded-[24px] overflow-hidden group/img">
+                    <div className="relative aspect-[6/11.5] rounded-[24px] overflow-hidden group/img w-full">
                         <img src={post.image} className="size-full object-cover group-hover/img:scale-105 transition-transform duration-1000" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-6">
-                            <button className="w-full bg-white/20 backdrop-blur-md border border-white/30 text-white py-3.5 rounded-2xl font-bold hover:bg-white hover:text-brand-navy transition-all flex items-center justify-center gap-2 group/btn" style={{ fontSize: 'var(--font-size-small)' }}>
-                                Register Now
-                                <span className="material-symbols-outlined text-[16px] group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
-                            </button>
-                        </div>
+
                     </div>
                 )}
 
@@ -460,8 +455,8 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             author: "Silver Oak International",
             role: "Admin (You)",
             avatar: "https://i.pravatar.cc/150?u=1",
-            content: "The annual #ScienceFair registration is officially OPEN. We invite all innovators to showcase their projects. 🚀",
-            image: "/banner4.jpg",
+            content: "We are immensely proud to announce the stellar results of our students at St. Mary’s Public School, Kuruppampady. Your hard work, discipline, and perseverance have culminated in this magnificent achievement. Congratulations to our Toppers and Distinction holders for setting such a high benchmark!",
+            image: "/banner5.webp",
             time: "2h ago",
             reactions: 1200,
             comments: 45,
@@ -885,38 +880,38 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                     <div className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-30 shrink-0">
                         <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
                             <div className="flex gap-8 overflow-x-auto no-scrollbar">
-                            {[
-                                { id: "feed", label: "Timeline", icon: "dashboard" },
-                                { id: "discussion", label: "Q&A Hub", icon: "forum" },
-                                { id: "moderation", label: "Moderation", icon: "verified_user", badge: 3 },
-                            ].map((t) => {
-                                const isActive = activeTab === t.id;
-                                return (
-                                    <button
-                                        key={t.id}
-                                        onClick={() => navigate(`/community/${t.id}`)}
-                                        className={cn(
-                                            "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
-                                            isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
-                                        )}
-                                    >
-                                        <span className={cn("material-symbols-outlined text-[20px] transition-all", isActive ? "text-primary" : "")} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
-                                            {t.icon}
-                                        </span>
-                                        {t.label}
-                                        {t.badge && (
-                                            <span className="absolute top-5 -right-2 size-1.5 bg-red-500 rounded-full" />
-                                        )}
-                                        {isActive && (
-                                            <motion.div
-                                                layoutId="communityTab"
-                                                className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full"
-                                                transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                                            />
-                                        )}
-                                    </button>
-                                );
-                            })}
+                                {[
+                                    { id: "feed", label: "Timeline", icon: "dashboard" },
+                                    { id: "discussion", label: "Q&A Hub", icon: "forum" },
+                                    { id: "moderation", label: "Moderation", icon: "verified_user", badge: 3 },
+                                ].map((t) => {
+                                    const isActive = activeTab === t.id;
+                                    return (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => navigate(`/community/${t.id}`)}
+                                            className={cn(
+                                                "flex items-center gap-2.5 pb-4 pt-6 text-[14px] font-semibold tracking-tight transition-all relative shrink-0",
+                                                isActive ? "text-foreground" : "text-[#B0AFA8] hover:text-foreground/70"
+                                            )}
+                                        >
+                                            <span className={cn("material-symbols-outlined text-[20px] transition-all", isActive ? "text-primary" : "")} style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>
+                                                {t.icon}
+                                            </span>
+                                            {t.label}
+                                            {t.badge && (
+                                                <span className="absolute top-5 -right-2 size-1.5 bg-red-500 rounded-full" />
+                                            )}
+                                            {isActive && (
+                                                <motion.div
+                                                    layoutId="communityTab"
+                                                    className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full"
+                                                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                                />
+                                            )}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
