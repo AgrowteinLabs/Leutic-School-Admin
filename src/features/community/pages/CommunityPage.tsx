@@ -452,7 +452,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         {
             id: 1,
             type: "announcement",
-            author: "Silver Oak International",
+            author: "St. Mary's Public School",
             role: "Admin (You)",
             avatar: "https://i.pravatar.cc/150?u=1",
             content: "We are immensely proud to announce the stellar results of our students at St. Mary’s Public School, Kuruppampady. Your hard work, discipline, and perseverance have culminated in this magnificent achievement. Congratulations to our Toppers and Distinction holders for setting such a high benchmark!",
