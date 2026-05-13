@@ -126,7 +126,7 @@ export const CommunityPost = ({ post }: { post: Post }) => {
                             {post.author !== "Silver Oak International" && (
                                 <>
                                     <span className="size-0.5 rounded-full bg-slate-300" />
-                                    <span className="font-medium text-muted-gray" style={{ fontSize: 'var(--font-size-small)' }}>Silver Oak International</span>
+                                    <span className="font-medium text-muted-gray" style={{ fontSize: 'var(--font-size-small)' }}>{post.author}</span>
                                 </>
                             )}
                             <span className="size-0.5 rounded-full bg-slate-300" />
