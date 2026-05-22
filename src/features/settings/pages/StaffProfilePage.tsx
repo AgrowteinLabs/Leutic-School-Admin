@@ -73,151 +73,139 @@ export const StaffProfilePage = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white font-sans">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FBFBFA] font-sans">
       <TopBar
         title="Faculty Profile"
-        subtitle="Manage professional records, performance metrics and schedule"
+        subtitle={`${staff.id} • ${staff.department}`}
         onBack={() => navigate(-1)}
         actions={
-          <div className="flex items-center gap-3">
-            <button className="h-10 px-5 rounded-[10px] bg-white border border-slate-100 text-[#444441] text-[13px] font-bold flex items-center gap-2 hover:bg-[#F7F8F4] transition-all shadow-sm shadow-slate-100/20">
+          <div className="flex items-center gap-2">
+            <button className="h-9 px-4 rounded-xl bg-white border border-slate-200 text-[#444441] text-[12px] font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
               <span className="material-symbols-outlined text-[18px]">edit</span>
-              Edit Profile
+              Edit
             </button>
-            <button className="h-10 px-5 rounded-[10px] bg-primary text-foreground text-[13px] font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-primary/20 transition-all">
+            <button className="h-9 px-4 rounded-xl bg-primary text-foreground text-[12px] font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-primary/20 transition-all">
               <span className="material-symbols-outlined text-[18px]">mail</span>
-              Send Message
+              Message
             </button>
           </div>
         }
       />
 
-      <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8 no-scrollbar">
-        <div className="max-w-[1400px] mx-auto space-y-8">
-          {/* Hero Profile Section */}
-          <div className="bg-[#F7F8F4] rounded-[32px] p-8 border border-slate-100 flex flex-col md:flex-row gap-8 items-start relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8">
-              <span className={cn(
-                "px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest",
-                getStatusStyles(staff.status)
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
+          
+          {/* Compact Header */}
+          <div className="flex flex-col md:flex-row gap-8 items-start">
+            <div className="relative group shrink-0">
+              <div className="size-28 rounded-3xl overflow-hidden border-4 border-white shadow-2xl shadow-slate-200/50">
+                <img src={staff.img} className="size-full object-cover group-hover:scale-110 transition-transform duration-700" />
+              </div>
+              <div className={cn(
+                "absolute -bottom-2 -right-2 size-6 rounded-full border-2 border-white flex items-center justify-center shadow-sm",
+                staff.status === "Active" ? "bg-green-500" : "bg-amber-500"
               )}>
-                {staff.status}
-              </span>
-            </div>
-            
-            <div
-              className="size-32 rounded-[24px] bg-cover bg-center border-[4px] border-white shadow-xl shadow-slate-200/50 shrink-0"
-              style={{ backgroundImage: `url("${staff.img}")` }}
-            ></div>
-            
-            <div className="flex-1 space-y-4">
-              <div>
-                <h1 className="text-3xl font-black text-foreground tracking-tight mb-1">{staff.name}</h1>
-                <p className="text-[14px] font-bold text-[#B0AFA8] flex items-center gap-2">
-                  {staff.role} • {staff.department} 
-                  <span className="size-1 bg-[#B0AFA8] rounded-full"></span>
-                  ID: {staff.id}
-                </p>
+                <span className="material-symbols-outlined text-white text-[12px] font-black">check</span>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-4 border-t border-white/50">
-                <div>
-                  <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-1.5">Official Email</p>
-                  <p className="text-[13px] font-bold text-foreground truncate">{staff.email}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-1.5">Phone Number</p>
-                  <p className="text-[13px] font-bold text-foreground">+91 98765 43210</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-1.5">Join Date</p>
-                  <p className="text-[13px] font-bold text-foreground">{staff.joinDate}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-1.5">Contract Type</p>
-                  <p className="text-[13px] font-bold text-foreground">Full-time Regular</p>
-                </div>
+            <div className="flex-1 py-1">
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-2xl font-black text-brand-navy tracking-tight">{staff.name}</h1>
+                <span className="px-2.5 py-0.5 rounded-lg bg-brand-navy/5 text-brand-navy text-[10px] font-bold uppercase tracking-wider border border-brand-navy/10">
+                  {staff.status}
+                </span>
+              </div>
+              <p className="text-[13px] font-bold text-muted-gray mb-6 flex items-center gap-2">
+                {staff.role} <span className="size-1 rounded-full bg-slate-300" /> {staff.department}
+              </p>
+
+              <div className="flex flex-wrap gap-x-12 gap-y-4">
+                {[
+                  { label: "Performance", value: `${staff.performance}%`, icon: "trending_up", color: "text-green-600" },
+                  { label: "Aura Score", value: staff.auraScore, icon: "verified", color: "text-primary" },
+                  { label: "Workload", value: "24h / wk", icon: "schedule", color: "text-blue-600" },
+                  { label: "Join Date", value: staff.joinDate, icon: "calendar_today", color: "text-slate-400" }
+                ].map((stat, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="size-8 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                      <span className={cn("material-symbols-outlined text-[18px]", stat.color)}>{stat.icon}</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-gray/50 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
+                      <p className="text-[13px] font-black text-brand-navy leading-none">{stat.value}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Metrics Architecture */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white border border-slate-100 rounded-[28px] p-6 space-y-4 hover:shadow-xl hover:shadow-slate-100/50 transition-all group">
-              <div className="flex justify-between items-center">
-                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-[20px]">star</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Column: Schedule & Details */}
+            <div className="lg:col-span-8 space-y-6">
+              <div className="bg-white rounded-[24px] border border-slate-100/60 overflow-hidden shadow-sm shadow-slate-100/20">
+                <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-brand-navy text-[20px]">calendar_view_week</span>
+                    <h3 className="text-[14px] font-bold text-brand-navy">Instructional Schedule</h3>
+                  </div>
+                  <button className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline transition-all">Full View</button>
                 </div>
-                <span className="text-[11px] font-bold text-[#2E7D32] bg-[#EAF2D7] px-2 py-1 rounded-lg">Top 5% Faculty</span>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest">Student Feedback</p>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <h4 className="text-3xl font-black text-foreground">{(staff.performance / 20).toFixed(1)}</h4>
-                  <span className="text-sm font-bold text-[#B0AFA8]">/ 5.0</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-100 rounded-[28px] p-6 space-y-4 hover:shadow-xl hover:shadow-slate-100/50 transition-all">
-              <div className="flex justify-between items-center">
-                <div className="size-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary">
-                  <span className="material-symbols-outlined text-[20px]">schedule</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest">Weekly Workload</p>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <h4 className="text-3xl font-black text-foreground">24</h4>
-                  <span className="text-sm font-bold text-[#B0AFA8]">Hours / week</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-100 rounded-[28px] p-6 space-y-4 hover:shadow-xl hover:shadow-slate-100/50 transition-all">
-              <div className="flex justify-between items-center">
-                <div className="size-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
-                  <span className="material-symbols-outlined text-[20px]">menu_book</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest">Classes Assigned</p>
-                <div className="flex items-baseline gap-1 mt-1">
-                  <h4 className="text-3xl font-black text-foreground">12</h4>
-                  <span className="text-sm font-bold text-[#B0AFA8]">Total Sections</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Schedule & Performance Narrative */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm shadow-slate-100/30">
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-[#F7F8F4]/30">
-                  <h3 className="text-[15px] font-bold text-foreground">Weekly Instructional Schedule</h3>
-                  <button className="text-[11px] font-bold text-primary hover:underline uppercase tracking-wider">View Full Calendar</button>
-                </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-5 gap-3">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => (
-                      <div key={day} className="space-y-4">
-                        <div className="py-2 text-center border-b border-slate-50">
-                          <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">{day}</p>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="h-[70px] rounded-2xl bg-primary/5 border border-primary/10 p-2 relative overflow-hidden group cursor-pointer hover:bg-primary/10 transition-colors">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
-                            <p className="text-[10px] font-bold text-foreground leading-tight">Grade 10-A</p>
-                            <p className="text-[9px] font-medium text-[#B0AFA8] mt-0.5">09:00 - 10:00</p>
+                <div className="p-4 grid grid-cols-5 gap-3">
+                  {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day, idx) => (
+                    <div key={day} className="space-y-3">
+                      <div className="text-center pb-2">
+                        <span className="text-[9px] font-black text-muted-gray uppercase tracking-[0.2em]">{day}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {[1, 2].map(slot => (
+                          <div key={slot} className={cn(
+                            "group p-2.5 rounded-xl border transition-all cursor-pointer relative",
+                            idx % 2 === 0 && slot === 1 
+                              ? "bg-primary/5 border-primary/20 hover:bg-primary/10" 
+                              : "bg-slate-50/50 border-slate-100 border-dashed hover:border-slate-200"
+                          )}>
+                            {idx % 2 === 0 && slot === 1 ? (
+                              <>
+                                <p className="text-[10px] font-black text-brand-navy leading-tight">GR-{10+idx}-A</p>
+                                <p className="text-[8px] font-bold text-muted-gray mt-0.5">09:00 AM</p>
+                              </>
+                            ) : (
+                              <div className="h-6 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[14px] text-slate-200 group-hover:text-slate-300 transition-colors">add</span>
+                              </div>
+                            )}
                           </div>
-                          <div className="h-[70px] rounded-2xl bg-slate-50/50 border border-slate-100 border-dashed"></div>
-                          <div className="h-[70px] rounded-2xl bg-secondary/5 border border-secondary/10 p-2 relative overflow-hidden group cursor-pointer hover:bg-secondary/10 transition-colors">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-secondary"></div>
-                            <p className="text-[10px] font-bold text-foreground leading-tight">Grade 12-C</p>
-                            <p className="text-[9px] font-medium text-[#B0AFA8] mt-0.5">11:30 - 12:30</p>
-                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Course Management Section */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="bg-white rounded-[24px] border border-slate-100/60 p-5 shadow-sm shadow-slate-100/20">
+                  <h4 className="text-[12px] font-black text-brand-navy uppercase tracking-widest mb-4">Assigned Subjects</h4>
+                  <div className="space-y-3">
+                    {["Advanced Mathematics", "Quantum Mechanics", "Linear Algebra"].map((sub, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50">
+                        <span className="text-[12px] font-bold text-brand-navy">{sub}</span>
+                        <span className="material-symbols-outlined text-[16px] text-slate-300">chevron_right</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white rounded-[24px] border border-slate-100/60 p-5 shadow-sm shadow-slate-100/20">
+                  <h4 className="text-[12px] font-black text-brand-navy uppercase tracking-widest mb-4">Achievements</h4>
+                  <div className="space-y-3">
+                    {["Gold Star Educator '24", "Curriculum Innovator", "Perfect Attendance"].map((ach, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="size-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[14px] filled">military_tech</span>
                         </div>
+                        <span className="text-[12px] font-bold text-brand-navy">{ach}</span>
                       </div>
                     ))}
                   </div>
@@ -225,28 +213,44 @@ export const StaffProfilePage = () => {
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6 shadow-sm shadow-slate-100/30">
-                <h3 className="text-[15px] font-bold text-foreground">Faculty Insights</h3>
-                <div className="space-y-5">
-                  <div className="flex gap-4">
-                    <div className="size-1.5 rounded-full bg-primary mt-1.5 shrink-0"></div>
-                    <p className="text-[13px] text-[#444441] leading-relaxed">
-                      Maintains an exceptional <strong>98% attendance</strong> rate for all assigned laboratory sessions.
-                    </p>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="size-1.5 rounded-full bg-secondary mt-1.5 shrink-0"></div>
-                    <p className="text-[13px] text-[#444441] leading-relaxed">
-                      Successfully pioneered the new <strong>Interactive Geometry</strong> module for Grade 10 students.
-                    </p>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="size-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0"></div>
-                    <p className="text-[13px] text-[#444441] leading-relaxed">
-                      Peer feedback highlights strong <strong>collaborative leadership</strong> in the Mathematics department.
-                    </p>
-                  </div>
+            {/* Right Column: Contact & Insights */}
+            <div className="lg:col-span-4 space-y-6">
+              <div className="bg-[#F7F8F4] rounded-[24px] border border-slate-100 p-6 space-y-6">
+                <h3 className="text-[12px] font-black text-brand-navy uppercase tracking-widest">Personal Records</h3>
+                <div className="space-y-4">
+                  {[
+                    { label: "Email Address", value: staff.email, icon: "alternate_email" },
+                    { label: "Contact Primary", value: "+91 98765 43210", icon: "phone_iphone" },
+                    { label: "Staff Identifier", value: staff.id, icon: "fingerprint" },
+                    { label: "Employment Type", value: "Permanent Regular", icon: "badge" }
+                  ].map((info, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className="material-symbols-outlined text-[18px] text-muted-gray/40 mt-0.5">{info.icon}</span>
+                      <div>
+                        <p className="text-[9px] font-black text-muted-gray/40 uppercase tracking-[0.1em] mb-0.5">{info.label}</p>
+                        <p className="text-[12px] font-bold text-brand-navy break-all">{info.value}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[24px] border border-slate-100/60 p-6 space-y-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[12px] font-black text-brand-navy uppercase tracking-widest">Faculty Insights</h3>
+                  <span className="material-symbols-outlined text-primary text-[18px]">lightbulb</span>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    "Maintains 98% laboratory session attendance.",
+                    "Pioneered 'Interactive Geometry' for Grade 10.",
+                    "High peer-rating in collaborative leadership."
+                  ].map((insight, i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="size-1 rounded-full bg-primary mt-1.5 shrink-0" />
+                      <p className="text-[12px] font-medium text-brand-navy/70 leading-relaxed italic">"{insight}"</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
