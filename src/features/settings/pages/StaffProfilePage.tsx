@@ -112,7 +112,10 @@ export const StaffProfilePage = () => {
             <div className="flex-1 py-1">
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-2xl font-black text-brand-navy tracking-tight">{staff.name}</h1>
-                <span className="px-2.5 py-0.5 rounded-lg bg-brand-navy/5 text-brand-navy text-[10px] font-bold uppercase tracking-wider border border-brand-navy/10">
+                <span className={cn(
+                  "px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider",
+                  getStatusStyles(staff.status)
+                )}>
                   {staff.status}
                 </span>
               </div>
