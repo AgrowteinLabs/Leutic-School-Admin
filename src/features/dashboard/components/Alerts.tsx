@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { cn } from "../../../lib/utils";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 
 const AlertItem = ({
   type,
@@ -32,7 +34,69 @@ const AlertItem = ({
   );
 };
 
+interface DBNotification {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
+const getTimeAgo = (dateStr: string) => {
+  const diffMs = new Date().getTime() - new Date(dateStr).getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 60) return `${Math.max(1, diffMins)}m`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d`;
+};
+
+const getAlertType = (title: string, content: string): "urgent" | "notice" | "info" => {
+  const lower = `${title} ${content}`.toLowerCase();
+  if (lower.includes("drop") || lower.includes("decline") || lower.includes("missing") || lower.includes("urgent") || lower.includes("critical")) {
+    return "urgent";
+  }
+  if (lower.includes("meeting") || lower.includes("reminder") || lower.includes("info")) {
+    return "info";
+  }
+  return "notice";
+};
+
 export const AlertsSection = ({ className }: { className?: string }) => {
+  const [alerts, setAlerts] = useState<DBNotification[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      setIsLoading(true);
+      try {
+        interface GetAlertsResponse {
+          notifications: {
+            items: DBNotification[];
+          };
+        }
+        const res = await graphqlRequest<GetAlertsResponse>(`
+          query GetAlertNotifications($page: Int, $pageSize: Int) {
+            notifications(page: $page, pageSize: $pageSize) {
+              items {
+                id
+                title
+                content
+                createdAt
+              }
+            }
+          }
+        `, { page: 1, pageSize: 5 });
+        setAlerts(res.notifications?.items || []);
+      } catch (err) {
+        console.error("Failed to fetch alerts:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAlerts();
+  }, []);
+
   return (
     <div className={cn("bg-white border border-slate-100 rounded-2xl flex flex-col h-full overflow-hidden", className)}>
       <div className="p-7 pb-0 shrink-0">
@@ -58,36 +122,21 @@ export const AlertsSection = ({ className }: { className?: string }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto px-7 pb-7 no-scrollbar space-y-2">
-        <AlertItem
-          type="urgent"
-          title="Attendance Drop — Grade 10B"
-          message="22% drop in morning attendance today. Requires immediate review."
-          time="10m"
-        />
-        <AlertItem
-          type="notice"
-          title="Math Scores Declining"
-          message="Grade 12 Math scores decreased by 4% this semester."
-          time="2h"
-        />
-        <AlertItem
-          type="info"
-          title="PTA Meeting Reminder"
-          message="Annual PTA meeting scheduled for next Monday at 10:00 AM."
-          time="5h"
-        />
-        <AlertItem
-          type="notice"
-          title="3 Missing Substitute Teachers"
-          message="Upcoming substitute classes lack registered supervisors."
-          time="1d"
-        />
-        <AlertItem
-          type="info"
-          title="Campus Security Update"
-          message="Enhanced monitoring protocols implemented in the north wing starting Monday."
-          time="2d"
-        />
+        {isLoading ? (
+          <p className="text-[12px] text-[#B0AFA8] font-bold text-center py-6">Loading alerts...</p>
+        ) : alerts.length > 0 ? (
+          alerts.map((item) => (
+            <AlertItem
+              key={item.id}
+              type={getAlertType(item.title, item.content)}
+              title={item.title}
+              message={item.content}
+              time={getTimeAgo(item.createdAt)}
+            />
+          ))
+        ) : (
+          <p className="text-[12px] text-[#B0AFA8] font-bold text-center py-6">No recent alerts</p>
+        )}
       </div>
     </div>
   );

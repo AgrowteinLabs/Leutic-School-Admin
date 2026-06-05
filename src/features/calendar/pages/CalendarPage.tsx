@@ -1,70 +1,374 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+import { motion, AnimatePresence } from "framer-motion";
 
 type CalendarView = "teacher" | "class" | "parent";
 
+interface DBEvent {
+  id: string;
+  calendarId: string;
+  title: string;
+  description?: string;
+  date: string;
+  type: "HOLIDAY" | "EXAM" | "ACTIVITY" | "HALF_DAY" | "ANNUAL_DAY";
+}
+
+interface DBCalendar {
+  id: string;
+  name: string;
+  classId?: string;
+  events: DBEvent[];
+}
+
+interface TimetableEntry {
+  section: string;
+  day: string;
+  period: number;
+  subjectId: string;
+  subjectName: string;
+  teacherId: string;
+  teacherName: string;
+  spanPeriods?: number;
+}
+
 export const CalendarPage = () => {
   const [activeView, setActiveView] = useState<CalendarView>("teacher");
-  const [selectedClass, setSelectedClass] = useState("10B");
-  const [selectedTeacher, setSelectedTeacher] = useState("Dr. Sunitha V.");
+  
+  // Dynamic Month & Selection
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-indexed
+  const [selectedDayNum, setSelectedDayNum] = useState(new Date().getDate());
 
-  const teacherSchedule = [
-    {
-      time: "08:00 AM",
-      event: "Mathematics - 10B",
-      type: "class",
-      room: "Room 304",
-    },
-    {
-      time: "09:30 AM",
-      event: "Advanced Algebra - 12A",
-      type: "class",
-      room: "Room 102",
-    },
-    {
-      time: "11:00 AM",
-      event: "Department Meeting",
-      type: "meeting",
-      room: "Staff Lounge",
-    },
-    {
-      time: "01:00 PM",
-      event: "Geometry - 10A",
-      type: "class",
-      room: "Room 301",
-    },
-    {
-      time: "02:30 PM",
-      event: "Office Hours",
-      type: "other",
-      room: "Office 12",
-    },
+  // Lists & Live Data
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [classesList, setClassesList] = useState<any[]>([]);
+  const [calendars, setCalendars] = useState<DBCalendar[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedTeacher, setSelectedTeacher] = useState("");
+
+  // Event Creation State
+  const [showNewEventModal, setShowNewEventModal] = useState(false);
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventDesc, setEventDesc] = useState("");
+  const [eventDate, setEventDate] = useState("");
+  const [eventType, setEventType] = useState("ACTIVITY");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const schoolId = localStorage.getItem("school_id") || "";
+
+  // Dynamic Grid helpers
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
   ];
-
-  const administrativeEvents = [
-    {
-      date: "Oct 26",
-      title: "Mid-Term Break",
-      type: "holiday",
-      color: "bg-red-500",
-    },
-    {
-      date: "Oct 31",
-      title: "Cultural Annual Day",
-      type: "event",
-      color: "bg-primary",
-    },
-    {
-      date: "Nov 05",
-      title: "Teacher Training",
-      type: "meeting",
-      color: "bg-secondary",
-    },
-  ];
-
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const calendarDays = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  const totalDaysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const calendarDays = Array.from({ length: totalDaysInMonth }, (_, i) => i + 1);
+
+  const rawFirstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay(); // Sun=0, Mon=1...
+  const firstDayIndexOffset = (rawFirstDayOfWeek + 6) % 7; // Mon=0 ... Sun=6
+
+  // Fetch classes, teachers, and events
+  const fetchData = async () => {
+    if (!schoolId) return;
+    setIsLoading(true);
+    try {
+      // 1. Get Teachers
+      const teachersRes = await graphqlRequest<any>(`
+        query GetTeachers($schoolId: String) {
+          users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 500 }) {
+            items {
+              id
+              name
+            }
+          }
+        }
+      `, { schoolId });
+      const loadedTeachers = teachersRes.users?.items || [];
+      setTeachers(loadedTeachers);
+      if (loadedTeachers.length > 0 && !selectedTeacher) {
+        setSelectedTeacher(loadedTeachers[0].name);
+      }
+
+      // 2. Get Classes
+      const classesRes = await graphqlRequest<any>(`
+        query GetClasses($schoolId: String) {
+          classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+            items {
+              id
+              name
+              grade
+              section
+            }
+          }
+        }
+      `, { schoolId });
+      const loadedClasses = classesRes.classes?.items || [];
+      setClassesList(loadedClasses);
+      if (loadedClasses.length > 0 && !selectedClass) {
+        setSelectedClass(loadedClasses[0].name || `${loadedClasses[0].grade}${loadedClasses[0].section || ""}`);
+      }
+
+      // 3. Get Calendars & Events
+      const calendarsRes = await graphqlRequest<any>(`
+        query GetCalendars {
+          calendars(page: 1, pageSize: 100) {
+            items {
+              id
+              name
+              classId
+              events {
+                id
+                calendarId
+                title
+                description
+                date
+                type
+              }
+            }
+          }
+        }
+      `);
+      setCalendars(calendarsRes.calendars?.items || []);
+    } catch (err) {
+      console.error("Failed to fetch calendar metadata:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [schoolId]);
+
+  // Navigate Months
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(prev => prev - 1);
+    } else {
+      setCurrentMonth(prev => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(prev => prev + 1);
+    } else {
+      setCurrentMonth(prev => prev + 1);
+    }
+  };
+
+  // Flatten events
+  const allEvents = useMemo(() => {
+    const evs: DBEvent[] = [];
+    calendars.forEach(cal => {
+      if (cal.events) {
+        evs.push(...cal.events);
+      }
+    });
+    return evs;
+  }, [calendars]);
+
+  // Resolve events for a specific cell
+  const getEventsForDay = (dayNum: number) => {
+    const cellDate = new Date(currentYear, currentMonth, dayNum);
+    cellDate.setHours(0, 0, 0, 0);
+
+    return allEvents.filter(ev => {
+      const evDate = new Date(ev.date);
+      evDate.setHours(0, 0, 0, 0);
+      return evDate.getTime() === cellDate.getTime();
+    });
+  };
+
+  // Selected Date events (Institutional notices)
+  const selectedDayEvents = useMemo(() => {
+    const cellDate = new Date(currentYear, currentMonth, selectedDayNum);
+    cellDate.setHours(0, 0, 0, 0);
+
+    return allEvents.filter(ev => {
+      const evDate = new Date(ev.date);
+      evDate.setHours(0, 0, 0, 0);
+      return evDate.getTime() === cellDate.getTime();
+    });
+  }, [allEvents, currentYear, currentMonth, selectedDayNum]);
+
+  // Load Timetable Slots from local storage
+  const timetableSlotsForDay = useMemo(() => {
+    const dateObj = new Date(currentYear, currentMonth, selectedDayNum);
+    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const selectedWeekday = weekdays[dateObj.getDay()];
+
+    const cached = localStorage.getItem(`curriculum_timetable_${schoolId}`);
+    if (!cached) return [];
+
+    try {
+      const allSlots: TimetableEntry[] = JSON.parse(cached);
+      return allSlots
+        .filter(slot => {
+          if (slot.day !== selectedWeekday) return false;
+          if (activeView === "teacher") {
+            return slot.teacherName === selectedTeacher || slot.teacherId === selectedTeacher;
+          } else if (activeView === "class") {
+            return slot.section === selectedClass;
+          }
+          return false;
+        })
+        .sort((a, b) => a.period - b.period);
+    } catch (e) {
+      console.error("Failed to parse timetable entries from local storage", e);
+      return [];
+    }
+  }, [currentYear, currentMonth, selectedDayNum, activeView, selectedClass, selectedTeacher, schoolId]);
+
+  // Format period numbers into times (starts 8:30 AM, 60m duration)
+  const getPeriodTimeStr = (periodNum: number) => {
+    const startHour = 8;
+    const startMin = 30;
+    const totalMinutesStart = startHour * 60 + startMin + (periodNum - 1) * 60;
+
+    let h = Math.floor(totalMinutesStart / 60);
+    const m = totalMinutesStart % 60;
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12;
+    if (h === 0) h = 12;
+
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")} ${ampm}`;
+  };
+
+  // Handle Event Creation
+  const handleCreateEvent = async () => {
+    if (!eventTitle || !eventDate || isSaving) return;
+    setIsSaving(true);
+    try {
+      // Find institutional calendar (classId = null)
+      let defaultCal = calendars.find(c => !c.classId);
+      let calendarId = defaultCal?.id;
+
+      if (!calendarId) {
+        // Create an institutional calendar
+        const createCalRes = await graphqlRequest<any>(`
+          mutation CreateCalendar($input: CreateCalendarDto!) {
+            createCalendar(createCalendarInput: $input) {
+              id
+              name
+            }
+          }
+        `, {
+          input: {
+            schoolId,
+            name: "Institutional Calendar"
+          }
+        });
+        calendarId = createCalRes.createCalendar?.id;
+      }
+
+      if (!calendarId) throw new Error("Could not find or create a default calendar.");
+
+      // Create Event
+      await graphqlRequest(`
+        mutation CreateEvent($input: CreateEventDto!) {
+          createEvent(createEventInput: $input) {
+            id
+            title
+          }
+        }
+      `, {
+        input: {
+          calendarId,
+          title: eventTitle,
+          description: eventDesc || "Institutional Event",
+          date: new Date(eventDate).toISOString(),
+          type: eventType
+        }
+      });
+
+      // Clear & Reload
+      setEventTitle("");
+      setEventDesc("");
+      setShowNewEventModal(false);
+      fetchData();
+    } catch (e) {
+      console.error("Failed to save calendar event:", e);
+      alert("Failed to save event. Check fields and try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleOpenAddModal = () => {
+    const clickedDate = new Date(currentYear, currentMonth, selectedDayNum + 1); // fix offset
+    setEventDate(clickedDate.toISOString().split("T")[0]);
+    setShowNewEventModal(true);
+  };
+
+  // Create Quick Holiday
+  const handleMarkHoliday = async () => {
+    if (isSaving) return;
+    const holidayDateStr = new Date(currentYear, currentMonth, selectedDayNum).toLocaleDateString("en-IN", { day: "numeric", month: "long" });
+    const title = confirm(`Mark ${holidayDateStr} as an institutional holiday?`);
+    if (!title) return;
+    setIsSaving(true);
+    try {
+      let defaultCal = calendars.find(c => !c.classId);
+      let calendarId = defaultCal?.id;
+      if (!calendarId) {
+        const createCalRes = await graphqlRequest<any>(`
+          mutation CreateCalendar($input: CreateCalendarDto!) {
+            createCalendar(createCalendarInput: $input) {
+              id
+              name
+            }
+          }
+        `, {
+          input: {
+            schoolId,
+            name: "Institutional Calendar"
+          }
+        });
+        calendarId = createCalRes.createCalendar?.id;
+      }
+      if (!calendarId) throw new Error("No calendar ID.");
+
+      await graphqlRequest(`
+        mutation CreateEvent($input: CreateEventDto!) {
+          createEvent(createEventInput: $input) {
+            id
+          }
+        }
+      `, {
+        input: {
+          calendarId,
+          title: "Public Holiday",
+          description: "Marked from Calendar Quick Actions",
+          date: new Date(currentYear, currentMonth, selectedDayNum, 12, 0).toISOString(),
+          type: "HOLIDAY"
+        }
+      });
+
+      fetchData();
+    } catch (e) {
+      console.error(e);
+      alert("Failed to mark holiday.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const typeColorClasses: Record<string, string> = {
+    HOLIDAY: "bg-rose-500 text-white",
+    EXAM: "bg-amber-500 text-white",
+    ACTIVITY: "bg-[#0F2328] text-[#D9EA85]",
+    HALF_DAY: "bg-sky-600 text-white",
+    ANNUAL_DAY: "bg-indigo-600 text-white"
+  };
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white">
@@ -73,11 +377,10 @@ export const CalendarPage = () => {
         subtitle="Manage academic schedules, institutional events, and class timings."
         actions={
           <div className="flex items-center gap-3">
-            <button className="bg-white border border-slate-100 text-foreground px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-[#F7F8F4] transition-all">
-              <span className="material-symbols-outlined text-lg">print</span>
-              Export PDF
-            </button>
-            <button className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30 ">
+            <button
+              onClick={handleOpenAddModal}
+              className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30"
+            >
               <span className="material-symbols-outlined text-sm">
                 add_circle
               </span>
@@ -87,27 +390,32 @@ export const CalendarPage = () => {
         }
       />
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto no-scrollbar relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-50 flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
         {/* Perspective Switcher */}
-        <div className="px-8 pt-6 border-b border-slate-100 shrink-0 bg-white">
+        <div className="px-8 pt-6 border-b border-slate-100 shrink-0 bg-white sticky top-0 z-20">
           <div className="flex justify-between items-center">
             <div className="flex gap-8">
               {[
                 { id: "teacher", label: "Teacher Schedules", icon: "school" },
                 { id: "class", label: "Class Timetables", icon: "grid_view" },
-                {
-                  id: "parent",
-                  label: "Institutional Calendar",
-                  icon: "family_restroom",
-                },
+                { id: "parent", label: "Institutional Calendar", icon: "family_restroom" },
               ].map((view) => (
                 <button
                   key={view.id}
-                  onClick={() => setActiveView(view.id as CalendarView)}
+                  onClick={() => {
+                    setActiveView(view.id as CalendarView);
+                    setSelectedDayNum(1); // Reset selected cell to prevent out of bounds
+                  }}
                   className={cn(
                     "flex items-center gap-2 pb-4 text-[13px] font-semibold tracking-tight transition-all relative",
                     activeView === view.id
-                      ? "text-foreground"
+                      ? "text-foreground font-black"
                       : "text-[#B0AFA8] hover:text-foreground",
                   )}
                 >
@@ -116,7 +424,10 @@ export const CalendarPage = () => {
                   </span>
                   {view.label}
                   {activeView === view.id && (
-                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full" />
+                    <motion.div
+                      layoutId="activeViewIndicator"
+                      className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full"
+                    />
                   )}
                 </button>
               ))}
@@ -136,25 +447,18 @@ export const CalendarPage = () => {
                         ? setSelectedClass(e.target.value)
                         : setSelectedTeacher(e.target.value)
                     }
-                    className="appearance-none bg-[#F7F8F4] border border-slate-100/50 rounded-xl px-4 py-2 pr-10 text-[13px] font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer min-w-[140px]"
+                    className="appearance-none bg-[#F7F8F4] border border-slate-100/50 rounded-xl px-4 py-2 pr-10 text-[13px] font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer min-w-[160px]"
                   >
                     {activeView === "class" ? (
-                      ["10A", "10B", "11A", "11B", "12A", "12B"].map((c) => (
-                        <option key={c} value={c}>
-                          Grade {c}
+                      classesList.map((c) => (
+                        <option key={c.id} value={c.name}>
+                          {c.name || `${c.grade}-${c.section}`}
                         </option>
                       ))
                     ) : (
-                      [
-                        "Ms. Preetha",
-                        "Ms. Saritha N S",
-                        "Ms. Latha Viswanathan",
-                        "Dr. Stefna Dias",
-                        "Ms. Maneesha O M",
-                        "Ms. Rajini Murali",
-                      ].map((t) => (
-                        <option key={t} value={t}>
-                          {t}
+                      teachers.map((t) => (
+                        <option key={t.id} value={t.name}>
+                          {t.name}
                         </option>
                       ))
                     )}
@@ -175,31 +479,25 @@ export const CalendarPage = () => {
               <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                 <div className="flex items-center gap-4">
                   <h3 className="text-xl font-black text-foreground">
-                    October 2023
+                    {monthNames[currentMonth]} {currentYear}
                   </h3>
                   <div className="flex items-center gap-1">
-                    <button className="p-1 hover:bg-[#F7F8F4] rounded transition-colors text-[#B0AFA8]">
-                      <span className="material-symbols-outlined">
+                    <button onClick={handlePrevMonth} className="p-1.5 hover:bg-[#F7F8F4] rounded-lg transition-colors text-[#B0AFA8] flex items-center justify-center">
+                      <span className="material-symbols-outlined text-lg">
                         chevron_left
                       </span>
                     </button>
-                    <button className="p-1 hover:bg-[#F7F8F4] rounded transition-colors text-[#B0AFA8]">
-                      <span className="material-symbols-outlined">
+                    <button onClick={handleNextMonth} className="p-1.5 hover:bg-[#F7F8F4] rounded-lg transition-colors text-[#B0AFA8] flex items-center justify-center">
+                      <span className="material-symbols-outlined text-lg">
                         chevron_right
                       </span>
                     </button>
                   </div>
                 </div>
                 <div className="flex bg-[#F7F8F4] p-1 rounded-xl">
-                  <button className="px-3 py-1 text-xs font-medium bg-white text-foreground rounded-md shadow-sm shadow-slate-100/30">
-                    Month
-                  </button>
-                  <button className="px-3 py-1 text-xs font-medium text-[#B0AFA8]">
-                    Week
-                  </button>
-                  <button className="px-3 py-1 text-xs font-medium text-[#B0AFA8]">
-                    Day
-                  </button>
+                  <span className="px-4 py-1 text-xs font-bold bg-white text-foreground rounded-lg shadow-sm border border-slate-100/20">
+                    Month View
+                  </span>
                 </div>
               </div>
 
@@ -207,7 +505,7 @@ export const CalendarPage = () => {
                 {days.map((day) => (
                   <div
                     key={day}
-                    className="py-3 text-center text-xs font-medium capitalize text-[#B0AFA8]"
+                    className="py-3 text-center text-xs font-bold capitalize text-[#B0AFA8]"
                   >
                     {day}
                   </div>
@@ -215,50 +513,68 @@ export const CalendarPage = () => {
               </div>
 
               <div className="grid grid-cols-7">
-                {Array.from({ length: 4 }).map((_, i) => (
+                {Array.from({ length: firstDayIndexOffset }).map((_, i) => (
                   <div
                     key={`empty-${i}`}
-                    className="h-20 border-r border-b border-slate-50 bg-[#F7F8F4]"
+                    className="h-24 border-r border-b border-slate-50 bg-[#F7F8F4]/30"
                   />
                 ))}
-                {calendarDays.map((day) => (
-                  <div
-                    key={day}
-                    className={cn(
-                      "h-20 border-r border-b border-slate-50 p-1.5 transition-colors hover:bg-[#F7F8F4] overflow-hidden",
-                      day === 24 && "bg-primary/5",
-                    )}
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <span
-                        className={cn(
-                          "size-6 flex items-center justify-center text-xs font-medium rounded-full",
-                          day === 24
-                            ? "btn-primary"
-                            : "text-[#444441]",
+                {calendarDays.map((day) => {
+                  const dayEvents = getEventsForDay(day);
+                  const isSelected = selectedDayNum === day;
+                  const isToday = new Date().getDate() === day && new Date().getMonth() === currentMonth && new Date().getFullYear() === currentYear;
+
+                  return (
+                    <div
+                      key={day}
+                      onClick={() => setSelectedDayNum(day)}
+                      className={cn(
+                        "h-24 border-r border-b border-slate-50 p-2 transition-all hover:bg-[#F7F8F4]/40 cursor-pointer overflow-hidden flex flex-col justify-between select-none relative",
+                        isSelected && "bg-primary/5 border-primary/20",
+                      )}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span
+                          className={cn(
+                            "size-6 flex items-center justify-center text-xs font-bold rounded-full transition-all",
+                            isToday ? "bg-[#0F2328] text-white" : isSelected ? "bg-primary text-foreground font-black" : "text-[#444441]",
+                          )}
+                        >
+                          {day}
+                        </span>
+                        {dayEvents.length > 0 && (
+                          <div className="flex gap-0.5">
+                            {Array.from(new Set(dayEvents.map(e => e.type))).slice(0, 3).map((t, idx) => (
+                              <div key={idx} className={cn("size-1.5 rounded-full", t === "HOLIDAY" ? "bg-rose-500" : t === "EXAM" ? "bg-amber-500" : "bg-primary")} />
+                            ))}
+                          </div>
                         )}
-                      >
-                        {day}
-                      </span>
-                      {day === 31 && (
-                        <span className="size-1.5 bg-primary rounded-full" />
-                      )}
-                      {day === 26 && (
-                        <span className="size-1.5 bg-red-500 rounded-full" />
-                      )}
-                    </div>
-                    {day === 24 && (
-                      <div className="space-y-1">
-                        <div className="bg-secondary text-white text-[8px] font-bold px-1.5 py-1 rounded truncate leading-none">
-                          Math Exam P1
-                        </div>
-                        <div className="btn-primary text-[8px] font-bold px-1.5 py-1 rounded truncate leading-none">
-                          Staff Review
-                        </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      
+                      <div className="flex-1 flex flex-col justify-end overflow-hidden mt-1 gap-1">
+                        {dayEvents.slice(0, 2).map((ev, idx) => (
+                          <div
+                            key={idx}
+                            className={cn(
+                              "text-[8px] font-black px-1.5 py-0.5 rounded truncate leading-none tracking-tight border",
+                              ev.type === "HOLIDAY" ? "bg-rose-50 text-rose-700 border-rose-100" : 
+                              ev.type === "EXAM" ? "bg-amber-50 text-amber-700 border-amber-100" : 
+                              "bg-[#0F2328]/5 text-[#0F2328] border-[#0F2328]/10"
+                            )}
+                            title={ev.title}
+                          >
+                            {ev.title}
+                          </div>
+                        ))}
+                        {dayEvents.length > 2 && (
+                          <span className="text-[8px] font-bold text-slate-400 text-right pr-0.5 leading-none">
+                            +{dayEvents.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -266,103 +582,204 @@ export const CalendarPage = () => {
           {/* Contextual Sidebar */}
           <div className="lg:col-span-4 space-y-6">
             {(activeView === "teacher" || activeView === "class") && (
-              <div className="bg-secondary rounded-2xl p-6 text-white shadow-2xl">
-                <h3 className="text-[16px] font-semibold mb-4 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">
+              <div className="bg-[#0F2328] rounded-[28px] p-6 text-white shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5">
+                  <span className="material-symbols-outlined text-9xl">schedule</span>
+                </div>
+                <h3 className="text-[15px] font-bold mb-6 flex items-center gap-2 relative z-10 text-[#D9EA85]">
+                  <span className="material-symbols-outlined">
                     timer
                   </span>
                   Schedule for {activeView === "class" ? selectedClass : selectedTeacher}
                 </h3>
-                <div className="space-y-4">
-                  {teacherSchedule.map((item, i) => (
-                    <div key={i} className="flex gap-4 group">
-                      <div className="flex flex-col items-center">
-                        <div className="size-2 bg-primary rounded-full ring-4 ring-primary/20" />
-                        {i !== teacherSchedule.length - 1 && (
-                          <div className="w-px h-full bg-white/10 my-1" />
-                        )}
+                <div className="space-y-5 relative z-10">
+                  {timetableSlotsForDay.length > 0 ? (
+                    timetableSlotsForDay.map((item, i) => (
+                      <div key={i} className="flex gap-4 group">
+                        <div className="flex flex-col items-center shrink-0">
+                          <div className="size-2 bg-[#D9EA85] rounded-full ring-4 ring-[#D9EA85]/20" />
+                          {i !== timetableSlotsForDay.length - 1 && (
+                            <div className="w-px h-full bg-white/10 my-1.5" />
+                          )}
+                        </div>
+                        <div className="pb-3 min-w-0">
+                          <p className="text-[11px] font-bold text-[#D9EA85] leading-none mb-1">
+                            {getPeriodTimeStr(item.period)}
+                          </p>
+                          <p className="text-[13px] font-bold truncate pr-2">
+                            {item.subjectName}
+                          </p>
+                          <p className="text-[10px] text-white/50 font-bold mt-1 uppercase tracking-wider">
+                            {activeView === "class" ? `Teacher: ${item.teacherName}` : `Class: ${item.section}`}
+                          </p>
+                        </div>
                       </div>
-                      <div className="pb-4">
-                        <p className="text-xs font-medium text-primary capitalize leading-none mb-1">
-                          {item.time}
-                        </p>
-                        <p className="text-[13px] font-semibold group-hover:text-primary transition-colors">
-                          {item.event}
-                        </p>
-                        <p className="text-[10px] text-white/40 font-medium">
-                          {item.room} • {item.type.toUpperCase()}
-                        </p>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-white/40">
+                      <span className="material-symbols-outlined text-3xl opacity-50 mb-2">event_busy</span>
+                      <p className="text-xs font-bold">No classes scheduled today</p>
                     </div>
-                  ))}
+                  )}
                 </div>
-                <button className="w-full mt-4 bg-white/5 border border-white/10 py-3 rounded-2xl text-xs font-medium capitalize tracking-[0.2em] hover:bg-white/10 transition-colors">
-                  Adjust Weekly Slots
-                </button>
               </div>
             )}
 
             {activeView === "parent" && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm shadow-slate-100/30">
-                <h3 className="text-foreground text-lg font-black capitalize mb-6 flex items-center gap-2">
+                <h3 className="text-foreground text-base font-black capitalize mb-6 flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#B91C1C]">
                     campaign
                   </span>
-                  Key Notices
+                  Events on Selected Date
                 </h3>
                 <div className="space-y-4">
-                  {administrativeEvents.map((event, i) => (
-                    <div
-                      key={i}
-                      className="p-4 rounded-2xl bg-[#F7F8F4] border border-slate-50 hover:border-slate-100 transition-all"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span
-                          className={cn(
-                            "px-3 py-1 rounded-full text-xs font-medium text-white capitalize",
-                            event.color,
-                          )}
-                        >
-                          {event.type}
-                        </span>
-                        <span className="text-[10px] font-bold text-[#B0AFA8]">
-                          {event.date}
-                        </span>
+                  {selectedDayEvents.length > 0 ? (
+                    selectedDayEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className="p-4 rounded-2xl bg-[#F7F8F4] border border-slate-50 hover:border-slate-100 transition-all flex flex-col gap-2"
+                      >
+                        <div className="flex justify-between items-start">
+                          <span
+                            className={cn(
+                              "px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tight",
+                              typeColorClasses[event.type] || "bg-slate-500 text-white"
+                            )}
+                          >
+                            {event.type}
+                          </span>
+                          <span className="text-[10px] font-bold text-[#B0AFA8]">
+                            {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                          </span>
+                        </div>
+                        <p className="text-[13px] font-black text-brand-navy">
+                          {event.title}
+                        </p>
+                        {event.description && (
+                          <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                            {event.description}
+                          </p>
+                        )}
                       </div>
-                      <p className="text-[13px] font-semibold text-foreground">
-                        {event.title}
-                      </p>
+                    ))
+                  ) : (
+                    <div className="py-12 text-center text-[#B0AFA8]/50">
+                      <span className="material-symbols-outlined text-3xl mb-2">calendar_today</span>
+                      <p className="text-xs font-bold">No institutional events on this date</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}
 
-            <div className="bg-primary rounded-2xl p-6 text-foreground shadow-lg">
-              <h3 className="text-lg font-black italic tracking-tighter mb-2 underline decoration-white/50 underline-offset-4">
-                Quick CRUD
+            <div className="bg-[#D9EA85] rounded-[24px] p-6 text-foreground shadow-sm">
+              <h3 className="text-[16px] font-black tracking-tight mb-2">
+                Quick Actions
               </h3>
-              <p className="text-[11px] font-medium mb-4 opacity-70">
-                Instantly swap a substitute or cancel a class slot.
+              <p className="text-[11px] font-bold mb-4 opacity-75 leading-relaxed">
+                Add quick schedule exceptions or declare holidays.
               </p>
               <div className="space-y-3">
-                <button className="w-full bg-secondary text-white py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-lg">
-                  <span className="material-symbols-outlined text-sm">
-                    swap_horiz
-                  </span>
-                  Assign Substitute
-                </button>
-                <button className="w-full bg-white text-foreground py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 shadow-sm shadow-slate-100/30 border border-slate-100">
+                <button
+                  onClick={handleMarkHoliday}
+                  className="w-full bg-[#0F2328] text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#0F2328]/10 hover:bg-[#0F2328]/95 transition-all"
+                >
                   <span className="material-symbols-outlined text-sm">
                     event_busy
                   </span>
-                  Mark Holiday
+                  Declare Holiday
                 </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Event Creation Modal */}
+      <AnimatePresence>
+        {showNewEventModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowNewEventModal(false)} />
+            <div className="relative bg-white p-8 rounded-[32px] max-w-md w-full border border-slate-100 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-brand-navy tracking-tight">Create Institutional Event</h3>
+                <button onClick={() => setShowNewEventModal(false)} className="size-8 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400">
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Event Title</label>
+                  <input
+                    type="text"
+                    value={eventTitle}
+                    onChange={(e) => setEventTitle(e.target.value)}
+                    placeholder="e.g. Annual Sports Meet"
+                    className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-2.5 text-[13px] font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-foreground"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Description</label>
+                  <textarea
+                    value={eventDesc}
+                    onChange={(e) => setEventDesc(e.target.value)}
+                    placeholder="Details about the event..."
+                    rows={3}
+                    className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-2.5 text-[13px] font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-foreground resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Date</label>
+                    <input
+                      type="date"
+                      value={eventDate}
+                      onChange={(e) => setEventDate(e.target.value)}
+                      className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-2.5 text-[13px] font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Event Type</label>
+                    <select
+                      value={eventType}
+                      onChange={(e) => setEventType(e.target.value)}
+                      className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-2.5 text-[13px] font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-foreground cursor-pointer"
+                    >
+                      <option value="ACTIVITY">Activity/Event</option>
+                      <option value="HOLIDAY">Holiday</option>
+                      <option value="EXAM">Exam</option>
+                      <option value="HALF_DAY">Half Day</option>
+                      <option value="ANNUAL_DAY">Annual Day</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowNewEventModal(false)}
+                  className="flex-1 h-12 rounded-2xl text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateEvent}
+                  disabled={!eventTitle || !eventDate || isSaving}
+                  className="flex-1 h-12 bg-primary text-foreground text-[14px] font-bold rounded-2xl hover:bg-primary/95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  {isSaving ? (
+                    <div className="w-5 h-5 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
+                  ) : "Create Event"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -1,16 +1,24 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-
-// PDS Components
 import { TopBar } from "../../../components/Header";
 import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
+const CREATE_EXAM = `
+  mutation CreateExam($input: CreateExamDto!) {
+    createExam(createExamInput: $input) {
+      id
+      name
+    }
+  }
+`;
 
 export const AddExaminationPage = () => {
     const navigate = useNavigate();
     const [showSuccess, setShowSuccess] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Form State
     const [examTitle, setExamTitle] = useState("");
@@ -24,9 +32,48 @@ export const AddExaminationPage = () => {
     const [publishDate, setPublishDate] = useState<Date | null>(null);
 
     const ALL_GRADES = ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"];
-    const EXAM_TYPES = ["Periodic Test (PT)", "Unit Test", "Quarterly", "Half Yearly", "Annual Exam", "Board Exam", "Mock Test", "Practical / Internal", "Continuous Evaluation"];
+    const EXAM_TYPES = ["Periodic Test (PT)", "Unit Test", "Quarterly", "Half Yearly", "Annual Exam", "Mock Test", "Practical / Internal", "Continuous Evaluation"];
     const TERMS = ["Term 1", "Term 2", "Annual", "Quarterly"];
     const ACADEMIC_YEARS = ["Academic Year 2025 - 2026", "Academic Year 2024 - 2025", "Academic Year 2023 - 2024"];
+
+    const handleCreateExam = async () => {
+        if (!examTitle) {
+            alert("Please provide an examination title.");
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const schoolId = localStorage.getItem("school_id") || "";
+            const startStr = startDate ? startDate.toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
+            const endStr = endDate ? endDate.toISOString().split("T")[0] : startStr;
+
+            // Generate scheduled subjects based on standard subjects list or target grades
+            const datesInput = [
+                {
+                    date: startStr,
+                    subject: "General Assessment",
+                    syllabus: `Exam conducted from ${startStr} to ${endStr}`,
+                    time: "09:00 AM"
+                }
+            ];
+
+            await graphqlRequest<any>(CREATE_EXAM, {
+                input: {
+                    schoolId,
+                    name: examTitle,
+                    type: examType || "Quarterly",
+                    dates: datesInput
+                }
+            });
+            setShowSuccess(true);
+        } catch (err) {
+            console.error("Error creating exam:", err);
+            alert("Failed to create exam: " + (err as Error).message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB] font-sans">
@@ -35,8 +82,8 @@ export const AddExaminationPage = () => {
                 subtitle="Setup new exams and tests for the academic year"
                 actions={
                     <div className="flex items-center gap-3">
-                        <PDSButton variant="text" onClick={() => navigate("/academics/exams")}>Cancel</PDSButton>
-                        <PDSButton variant="primary" icon="check_circle" onClick={() => setShowSuccess(true)}>Create Exam</PDSButton>
+                        <PDSButton variant="text" onClick={() => navigate("/academics/exams")} disabled={isLoading}>Cancel</PDSButton>
+                        <PDSButton variant="primary" icon="check_circle" onClick={handleCreateExam} loading={isLoading}>Create Exam</PDSButton>
                     </div>
                 }
             />
@@ -120,8 +167,8 @@ export const AddExaminationPage = () => {
 
                         {/* Footer Action Bar */}
                         <div className="bg-slate-50/50 p-6 flex justify-end items-center gap-4 border-t border-slate-100 rounded-b-[32px]">
-                             <PDSButton variant="text" onClick={() => navigate("/academics/exams")}>Cancel</PDSButton>
-                             <PDSButton variant="primary" className="px-10 h-10" onClick={() => setShowSuccess(true)}>Create Exam</PDSButton>
+                             <PDSButton variant="text" onClick={() => navigate("/academics/exams")} disabled={isLoading}>Cancel</PDSButton>
+                             <PDSButton variant="primary" className="px-10 h-10" onClick={handleCreateExam} loading={isLoading}>Create Exam</PDSButton>
                         </div>
                     </div>
                 </div>

@@ -1,21 +1,89 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "../../../lib/utils";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 
 const subjects = [
   "Mathematics", "Physics", "Chemistry", "English", 
   "Biology", "History", "Geography", "Computer Science"
 ];
 
-const mockStudents = [
-  { id: "STU-001", name: "Aavya Sharma", rollNo: "12", marks: { Mathematics: "88", Physics: "", Chemistry: "76", English: "", Biology: "85", History: "", Geography: "70", "Computer Science": "92" } },
-  { id: "STU-002", name: "Ishan Verma", rollNo: "15", marks: { Mathematics: "85", Physics: "90", Chemistry: "", English: "82", Biology: "", History: "88", Geography: "", "Computer Science": "85" } },
-  { id: "STU-003", name: "Kavya Nair", rollNo: "18", marks: { Mathematics: "", Physics: "", Chemistry: "", English: "", Biology: "", History: "", Geography: "", "Computer Science": "" } },
-  { id: "STU-004", name: "Rohan Das", rollNo: "22", marks: { Mathematics: "92", Physics: "88", Chemistry: "94", English: "90", Biology: "95", History: "92", Geography: "88", "Computer Science": "98" } },
-  { id: "STU-005", name: "Sanya Gupta", rollNo: "25", marks: { Mathematics: "", Physics: "78", Chemistry: "", English: "", Biology: "82", History: "", Geography: "75", "Computer Science": "" } },
-];
+const GET_EXAMS = `
+  query GetExams {
+    exams(page: 1, pageSize: 100) {
+      items {
+        id
+        name
+        type
+        dates {
+          id
+          subject
+          syllabus
+          date
+          time
+        }
+      }
+    }
+  }
+`;
+
+const GET_CLASSES = `
+  query GetClasses($schoolId: String) {
+    classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+      items {
+        id
+        name
+        section
+      }
+    }
+  }
+`;
+
+const GET_STUDENTS = `
+  query GetClassStudents($classId: String, $schoolId: String) {
+    users(filter: { role: "STUDENT", classId: $classId, schoolId: $schoolId, page: 1, pageSize: 200 }) {
+      items {
+        id
+        name
+        admissionNumber
+        classId
+      }
+    }
+  }
+`;
+
+const GET_MARKS = `
+  query GetMarks {
+    marks(page: 1, pageSize: 1000) {
+      items {
+        id
+        studentId
+        examId
+        subject
+        marksObtained
+        totalMarks
+      }
+    }
+  }
+`;
+
+const CREATE_MARK = `
+  mutation CreateMark($input: CreateMarkDto!) {
+    createMark(createMarkInput: $input) {
+      id
+    }
+  }
+`;
+
+const UPDATE_MARK = `
+  mutation UpdateMark($id: ID!, $input: UpdateMarkDto!) {
+    updateMark(id: $id, updateMarkInput: $input) {
+      id
+    }
+  }
+`;
 
 interface MarksEntryPageProps {
   isHubChild?: boolean;
@@ -24,13 +92,140 @@ interface MarksEntryPageProps {
 }
 
 export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete }: MarksEntryPageProps) => {
-  const [examCategory, setExamCategory] = useState("Mid-Term Examination");
-  const [grade, setGrade] = useState("Grade 10");
-  const [section, setSection] = useState("Section A");
+  const [classes, setClasses] = useState<any[]>([]);
+  const [selectedClass, setSelectedClass] = useState<string>("");
+  
+  const [exams, setExams] = useState<any[]>([]);
+  const [selectedExam, setSelectedExam] = useState<string>("");
+
   const [subject, setSubject] = useState("All Subjects");
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [studentMarks, setStudentMarks] = useState(mockStudents);
+  const [studentMarks, setStudentMarks] = useState<any[]>([]);
+  const [originalStudentMarks, setOriginalStudentMarks] = useState<any[]>([]);
+
+  // Load classes and exams on mount
+  useEffect(() => {
+    const initPage = async () => {
+      setIsLoading(true);
+      try {
+        const schoolId = localStorage.getItem("school_id");
+        const [classesRes, examsRes] = await Promise.all([
+          graphqlRequest<any>(GET_CLASSES, { schoolId }),
+          graphqlRequest<any>(GET_EXAMS)
+        ]);
+
+        const classesList = classesRes.classes?.items || [];
+        setClasses(classesList);
+        if (classesList.length > 0) {
+          const firstClass = classesList[0];
+          setSelectedClass(firstClass.section ? `${firstClass.name}-${firstClass.section}` : firstClass.name);
+        }
+
+        const examsList = examsRes.exams?.items || [];
+        setExams(examsList);
+        if (examsList.length > 0) {
+          setSelectedExam(examsList[0].name);
+        }
+      } catch (err) {
+        console.error("Error loading exams and classes:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    initPage();
+  }, []);
+
+  const classOptions = useMemo(() => {
+    return classes.map(c => c.section ? `${c.name}-${c.section}` : c.name);
+  }, [classes]);
+
+  const activeClass = useMemo(() => {
+    return classes.find(c => {
+      const label = c.section ? `${c.name}-${c.section}` : c.name;
+      return label === selectedClass;
+    });
+  }, [classes, selectedClass]);
+
+  const examOptions = useMemo(() => {
+    return exams.map(e => e.name);
+  }, [exams]);
+
+  const activeExam = useMemo(() => {
+    return exams.find(e => e.name === selectedExam);
+  }, [exams, selectedExam]);
+
+  const activeSubjects = useMemo(() => {
+    if (activeExam?.dates && activeExam.dates.length > 0) {
+      const subs = activeExam.dates.map((d: any) => d.subject);
+      return Array.from(new Set(subs)) as string[];
+    }
+    return subjects;
+  }, [activeExam]);
+
+  const subjectOptions = useMemo(() => {
+    return ["All Subjects", ...activeSubjects];
+  }, [activeSubjects]);
+
+  const fetchRegistry = async () => {
+    if (!activeClass?.id || !activeExam?.id) return;
+    setIsLoading(true);
+    try {
+      const schoolId = localStorage.getItem("school_id");
+      const [studentsRes, marksRes] = await Promise.all([
+        graphqlRequest<any>(GET_STUDENTS, { classId: activeClass.id, schoolId }),
+        graphqlRequest<any>(GET_MARKS)
+      ]);
+
+      const studentsList = studentsRes.users?.items || [];
+      const marksList = marksRes.marks?.items || [];
+
+      const marksMap: Record<string, Record<string, { id: string; marksObtained: number }>> = {};
+      marksList.forEach((m: any) => {
+        if (m.examId === activeExam.id) {
+          if (!marksMap[m.studentId]) {
+            marksMap[m.studentId] = {};
+          }
+          marksMap[m.studentId][m.subject] = {
+            id: m.id,
+            marksObtained: m.marksObtained
+          };
+        }
+      });
+
+      const mappedStudents = studentsList.map((student: any) => {
+        const studentMarksObj: Record<string, string> = {};
+        const studentMarkIdsObj: Record<string, string> = {};
+
+        activeSubjects.forEach((sub: string) => {
+          const recorded = marksMap[student.id]?.[sub];
+          studentMarksObj[sub] = recorded ? String(recorded.marksObtained) : "";
+          studentMarkIdsObj[sub] = recorded ? recorded.id : "";
+        });
+
+        return {
+          id: student.id,
+          name: student.name,
+          rollNo: student.admissionNumber || student.id.slice(0, 8),
+          marks: studentMarksObj,
+          markIds: studentMarkIdsObj
+        };
+      });
+
+      setStudentMarks(mappedStudents);
+      setOriginalStudentMarks(JSON.parse(JSON.stringify(mappedStudents)));
+    } catch (err) {
+      console.error("Error fetching registry:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRegistry();
+  }, [activeClass?.id, activeExam?.id, activeExam?.dates]);
 
   const handleMarkChange = (id: string, sub: string, value: string) => {
     setStudentMarks((prev) =>
@@ -38,9 +233,67 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
     );
   };
 
+  const handleSaveMarks = async () => {
+    if (!activeExam?.id) return;
+    setIsSaving(true);
+    try {
+      const mutations = [];
+      for (const student of studentMarks) {
+        for (const sub of activeSubjects) {
+          const valStr = student.marks[sub];
+          const originalValStr = originalStudentMarks.find(s => s.id === student.id)?.marks[sub] || "";
+          
+          if (valStr !== originalValStr) {
+            const markId = student.markIds[sub];
+            
+            if (markId) {
+              const marksVal = valStr === "" ? 0 : parseFloat(valStr);
+              mutations.push(
+                graphqlRequest(UPDATE_MARK, {
+                  id: markId,
+                  input: {
+                    marks: marksVal,
+                    totalMarks: 100
+                  }
+                })
+              );
+            } else if (valStr !== "") {
+              const marksVal = parseFloat(valStr);
+              mutations.push(
+                graphqlRequest(CREATE_MARK, {
+                  input: {
+                    studentId: student.id,
+                    examId: activeExam.id,
+                    subject: sub,
+                    marks: marksVal,
+                    totalMarks: 100
+                  }
+                })
+              );
+            }
+          }
+        }
+      }
+
+      if (mutations.length > 0) {
+        await Promise.all(mutations);
+      }
+      setIsSuccessModalOpen(true);
+      fetchRegistry();
+    } catch (err) {
+      console.error("Error saving marks:", err);
+      alert("Failed to save some marks. Please check your inputs.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setStudentMarks(JSON.parse(JSON.stringify(originalStudentMarks)));
+  };
+
   useEffect(() => {
     if (triggerBulkUpload && triggerBulkUpload > 0) {
-      // Handle bulk upload trigger from parent TopBar
       setTimeout(() => {
         onUploadComplete?.();
         setIsSuccessModalOpen(true);
@@ -57,132 +310,147 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
           
           {/* Refinement Engine - Zero Box Aesthetic */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
               <AppDropdown
                 icon="quiz"
-                value={examCategory}
-                onChange={setExamCategory}
-                options={["Mid-Term Examination", "Annual Examination", "Quarterly Assessment"]}
+                value={selectedExam}
+                onChange={setSelectedExam}
+                options={examOptions}
                 placeholder="Select Exam"
               />
               <AppDropdown
                 icon="school"
-                value={grade}
-                onChange={setGrade}
-                options={["Grade 10", "Grade 11", "Grade 12"]}
-                placeholder="Select Grade"
-              />
-              <AppDropdown
-                icon="layers"
-                value={section}
-                onChange={setSection}
-                options={["Section A", "Section B", "Section C"]}
-                placeholder="Select Section"
+                value={selectedClass}
+                onChange={setSelectedClass}
+                options={classOptions}
+                placeholder="Select Class"
+                searchable={true}
               />
               <AppDropdown
                 icon="menu_book"
                 value={subject}
                 onChange={setSubject}
-                options={["All Subjects", ...subjects]}
+                options={subjectOptions}
                 placeholder="Select Subject"
               />
             </div>
-            <PDSButton variant="primary" className="h-10 px-8 rounded-xl font-bold shrink-0">
+            <PDSButton 
+              variant="primary" 
+              className="h-10 px-8 rounded-xl font-bold shrink-0"
+              onClick={fetchRegistry}
+              loading={isLoading}
+            >
               Fetch Registry
             </PDSButton>
           </div>
 
           {/* Marks Entry Registry */}
-          <div className="bg-white rounded-[24px] border border-slate-100 overflow-hidden flex flex-col min-h-0">
+          <div className="bg-white rounded-[24px] border border-slate-100 overflow-hidden flex flex-col min-h-0 relative">
+            {isLoading && (
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
             <div className="overflow-x-auto no-scrollbar">
-              <table className={cn(
-                "text-left border-separate border-spacing-0",
-                isAllSubjects ? "min-w-[1600px]" : "w-full"
-              )}>
-                <thead className="relative z-40">
-                  <tr>
-                    <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest w-[100px] bg-[#F7F8F4] sticky left-0 top-0 z-50 border-b border-slate-100">Roll No</th>
-                    <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest min-w-[280px] bg-[#F7F8F4] sticky left-[100px] top-0 z-50 border-b border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">Full Name & ID</th>
-                    
-                    {isAllSubjects ? (
-                      subjects.map(sub => (
-                        <th key={sub} className="px-4 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest text-center w-[160px] bg-[#F7F8F4] sticky top-0 z-40 border-b border-slate-100">{sub}</th>
-                      ))
-                    ) : (
-                      <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest w-[200px] text-center bg-[#F7F8F4] sticky top-0 z-40 border-b border-slate-100">{subject} (Max 100)</th>
-                    )}
-                    
-                    <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest text-right bg-[#F7F8F4] sticky top-0 z-40 border-b border-slate-100">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="relative z-0">
-                  {studentMarks.map((student) => {
-                    const marksMap = student.marks as Record<string, string>;
-                    const isRecorded = isAllSubjects 
-                      ? Object.values(marksMap).some(v => v !== "")
-                      : marksMap[subject] !== "";
+              {studentMarks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                  <span className="material-symbols-outlined text-[48px] mb-3 text-slate-300">
+                    sentiment_dissatisfied
+                  </span>
+                  <p className="text-[14px] font-semibold">No students found in this class</p>
+                  <p className="text-[12px]">Please verify class enrollment under the students tab.</p>
+                </div>
+              ) : (
+                <table className={cn(
+                  "text-left border-separate border-spacing-0",
+                  isAllSubjects ? "min-w-[1600px]" : "w-full"
+                )}>
+                  <thead className="relative z-40">
+                    <tr>
+                      <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest w-[100px] bg-[#F7F8F4] sticky left-0 top-0 z-50 border-b border-slate-100">Roll No</th>
+                      <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest min-w-[280px] bg-[#F7F8F4] sticky left-[100px] top-0 z-50 border-b border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">Full Name & ID</th>
+                      
+                      {isAllSubjects ? (
+                        activeSubjects.map(sub => (
+                          <th key={sub} className="px-4 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest text-center w-[160px] bg-[#F7F8F4] sticky top-0 z-40 border-b border-slate-100">{sub}</th>
+                        ))
+                      ) : (
+                        <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest w-[200px] text-center bg-[#F7F8F4] sticky top-0 z-40 border-b border-slate-100">{subject} (Max 100)</th>
+                      )}
+                      
+                      <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest text-right bg-[#F7F8F4] sticky top-0 z-40 border-b border-slate-100">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="relative z-0">
+                    {studentMarks.map((student) => {
+                      const marksMap = student.marks as Record<string, string>;
+                      const isRecorded = isAllSubjects 
+                        ? Object.values(marksMap).some(v => v !== "")
+                        : marksMap[subject] !== "";
 
-                    return (
-                      <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-6 py-4 bg-white sticky left-0 z-30 group-hover:bg-slate-50 transition-colors border-b border-slate-50">
-                          <span className="text-[13px] font-bold text-brand-navy">{student.rollNo}</span>
-                        </td>
-                        <td className="px-6 py-4 bg-white sticky left-[100px] z-30 group-hover:bg-slate-50 transition-colors shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-b border-slate-50">
-                          <div className="flex flex-col">
-                             <span className="text-[13px] font-bold text-brand-navy">{student.name}</span>
-                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{student.id}</span>
-                          </div>
-                        </td>
+                      return (
+                        <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
+                          <td className="px-6 py-4 bg-white sticky left-0 z-30 group-hover:bg-slate-50 transition-colors border-b border-slate-50">
+                            <span className="text-[13px] font-bold text-brand-navy">{student.rollNo}</span>
+                          </td>
+                          <td className="px-6 py-4 bg-white sticky left-[100px] z-30 group-hover:bg-slate-50 transition-colors shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-b border-slate-50">
+                            <div className="flex flex-col">
+                               <span className="text-[13px] font-bold text-brand-navy">{student.name}</span>
+                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{student.id.slice(0, 8)}</span>
+                            </div>
+                          </td>
 
-                        {isAllSubjects ? (
-                          subjects.map(sub => (
-                            <td key={sub} className="px-4 py-4">
+                          {isAllSubjects ? (
+                            activeSubjects.map(sub => (
+                              <td key={sub} className="px-4 py-4">
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={marksMap[sub] || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                                    if (val === '' || (parseFloat(val) <= 100)) {
+                                      handleMarkChange(student.id, sub, val);
+                                    }
+                                  }}
+                                  placeholder="--"
+                                  className="w-full h-11 text-center bg-white border border-slate-100 rounded-xl text-[14px] font-bold text-brand-navy focus:border-primary transition-all outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                              </td>
+                            ))
+                          ) : (
+                            <td className="px-6 py-4">
                               <input
                                 type="text"
                                 inputMode="numeric"
-                                value={marksMap[sub] || ""}
+                                value={marksMap[subject] || ""}
                                 onChange={(e) => {
-                                  const val = e.target.value.replace(/[^0-9]/g, '');
-                                  if (val === '' || (parseInt(val) <= 100)) {
-                                    handleMarkChange(student.id, sub, val);
+                                  const val = e.target.value.replace(/[^0-9.]/g, '');
+                                  if (val === '' || (parseFloat(val) <= 100)) {
+                                    handleMarkChange(student.id, subject, val);
                                   }
                                 }}
                                 placeholder="--"
-                                className="w-full h-11 text-center bg-white border border-slate-100 rounded-xl text-[14px] font-bold text-brand-navy focus:border-primary transition-all outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="w-full h-11 text-center bg-[#F7F8F4] border border-transparent rounded-xl text-[14px] font-bold text-brand-navy focus:border-primary focus:bg-white transition-all outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                             </td>
-                          ))
-                        ) : (
-                          <td className="px-6 py-4">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={marksMap[subject] || ""}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/[^0-9]/g, '');
-                                if (val === '' || (parseInt(val) <= 100)) {
-                                  handleMarkChange(student.id, subject, val);
-                                }
-                              }}
-                              placeholder="--"
-                              className="w-full h-11 text-center bg-[#F7F8F4] border border-transparent rounded-xl text-[14px] font-bold text-brand-navy focus:border-primary focus:bg-white transition-all outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                          </td>
-                        )}
+                          )}
 
-                        <td className="px-6 py-4 text-right">
-                          <span className={cn(
-                            "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap",
-                            isRecorded ? "bg-[#EAF2D7] text-[#2E7D32] border-[#D9EA85]" : "bg-slate-50 text-slate-400 border-slate-200"
-                          )}>
-                            {isRecorded ? "Recorded" : "Pending"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          <td className="px-6 py-4 text-right">
+                            <span className={cn(
+                              "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap",
+                              isRecorded ? "bg-[#EAF2D7] text-[#2E7D32] border-[#D9EA85]" : "bg-slate-50 text-slate-400 border-slate-200"
+                            )}>
+                              {isRecorded ? "Recorded" : "Pending"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
@@ -190,15 +458,30 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
 
       {/* Sticky Action Footer */}
       <div className="shrink-0 bg-white/80 backdrop-blur-md border-t border-slate-100 p-6 flex justify-end gap-4 relative z-20">
-          <PDSButton variant="outline" className="px-10">Discard Changes</PDSButton>
-          <PDSButton variant="primary" className="px-10 shadow-lg shadow-primary/10" onClick={() => setIsSuccessModalOpen(true)}>Save Final Marks</PDSButton>
+          <PDSButton 
+            variant="outline" 
+            className="px-10"
+            onClick={handleDiscardChanges}
+            disabled={isLoading || isSaving}
+          >
+            Discard Changes
+          </PDSButton>
+          <PDSButton 
+            variant="primary" 
+            className="px-10 shadow-lg shadow-primary/10" 
+            onClick={handleSaveMarks}
+            loading={isSaving}
+            disabled={isLoading || isSaving || studentMarks.length === 0}
+          >
+            Save Final Marks
+          </PDSButton>
       </div>
 
       <PDSSuccessModal
         show={isSuccessModalOpen}
         onClose={() => setIsSuccessModalOpen(false)}
         title="Marks Recorded Successfully"
-        description={`Student performance for ${subject} — ${examCategory} has been updated in the master registry.`}
+        description={`Student performance for ${subject} — ${selectedExam} has been updated in the master registry.`}
         buttonText="Back to Academics"
         onAction={() => setIsSuccessModalOpen(false)}
       />

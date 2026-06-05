@@ -1,6 +1,8 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { useEffect } from "react";
+import { LoginPage } from "./features/auth/pages/LoginPage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardPage } from "./features/dashboard/pages/DashboardPage";
 import { CommunityPage } from "./features/community/pages/CommunityPage";
 import { StudentProfilePage } from "./features/students/pages/StudentProfilePage";
@@ -34,6 +36,19 @@ import { QuizViewPage } from "./features/quizzes/pages/QuizViewPage";
 import { AddProgramPage } from "./features/programs/pages/AddProgramPage";
 import { SettingsPage } from "./features/settings/pages/SettingsPage";
 
+const DashboardLayout = () => {
+  return (
+    <ProtectedRoute>
+      <div className="bg-white text-foreground font-sans h-screen flex overflow-hidden w-full">
+        <Sidebar />
+        <main className="flex-1 flex overflow-hidden">
+          <Outlet />
+        </main>
+      </div>
+    </ProtectedRoute>
+  );
+};
+
 function App() {
   useEffect(() => {
     const savedFontSize = localStorage.getItem('pds-font-size') || 'theme-small';
@@ -43,48 +58,47 @@ function App() {
   }, []);
 
   return (
-    <div className="bg-white text-foreground font-sans h-screen flex overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 flex overflow-hidden">
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/classes" element={<ClassesPage />} />
-          <Route path="/classes/create" element={<CreateClassPage />} />
-          <Route path="/classes/:id" element={<ClassDetailsPage />} />
-          <Route path="/attendance/:tab?" element={<AttendancePage />} />
-          <Route path="/students/:id" element={<StudentProfilePage />} />
-          
-          {/* Specific Academic Routes (Higher Priority) */}
-          <Route path="/academics/exams/add" element={<AddExaminationPage />} />
-          <Route path="/academics/quizzes/add" element={<CreateQuizPage />} />
-          <Route path="/academics/quizzes/:id/:tab?" element={<QuizViewPage />} />
-          <Route path="/academics/programs/add" element={<AddProgramPage />} />
-          <Route path="/academics/exams/:id" element={<ExamDetailsPage />} />
-          
-          {/* Hub and General Routes */}
-          <Route path="/academics/:tab?/:sub?" element={<AcademicHubPage />} />
-          <Route path="/directory/:tab?" element={<DirectoryPage />} />
-          <Route path="/curriculum/:tab?" element={<CurriculumPage />} />
-          <Route path="/directory/students/add" element={<EnrollStudentPage />} />
-          <Route path="/directory/staff/add" element={<AddStaffPage />} />
-          <Route path="/directory/drivers/add" element={<AddDriverPage />} />
-          <Route path="/transportation/add-vehicle" element={<AddVehiclePage />} />
-          <Route path="/communications/announcements/add" element={<AddNoticePage />} />
-          <Route path="/communications/:tab?" element={<CommunicationsHubPage />} />
-          <Route path="/transportation" element={<TransportationHubPage />} />
-          <Route path="/finance" element={<FeesPage />} />
-          <Route path="/staff/:id" element={<StaffProfilePage />} />
-          <Route path="/drivers/:id" element={<DriverProfilePage />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/community/:tab?" element={<CommunityPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/know-your-student" element={<KnowYourStudentPage />} />
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      
+      <Route element={<DashboardLayout />}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/classes" element={<ClassesPage />} />
+        <Route path="/classes/create" element={<CreateClassPage />} />
+        <Route path="/classes/:id" element={<ClassDetailsPage />} />
+        <Route path="/attendance/:tab?" element={<AttendancePage />} />
+        <Route path="/students/:id" element={<StudentProfilePage />} />
+        
+        {/* Specific Academic Routes (Higher Priority) */}
+        <Route path="/academics/exams/add" element={<AddExaminationPage />} />
+        <Route path="/academics/quizzes/add" element={<CreateQuizPage />} />
+        <Route path="/academics/quizzes/:id/:tab?" element={<QuizViewPage />} />
+        <Route path="/academics/programs/add" element={<AddProgramPage />} />
+        <Route path="/academics/exams/:id" element={<ExamDetailsPage />} />
+        
+        {/* Hub and General Routes */}
+        <Route path="/academics/:tab?/:sub?" element={<AcademicHubPage />} />
+        <Route path="/directory/:tab?" element={<DirectoryPage />} />
+        <Route path="/curriculum/:tab?" element={<CurriculumPage />} />
+        <Route path="/directory/students/add" element={<EnrollStudentPage />} />
+        <Route path="/directory/staff/add" element={<AddStaffPage />} />
+        <Route path="/directory/drivers/add" element={<AddDriverPage />} />
+        <Route path="/transportation/add-vehicle" element={<AddVehiclePage />} />
+        <Route path="/communications/announcements/add" element={<AddNoticePage />} />
+        <Route path="/communications/:tab?" element={<CommunicationsHubPage />} />
+        <Route path="/transportation" element={<TransportationHubPage />} />
+        <Route path="/finance" element={<FeesPage />} />
+        <Route path="/staff/:id" element={<StaffProfilePage />} />
+        <Route path="/drivers/:id" element={<DriverProfilePage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/community/:tab?" element={<CommunityPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/know-your-student" element={<KnowYourStudentPage />} />
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
   );
 }
 

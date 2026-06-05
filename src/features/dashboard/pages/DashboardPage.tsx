@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { StatCard } from "../../../components/StatCard";
 import { ParticipationOverview } from "../components/ParticipationOverview";
@@ -7,6 +7,7 @@ import { AlertsSection } from "../components/Alerts";
 import { TopBar } from "../../../components/Header";
 import { StudentDrawer } from "../../students/components/StudentDrawer";
 import { cn } from "../../../lib/utils";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 import {
     Users,
     UserPlus,
@@ -23,29 +24,235 @@ import {
     // HelpCircle
 } from "lucide-react";
 
+interface DashboardStudent {
+    name: string;
+    id: string;
+    grade: string;
+    section: string;
+    auraScore: number;
+    attendanceRate: number;
+    gpa: number;
+    img: string;
+    status: string;
+    participation: number;
+    phone: string;
+}
+
+interface DashboardClass {
+    id: string;
+    name: string;
+    section?: string;
+}
+
 export const DashboardPage = () => {
     const navigate = useNavigate();
-    const [selectedStudent, setSelectedStudent] = useState<any>(null);
+    const [selectedStudent, setSelectedStudent] = useState<DashboardStudent | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
-    const mockStudents = [
-        {
-            name: "Aavya S.",
-            id: "OA-2024-001",
-            grade: "12th Grade",
-            section: "A",
-            participation: 92,
-            auraScore: 98.4,
-            attendanceRate: 98,
-            gpa: 3.9,
-            status: "Active",
-            img: "/Avatar/Female Avatar Age17.png",
-            phone: "+91 98472-11002"
-        },
-        {
+    const [studentsCount, setStudentsCount] = useState<number | null>(null);
+    const [teachersCount, setTeachersCount] = useState<number | null>(null);
+    const [classesList, setClassesList] = useState<DashboardClass[]>([]);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            const schoolId = localStorage.getItem("school_id") || undefined;
+            const query = `
+                query GetDashboardData($schoolId: String) {
+                    students: users(filter: { role: "STUDENT", schoolId: $schoolId, page: 1, pageSize: 1 }) {
+                        total
+                    }
+                    teachers: users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 1 }) {
+                        total
+                    }
+                    classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+                        items {
+                            id
+                            name
+                            section
+                        }
+                    }
+                }
+            `;
+            try {
+                interface DashboardDataResponse {
+                    students: { total: number };
+                    teachers: { total: number };
+                    classes: { items: DashboardClass[] };
+                }
+                const res = await graphqlRequest<DashboardDataResponse>(query, { schoolId });
+                setStudentsCount(res.students?.total ?? 0);
+                setTeachersCount(res.teachers?.total ?? 0);
+                setClassesList(res.classes?.items ?? []);
+            } catch (err) {
+                console.error("Error loading dashboard counts:", err);
+            }
+        };
+        fetchDashboardData();
+    }, []);
+
+    const handleSearch = async (term: string) => {
+        if (!term.trim()) return;
+        const schoolId = localStorage.getItem("school_id") || undefined;
+        const query = `
+            query SearchDashboardStudent($schoolId: String, $name: String!) {
+                users(filter: { role: "STUDENT", schoolId: $schoolId, name: $name, page: 1, pageSize: 5 }) {
+                    items {
+                        id
+                        name
+                        role
+                        email
+                        mobileNo
+                        admissionNumber
+                        classId
+                        isActive
+                    }
+                }
+            }
+        `;
+        try {
+            interface SearchStudentResponse {
+                users: {
+                    items: Array<{
+                        id: string;
+                        name: string;
+                        role: string;
+                        email?: string;
+                        mobileNo?: string;
+                        admissionNumber?: string;
+                        classId?: string;
+                        isActive: boolean;
+                    }>;
+                };
+            }
+            const res = await graphqlRequest<SearchStudentResponse>(query, { schoolId, name: term });
+            const foundUser = res.users?.items?.[0];
+            if (foundUser) {
+                const classMap = new Map(classesList.map(c => [c.id, c]));
+                const matchedClass = foundUser.classId ? classMap.get(foundUser.classId) : null;
+                
+                // Fetch actual aura points
+                let auraScore = 80;
+                try {
+                    interface AuraResponse {
+                        studentAuraPoints: {
+                            totalPoints: number;
+                        };
+                    }
+                    const auraRes = await graphqlRequest<AuraResponse>(`
+                        query GetStudentAura($studentId: String!) {
+                            studentAuraPoints(studentId: $studentId) {
+                                totalPoints
+                            }
+                        }
+                    `, { studentId: foundUser.id });
+                    auraScore = auraRes.studentAuraPoints?.totalPoints ?? 80;
+                } catch (e: unknown) {
+                    console.error("Failed to fetch aura points in search:", e);
+                }
+
+                setSelectedStudent({
+                    name: foundUser.name,
+                    id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
+                    grade: matchedClass ? matchedClass.name : "Unassigned",
+                    section: matchedClass ? (matchedClass.section || "") : "",
+                    participation: 75,
+                    auraScore,
+                    attendanceRate: 92,
+                    gpa: 3.5,
+                    status: foundUser.isActive ? "Active" : "Inactive",
+                    img: "/Avatar/Male Avatar Age16.png",
+                    phone: foundUser.mobileNo || "+91 99999-99999"
+                });
+                setIsDrawerOpen(true);
+            } else {
+                alert("No student found with that name.");
+            }
+        } catch (err) {
+            console.error("Error searching student:", err);
+        }
+    };
+
+    const handleClassMonitorClick = async (gradeCode: string) => {
+        const matchedClass = classesList.find(c => c.name.toLowerCase().includes(gradeCode.toLowerCase()) || (c.section && `${c.name}-${c.section}`.toLowerCase().includes(gradeCode.toLowerCase())));
+        if (matchedClass) {
+            const query = `
+                query GetClassStudents($classId: String!) {
+                    users(filter: { role: "STUDENT", classId: $classId, page: 1, pageSize: 1 }) {
+                        items {
+                            id
+                            name
+                            role
+                            email
+                            mobileNo
+                            admissionNumber
+                            classId
+                            isActive
+                        }
+                    }
+                }
+            `;
+            try {
+                interface GetClassStudentsResponse {
+                    users: {
+                        items: Array<{
+                            id: string;
+                            name: string;
+                            role: string;
+                            email?: string;
+                            mobileNo?: string;
+                            admissionNumber?: string;
+                            classId?: string;
+                            isActive: boolean;
+                        }>;
+                    };
+                }
+                const res = await graphqlRequest<GetClassStudentsResponse>(query, { classId: matchedClass.id });
+                const foundUser = res.users?.items?.[0];
+                if (foundUser) {
+                    let auraScore = 68;
+                    try {
+                        interface AuraResponse {
+                            studentAuraPoints: {
+                                totalPoints: number;
+                            };
+                        }
+                        const auraRes = await graphqlRequest<AuraResponse>(`
+                            query GetStudentAura($studentId: String!) {
+                                studentAuraPoints(studentId: $studentId) {
+                                    totalPoints
+                                }
+                            }
+                        `, { studentId: foundUser.id });
+                        auraScore = auraRes.studentAuraPoints?.totalPoints ?? 68;
+                    } catch (e: unknown) {}
+                    
+                    setSelectedStudent({
+                        name: foundUser.name,
+                        id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
+                        grade: matchedClass.name,
+                        section: matchedClass.section || "",
+                        participation: 62,
+                        auraScore,
+                        attendanceRate: 72,
+                        gpa: 2.8,
+                        status: "At Risk",
+                        img: "/Avatar/Male Avatar Age16.png",
+                        phone: foundUser.mobileNo || "+91 99999-99999"
+                    });
+                    setIsDrawerOpen(true);
+                    return;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // Fallback profile
+        setSelectedStudent({
             name: "Manoj P.",
             id: "OA-2024-112",
-            grade: "11th Grade",
+            grade: gradeCode,
             section: "C",
             participation: 62,
             auraScore: 68.2,
@@ -54,17 +261,7 @@ export const DashboardPage = () => {
             status: "At Risk",
             img: "/Avatar/Male Avatar Age16.png",
             phone: "+91 91234-56789"
-        }
-    ];
-
-    const handleSearch = () => {
-        // Mocking a search result for "Aavya" or "Manoj"
-        setSelectedStudent(mockStudents[0]);
-        setIsDrawerOpen(true);
-    };
-
-    const handleClassMonitorClick = () => {
-        setSelectedStudent(mockStudents[1]); // Mocking the "Critical" student
+        });
         setIsDrawerOpen(true);
     };
 
@@ -82,14 +279,14 @@ export const DashboardPage = () => {
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <StatCard
                             label="Total Students"
-                            value="1,240"
+                            value={studentsCount !== null ? studentsCount.toLocaleString() : "..."}
                             trend="+2.1%"
                             trendType="up"
                             icon="group"
                         />
                         <StatCard
                             label="Teachers"
-                            value="86"
+                            value={teachersCount !== null ? teachersCount.toLocaleString() : "..."}
                             trend="Full Staff"
                             trendType="stable"
                             icon="person"
@@ -131,10 +328,12 @@ export const DashboardPage = () => {
                                                     type="text"
                                                     placeholder="Know Your Student — Search Name, ID or Roll Number..."
                                                     className="flex-1 bg-transparent border-none outline-none text-[14px] font-medium text-foreground placeholder-[#B0AFA8] placeholder:font-medium py-2.5 px-1"
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
                                                 />
                                                 <button
-                                                    onClick={handleSearch}
+                                                    onClick={() => handleSearch(searchQuery)}
                                                     className="btn-primary h-10 px-6 rounded-xl text-[12px] font-bold whitespace-nowrap shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all duration-300"
                                                 >
                                                     Get Profile
@@ -278,7 +477,7 @@ export const DashboardPage = () => {
                                 { grade: "9-D", teacher: "Ms. Dhanya S.", issue: "Grade Decline", detail: "Average Drop", score: 76, status: "warning" },
                                 { grade: "10-A", teacher: "Dr. Lakshmi K.", issue: "Absenteeism", detail: "Unusual spikes", score: 68, status: "warning" },
                             ].map((item, i) => (
-                                <div key={i} className="group relative" onClick={() => handleClassMonitorClick()}>
+                                <div key={i} className="group relative" onClick={() => handleClassMonitorClick(item.grade)}>
                                     <div className="flex items-center gap-4 p-5 rounded-[18px] bg-white border border-slate-100 hover:border-primary/20 transition-all duration-500 cursor-pointer h-full">
                                         {/* Circular Gauge */}
                                         <div className="relative size-12 shrink-0">

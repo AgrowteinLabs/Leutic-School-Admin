@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
@@ -10,50 +10,207 @@ import { StatCard } from "../../../components/StatCard";
 import { TablePagination } from "../../../components/TablePagination";
 import { cn } from "../../../lib/utils";
 import { PDSButton } from "../../../components/pds/PDSButton";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
+const GET_CLASSES = `
+  query GetClasses($schoolId: String) {
+    classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+      items {
+        id
+        name
+        section
+      }
+    }
+  }
+`;
+
+const GET_STUDENTS = `
+  query GetClassStudents($classId: String, $schoolId: String) {
+    users(filter: { role: "STUDENT", classId: $classId, schoolId: $schoolId, page: 1, pageSize: 100 }) {
+      items {
+        id
+        name
+        admissionNumber
+        classId
+      }
+    }
+  }
+`;
+
+const GET_STAFF = `
+  query GetStaff($schoolId: String) {
+    users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 100 }) {
+      items {
+        id
+        name
+        role
+        classId
+      }
+    }
+  }
+`;
+
+const GET_ATTENDANCES = `
+  query GetAttendances($classId: String, $dateFrom: String, $dateTo: String) {
+    attendances(filter: { classId: $classId, dateFrom: $dateFrom, dateTo: $dateTo }, page: 1, pageSize: 500) {
+      items {
+        id
+        studentId
+        teacherId
+        status
+      }
+    }
+  }
+`;
+
+const CREATE_ATTENDANCE = `
+  mutation CreateAttendance($input: CreateAttendanceDto!) {
+    createAttendance(createAttendanceInput: $input) {
+      id
+    }
+  }
+`;
+
+const UPDATE_ATTENDANCE = `
+  mutation UpdateAttendance($id: ID!, $input: UpdateAttendanceDto!) {
+    updateAttendance(id: $id, updateAttendanceInput: $input) {
+      id
+    }
+  }
+`;
 
 export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const { tab } = useParams();
   const navigate = useNavigate();
   const activeTab = (tab as "students" | "staff") || "students";
 
-  const [selectedClass, setSelectedClass] = useState<string>("Grade 10-A");
+  const [classes, setClasses] = useState<any[]>([]);
+  const [selectedClass, setSelectedClass] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [attendanceDate, setAttendanceDate] = useState<Date>(new Date());
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // --- Student Data ---
-  const allStudents = [
-    { id: "STU-001", rollNo: "01", name: "Aavya Sharma", status: "Present", img: "/Avatar/Female Avatar Age15.png", class: "Grade 10-A" },
-    { id: "STU-002", rollNo: "02", name: "Isha Kapoor", status: "Absent", img: "/Avatar/Female Avatar Age16.png", class: "Grade 10-A" },
-    { id: "STU-003", rollNo: "03", name: "Kabir Mehra", status: "Present", img: "/Avatar/Male Avatar Age15.png", class: "Grade 10-A" },
-    { id: "STU-004", rollNo: "04", name: "Sneha Reddy", status: "Present", img: "/Avatar/Female Avatar Age14.png", class: "Grade 10-A" },
-    { id: "STU-005", rollNo: "05", name: "Ishaan Khatri", status: "Present", img: "/Avatar/Male Avatar Age16.png", class: "Grade 10-A" },
-    { id: "STU-006", rollNo: "06", name: "Meera Varma", status: "Present", img: "/Avatar/Female Avatar Age15.png", class: "Grade 10-A" },
-    { id: "STU-007", rollNo: "07", name: "Sanya Gupta", status: "Present", img: "/Avatar/Female Avatar Age14.png", class: "Grade 10-A" },
-    { id: "STU-008", rollNo: "08", name: "Arjun Talwar", status: "Present", img: "/Avatar/Male Avatar Age17.png", class: "Grade 10-A" },
-    { id: "STU-009", rollNo: "09", name: "Diya Malhotra", status: "Present", img: "/Avatar/Female Avatar Age15.png", class: "Grade 10-A" },
-    { id: "STU-010", rollNo: "10", name: "Rohan Prasad", status: "Present", img: "/Avatar/Male Avatar Age14.png", class: "Grade 10-A" },
-    { id: "STU-011", rollNo: "11", name: "Ananya Iyer", status: "Present", img: "/Avatar/Female Avatar Age16.png", class: "Grade 10-A" },
-    { id: "STU-012", rollNo: "12", name: "Vikram Seth", status: "Absent", img: "/Avatar/Male Avatar Age15.png", class: "Grade 10-A" },
-    { id: "STU-013", rollNo: "13", name: "Pooja Hegde", status: "Present", img: "/Avatar/Female Avatar Age15.png", class: "Grade 10-A" },
-    { id: "STU-014", rollNo: "14", name: "Rahul Bose", status: "Present", img: "/Avatar/Male Avatar Age16.png", class: "Grade 10-A" },
-    { id: "STU-015", rollNo: "15", name: "Zoya Akhtar", status: "Present", img: "/Avatar/Female Avatar Age14.png", class: "Grade 10-A" },
-  ];
+  const [students, setStudents] = useState<any[]>([]);
+  const [staff, setStaff] = useState<any[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
 
-  const [students, setStudents] = useState(allStudents);
+  // Fetch classes on mount
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const schoolId = localStorage.getItem("school_id");
+        const res = await graphqlRequest<any>(GET_CLASSES, { schoolId });
+        const items = res.classes?.items || [];
+        setClasses(items);
+        if (items.length > 0) {
+          const firstClass = items[0];
+          const label = firstClass.section ? `${firstClass.name}-${firstClass.section}` : firstClass.name;
+          setSelectedClass(label);
+        }
+      } catch (err) {
+        console.error("Error fetching classes:", err);
+      }
+    };
+    fetchClasses();
+  }, []);
 
-  // --- Staff Data ---
-  const allStaff = [
-    { id: "TCH-001", name: "Dr. Lakshmi K.", status: "On leave", role: "Math Lead", substitution: "Ms. Saritha", reason: "Medical", img: "/Avatar/Female Avatar Age35.png" },
-    { id: "TCH-002", name: "Mr. Marcus R.", status: "Present", role: "Science Head", img: "/Avatar/Male Avatar Age38.png" },
-    { id: "TCH-003", name: "Ms. Elena R.", status: "Present", role: "English Dept", img: "/Avatar/Female Avatar Age32.png" },
-    { id: "TCH-004", name: "Prof. Alan T.", status: "Half day", role: "Tech Lead", img: "/Avatar/Male Avatar Age42.png" },
-    { id: "TCH-005", name: "Dr. Sarah J.", status: "Late", role: "Arts Head", img: "/Avatar/Female Avatar Age34.png" },
-  ];
+  const activeClass = useMemo(() => {
+    return classes.find(c => {
+      const label = c.section ? `${c.name}-${c.section}` : c.name;
+      return label === selectedClass;
+    });
+  }, [classes, selectedClass]);
 
-  const [staff, setStaff] = useState(allStaff);
+  const classOptions = useMemo(() => {
+    return classes.map(c => c.section ? `${c.name}-${c.section}` : c.name);
+  }, [classes]);
+
+  // Fetch students/staff and existing attendances when class or date or tab changes
+  useEffect(() => {
+    const fetchAttendanceData = async () => {
+      setIsLoading(true);
+      try {
+        const schoolId = localStorage.getItem("school_id");
+        const dateStr = attendanceDate.toISOString().split("T")[0];
+
+        if (activeTab === "students") {
+          if (!activeClass?.id) return;
+
+          const [studentsData, attendanceData] = await Promise.all([
+            graphqlRequest<any>(GET_STUDENTS, { classId: activeClass.id, schoolId }),
+            graphqlRequest<any>(GET_ATTENDANCES, { classId: activeClass.id, dateFrom: dateStr, dateTo: dateStr })
+          ]);
+
+          const studentsList = studentsData.users?.items || [];
+          const attendanceList = attendanceData.attendances?.items || [];
+          setAttendanceRecords(attendanceList);
+
+          const attMap = new Map(attendanceList.map((a: any) => [a.studentId, a]));
+
+          const mapped = studentsList.map((u: any) => {
+            const att = attMap.get(u.id) as any;
+            return {
+              id: u.id,
+              rollNo: u.admissionNumber || u.id.slice(0, 8),
+              name: u.name,
+              status: att ? (att.status === "PRESENT" ? "Present" : "Absent") : "Present",
+              img: `/Avatar/Male Avatar Age15.png`,
+              class: selectedClass,
+              attendanceRecordId: att?.id || null,
+              remarks: ""
+            };
+          });
+          setStudents(mapped);
+        } else {
+          // Staff tab
+          const [staffData, attendanceData] = await Promise.all([
+            graphqlRequest<any>(GET_STAFF, { schoolId }),
+            graphqlRequest<any>(GET_ATTENDANCES, { dateFrom: dateStr, dateTo: dateStr })
+          ]);
+
+          const staffList = staffData.users?.items || [];
+          const attendanceList = attendanceData.attendances?.items || [];
+          setAttendanceRecords(attendanceList);
+
+          const attMap = new Map(attendanceList.map((a: any) => [a.teacherId, a]));
+
+          const mapped = staffList.map((u: any) => {
+            const att = attMap.get(u.id) as any;
+            let status = "Present";
+            if (att) {
+              if (att.status === "ABSENT") {
+                status = "Absent";
+              } else if (att.status === "HALF_DAY") {
+                status = "Half day";
+              } else if (att.status === "PRESENT") {
+                status = "Present";
+              }
+            }
+            return {
+              id: u.id,
+              name: u.name,
+              status,
+              role: u.role || "Staff",
+              img: `/Avatar/Female Avatar Age35.png`,
+              attendanceRecordId: att?.id || null,
+              remarks: "",
+              teacherClassId: u.classId
+            };
+          });
+          setStaff(mapped);
+        }
+      } catch (err) {
+        console.error("Error loading attendance data:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAttendanceData();
+  }, [activeClass?.id, attendanceDate, activeTab, selectedClass]);
 
   const updateStudentStatus = (id: string, status: string) => {
     setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, status } : s)));
@@ -67,20 +224,79 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
     setStudents((prev) => prev.map((s) => ({ ...s, status })));
   };
 
-  const handleSubmit = () => {
-    setShowSuccess(true);
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    try {
+      const schoolId = localStorage.getItem("school_id") || "";
+      const dateStr = attendanceDate.toISOString().split("T")[0];
+      const listToSave = activeTab === "students" ? students : staff;
+
+      const mutations = listToSave.map(item => {
+        let status = "PRESENT";
+        let remarks = item.remarks || "";
+
+        if (activeTab === "students") {
+          status = item.status === "Present" ? "PRESENT" : "ABSENT";
+        } else {
+          if (item.status === "Present") {
+            status = "PRESENT";
+          } else if (item.status === "Late") {
+            status = "PRESENT";
+            remarks = "Late";
+          } else if (item.status === "Half day") {
+            status = "HALF_DAY";
+          } else if (item.status === "On leave") {
+            status = "ABSENT";
+            remarks = "Leave";
+          } else if (item.status === "Absent") {
+            status = "ABSENT";
+          }
+        }
+
+        if (item.attendanceRecordId) {
+          const input: any = { status, remarks };
+          return graphqlRequest(UPDATE_ATTENDANCE, { id: item.attendanceRecordId, input });
+        } else {
+          const classId = activeTab === "students"
+            ? activeClass?.id
+            : (item.teacherClassId || activeClass?.id || (classes.length > 0 ? classes[0].id : "default_class"));
+
+          const input: any = {
+            schoolId,
+            classId,
+            date: dateStr,
+            status,
+            remarks,
+            idempotencyKey: Math.random().toString(36).substr(2, 9)
+          };
+          if (activeTab === "students") {
+            input.studentId = item.id;
+          } else {
+            input.teacherId = item.id;
+          }
+          return graphqlRequest(CREATE_ATTENDANCE, { input });
+        }
+      });
+
+      await Promise.all(mutations);
+      setShowSuccess(true);
+    } catch (err) {
+      console.error("Failed to save attendance:", err);
+      alert("Error saving attendance records. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filteredStudents = useMemo(() => {
     if (!selectedClass) return [];
     return students.filter((student) => {
-      const matchesClass = student.class === selectedClass;
       const matchesSearch =
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.rollNo.includes(searchTerm);
-      return matchesClass && matchesSearch;
+        (student.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (student.rollNo || "").includes(searchTerm);
+      return matchesSearch;
     });
-  }, [selectedClass, searchTerm, students]);
+  }, [searchTerm, students, selectedClass]);
 
   const filteredStaff = useMemo(() => {
     return staff.filter((s) =>
@@ -114,9 +330,8 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
     return filteredStudents.every(s => s.status === "Absent");
   }, [filteredStudents]);
 
-  // Mock info for "already taken"
-  const isAttendanceAlreadyTaken = activeTab === "students" && selectedClass === "Grade 10-A";
-  const attendanceTakenBy = "Ms. Saritha";
+  const isAttendanceAlreadyTaken = attendanceRecords.length > 0;
+  const attendanceTakenBy = attendanceRecords.length > 0 ? "a Teacher" : "";
 
   return (
     <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#FDFCFB] relative", !isHubChild && "h-screen")}>
@@ -219,7 +434,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                       placeholder="Select class"
                       value={selectedClass}
                       onChange={(val) => { setSelectedClass(val); setCurrentPage(1); }}
-                      options={["Grade 10-A", "Grade 10-B", "Grade 11-A"]}
+                      options={classOptions}
                       height="h-10"
                       searchable={true}
                     />
@@ -277,10 +492,18 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                   <button
                     onClick={handleSubmit}
-                    className="btn-primary h-10 px-6 rounded-xl flex items-center gap-2 group/save shadow-sm shadow-slate-100/30 transition-all active:scale-95 whitespace-nowrap"
+                    disabled={isLoading}
+                    className={cn(
+                      "btn-primary h-10 px-6 rounded-xl flex items-center gap-2 group/save shadow-sm shadow-slate-100/30 transition-all active:scale-95 whitespace-nowrap",
+                      isLoading && "opacity-50 pointer-events-none"
+                    )}
                   >
-                    <span className="material-symbols-outlined text-[18px] group-hover/save:rotate-12 transition-transform">save</span>
-                    <span className="text-[13px] font-bold">Save Attendance</span>
+                    <span className={cn("material-symbols-outlined text-[18px] transition-transform", isLoading ? "animate-spin" : "group-hover/save:rotate-12")}>
+                      {isLoading ? "sync" : "save"}
+                    </span>
+                    <span className="text-[13px] font-bold">
+                      {isLoading ? "Saving..." : "Save Attendance"}
+                    </span>
                   </button>
                 </div>
               </div>

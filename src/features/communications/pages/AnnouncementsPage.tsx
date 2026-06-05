@@ -1,56 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { StatCard } from "../../../components/StatCard";
 import { motion } from "framer-motion";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
+interface AnnouncementRecord {
+  id: string;
+  title: string;
+  content: string;
+  targetRoles: string[];
+  schoolId?: string;
+  createdAt: string;
+}
 
 export const AnnouncementsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [announcements, setAnnouncements] = useState<AnnouncementRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const announcements = [
-    {
-      id: "ANN-2024-001",
-      title: "Quarterly Parent-Teacher Meeting",
-      content: "The quarterly PTM is scheduled for next Friday. All parents are requested to attend to discuss terminal results.",
-      visibility: "Parents",
-      target: "All Grades",
-      date: "Oct 24, 2024",
-      status: "Published",
-      engagement: "84%",
-    },
-    {
-      id: "ANN-2024-002",
-      title: "New Science Lab Safety Protocols",
-      content: "Important updates to lab safety procedures. Mandatory review for all science faculty and students.",
-      visibility: "Teachers, Students",
-      target: "Science Dept",
-      date: "Oct 22, 2024",
-      status: "Published",
-      engagement: "92%",
-    },
-    {
-      id: "ANN-2024-003",
-      title: "Annual Sports Day Volunteer Signup",
-      content: "Students interested in volunteering for the Annual Sports Day can now register via the portal.",
-      visibility: "Students",
-      target: "High School",
-      date: "Oct 20, 2024",
-      status: "Draft",
-      engagement: "-",
-    },
-    {
-      id: "ANN-2024-004",
-      title: "Inter-School Debate Championship",
-      content: "Call for participants for the upcoming regional debate championship. Auditions on Monday.",
-      visibility: "Students",
-      target: "Grades 9-12",
-      date: "Oct 18, 2024",
-      status: "Scheduled",
-      engagement: "-",
-    },
-  ];
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      setIsLoading(true);
+      try {
+        interface GetAnnouncementsResponse {
+          announcements: AnnouncementRecord[];
+        }
+        const res = await graphqlRequest<GetAnnouncementsResponse>(`
+          query GetAnnouncementsList {
+            announcements {
+              id
+              title
+              content
+              targetRoles
+              schoolId
+              createdAt
+            }
+          }
+        `);
+        setAnnouncements(res.announcements || []);
+      } catch (err) {
+        console.error("Failed to fetch announcements:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAnnouncements();
+  }, []);
+
+  const filteredAnnouncements = announcements.filter((ann) => {
+    const matchesSearch =
+      ann.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ann.content.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (activeFilter === "published") {
+      return matchesSearch;
+    }
+    if (activeFilter === "drafts" || activeFilter === "scheduled") {
+      return false;
+    }
+    return matchesSearch;
+  });
 
   return (
     <div className={cn("flex-1 flex flex-col overflow-hidden bg-white", !isHubChild && "h-screen")}>
@@ -95,7 +108,7 @@ export const AnnouncementsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               />
               <StatCard
                 label="Active drafts"
-                value="04"
+                value="0"
                 icon="edit_document"
                 tooltip="Notices currently being composed or pending approval before institutional release."
               />
@@ -111,6 +124,8 @@ export const AnnouncementsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                     </span>
                     <input
                       type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder="Search notices..."
                       className="input-base w-full pl-11 pr-4 placeholder:text-[#B0AFA8] placeholder:font-medium transition-all"
                     />
@@ -145,71 +160,61 @@ export const AnnouncementsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                       <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Notice Detail</th>
                       <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Audience Scope</th>
                       <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Status</th>
-                      <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Performance</th>
                       <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {announcements.map((ann) => (
-                      <tr key={ann.id} className="hover:bg-[#F7F8F4]/50 transition-colors group">
-                        <td className="px-6 py-4 min-w-[320px]">
-                          <div className="space-y-1">
-                            <p className="text-[13px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{ann.title}</p>
-                            <p className="text-[11px] text-slate-500 line-clamp-1 font-medium">{ann.content}</p>
-                            <div className="flex items-center gap-3 pt-0.5">
-                              <span className="text-[10px] font-bold text-slate-400 tracking-tight">{ann.id}</span>
-                              <div className="size-1 rounded-full bg-slate-200" />
-                              <span className="text-[10px] font-bold text-slate-400 tracking-tight">{ann.date}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-2">
-                            {ann.visibility.split(", ").map((v, i) => (
-                              <span key={i} className="px-2.5 py-1 rounded-full bg-slate-50 text-[10px] font-bold text-slate-500 border border-slate-100 transition-all group-hover:bg-white group-hover:border-slate-200">
-                                {v}
-                              </span>
-                            ))}
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/5 text-[10px] font-bold text-primary border border-primary/10">
-                              <span className="size-1 rounded-full bg-primary" />
-                              {ann.target}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className={cn(
-                              "size-1.5 rounded-full",
-                              ann.status === "Published" ? "bg-green-500" : ann.status === "Scheduled" ? "bg-blue-400" : "bg-slate-300"
-                            )} />
-                            <span className="text-[12px] font-bold text-slate-600">{ann.status}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {ann.engagement !== "-" ? (
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold text-slate-600">{ann.engagement} read</span>
-                              </div>
-                              <div className="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: ann.engagement }}
-                                  className="h-full bg-primary"
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-[11px] font-bold text-slate-400 italic">Pending launch</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button className="size-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary/30 transition-all shadow-sm hover:shadow-md">
-                            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                          </button>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-10 text-center text-[12px] text-[#B0AFA8] font-bold">
+                          Loading announcements...
                         </td>
                       </tr>
-                    ))}
+                    ) : filteredAnnouncements.length > 0 ? (
+                      filteredAnnouncements.map((ann) => (
+                        <tr key={ann.id} className="hover:bg-[#F7F8F4]/50 transition-colors group">
+                          <td className="px-6 py-4 min-w-[320px]">
+                            <div className="space-y-1">
+                              <p className="text-[13px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{ann.title}</p>
+                              <p className="text-[11px] text-slate-500 line-clamp-1 font-medium">{ann.content}</p>
+                              <div className="flex items-center gap-3 pt-0.5">
+                                <span className="text-[10px] font-bold text-slate-400 tracking-tight">{ann.id.slice(0, 8)}</span>
+                                <div className="size-1 rounded-full bg-slate-200" />
+                                <span className="text-[10px] font-bold text-slate-400 tracking-tight">
+                                  {new Date(ann.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" })}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              {ann.targetRoles.map((v, i) => (
+                                <span key={i} className="px-2.5 py-1 rounded-full bg-slate-50 text-[10px] font-bold text-slate-500 border border-slate-100 transition-all group-hover:bg-white group-hover:border-slate-200 uppercase">
+                                  {v}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="size-1.5 rounded-full bg-green-500" />
+                              <span className="text-[12px] font-bold text-slate-600">Published</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button className="size-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary/30 transition-all shadow-sm hover:shadow-md">
+                              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-10 text-center text-[12px] text-[#B0AFA8] font-bold">
+                          No announcements found
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

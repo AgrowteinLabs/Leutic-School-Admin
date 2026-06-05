@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
@@ -6,17 +6,46 @@ import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
+interface StudentRecord {
+  name: string;
+  id: string;
+  grade: string;
+  section: string;
+  participation: number;
+  auraScore: number;
+  status: string;
+  img: string;
+  enrollmentDate: string;
+  bloodGroup: string;
+  guardianName: string;
+  phone: string;
+  uid: string;
+}
 
 const StudentRow = ({
   student,
   onClick,
   onDelete,
 }: {
-  student: any;
-  onClick: (student: any) => void;
-  onDelete: (student: any) => void;
+  student: StudentRecord;
+  onClick: (student: StudentRecord) => void;
+  onDelete: (student: StudentRecord) => void;
 }) => {
-  const { name, id, grade, section, auraScore, status, img, enrollmentDate, bloodGroup, guardianName, phone } = student;
+  const {
+    name,
+    id,
+    grade,
+    section,
+    auraScore,
+    status,
+    img,
+    enrollmentDate,
+    bloodGroup,
+    guardianName,
+    phone,
+  } = student;
 
   const getStatusStyles = (status: string) => {
     switch (status.toLowerCase()) {
@@ -44,14 +73,20 @@ const StudentRow = ({
             <span className="text-[13px] font-bold text-foreground group-hover:text-primary transition-colors">
               {name}
             </span>
-            <span className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider">{id}</span>
+            <span className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider">
+              {id}
+            </span>
           </div>
         </div>
       </td>
       <td className="px-6 py-4">
         <div className="flex flex-col">
-          <span className="text-[13px] font-semibold text-foreground leading-none mb-1">{grade}</span>
-          <span className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider">Sec {section}</span>
+          <span className="text-[13px] font-semibold text-foreground leading-none mb-1">
+            {grade}
+          </span>
+          <span className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-wider">
+            Sec {section}
+          </span>
         </div>
       </td>
       <td className="px-6 py-4">
@@ -62,15 +97,23 @@ const StudentRow = ({
         </div>
       </td>
       <td className="px-6 py-4">
-        <span className="text-[12px] font-semibold text-[#444441]">{enrollmentDate}</span>
+        <span className="text-[12px] font-semibold text-[#444441]">
+          {enrollmentDate}
+        </span>
       </td>
       <td className="px-6 py-4">
-        <span className="text-[12px] font-bold text-foreground">{bloodGroup}</span>
+        <span className="text-[12px] font-bold text-foreground">
+          {bloodGroup}
+        </span>
       </td>
       <td className="px-6 py-4">
         <div className="flex flex-col">
-          <span className="text-[12px] font-bold text-foreground whitespace-nowrap">{guardianName}</span>
-          <span className="text-[10px] font-medium text-[#B0AFA8] whitespace-nowrap">{phone}</span>
+          <span className="text-[12px] font-bold text-foreground whitespace-nowrap">
+            {guardianName}
+          </span>
+          <span className="text-[10px] font-medium text-[#B0AFA8] whitespace-nowrap">
+            {phone}
+          </span>
         </div>
       </td>
       <td className="px-6 py-4">
@@ -86,11 +129,16 @@ const StudentRow = ({
       <td className="px-6 py-4 text-right">
         <div className="flex items-center justify-end gap-1">
           <button
-            onClick={(e) => { e.stopPropagation(); onClick(student); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick(student);
+            }}
             className="size-8 flex items-center justify-center rounded-lg text-[#B0AFA8] hover:bg-white hover:text-foreground hover:shadow-sm transition-all"
             title="View Profile"
           >
-            <span className="material-symbols-outlined text-[18px]">visibility</span>
+            <span className="material-symbols-outlined text-[18px]">
+              visibility
+            </span>
           </button>
           <button
             className="size-8 flex items-center justify-center rounded-lg text-[#B0AFA8] hover:bg-white hover:text-primary hover:shadow-sm transition-all"
@@ -99,11 +147,16 @@ const StudentRow = ({
             <span className="material-symbols-outlined text-[18px]">edit</span>
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); onDelete(student); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(student);
+            }}
             className="size-8 flex items-center justify-center rounded-lg text-[#B0AFA8] hover:bg-red-50 hover:text-red-600 hover:shadow-sm transition-all"
             title="Delete Student"
           >
-            <span className="material-symbols-outlined text-[18px]">delete</span>
+            <span className="material-symbols-outlined text-[18px]">
+              delete
+            </span>
           </button>
         </div>
       </td>
@@ -117,7 +170,7 @@ export const StudentsPage = ({
   onAddStudent,
 }: {
   isHubChild?: boolean;
-  externalStudents?: any[];
+  externalStudents?: StudentRecord[];
   onAddStudent?: () => void;
 }) => {
   const navigate = useNavigate();
@@ -126,102 +179,172 @@ export const StudentsPage = ({
   const [statusFilter, setStatusFilter] = useState("Status (All)");
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [overviewTotals, setOverviewTotals] = useState({
+    totalStudents: "",
+    activePrograms: "",
+  });
 
-  const [students, setStudents] = useState(externalStudents || [
-    {
-      name: "Aavya S.",
-      id: "#OA-2024-001",
-      grade: "12th Grade",
-      participation: 92,
-      auraScore: 98.4,
-      status: "Active",
-      img: "/Avatar/Female Avatar Age17.png",
-      enrollmentDate: "Aug 15, 2021",
-      bloodGroup: "O+",
-      guardianName: "Ramesh S.",
-      phone: "+91 98472-11002",
-      section: "A",
-    },
-    {
-      name: "Isha K.",
-      id: "#OA-2024-015",
-      grade: "11th Grade",
-      participation: 84,
-      auraScore: 92.1,
-      status: "Active",
-      img: "/Avatar/Female Avatar Age16.png",
-      enrollmentDate: "July 20, 2022",
-      bloodGroup: "A+",
-      guardianName: "Sanjay K.",
-      phone: "+91 94460-22310",
-      section: "B",
-    },
-    {
-      name: "Kabir M.",
-      id: "#OA-2024-082",
-      grade: "12th Grade",
-      participation: 76,
-      auraScore: 85.5,
-      status: "Active",
-      img: "/Avatar/Male Avatar Age17.png",
-      enrollmentDate: "Aug 10, 2021",
-      bloodGroup: "B+",
-      guardianName: "Mohan M.",
-      phone: "+91 98765-43210",
-      section: "A",
-    },
-    {
-      name: "Sneha R.",
-      id: "#OA-2024-112",
-      grade: "10th Grade",
-      participation: 95,
-      auraScore: 96.8,
-      status: "Active",
-      img: "/Avatar/Female Avatar Age15.png",
-      enrollmentDate: "June 05, 2023",
-      bloodGroup: "O-",
-      guardianName: "Raghav R.",
-      phone: "+91 91234-56789",
-      section: "C",
-    },
-    {
-      name: "Ishaan K.",
-      id: "#OA-2024-042",
-      grade: "10th Grade",
-      participation: 45,
-      auraScore: 64.2,
-      status: "At Risk",
-      img: "/Avatar/Male Avatar Age16.png",
-      enrollmentDate: "Sept 12, 2023",
-      bloodGroup: "AB+",
-      guardianName: "Kishore K.",
-      phone: "+91 98765-43211",
-      section: "B",
-    },
-    {
-      name: "Meera V.",
-      id: "#OA-2024-118",
-      grade: "11th Grade",
-      participation: 88,
-      auraScore: 91.5,
-      status: "Active",
-      img: "/Avatar/Female Avatar Age16.png",
-      enrollmentDate: "Jan 15, 2022",
-      bloodGroup: "A-",
-      guardianName: "Vinay V.",
-      phone: "+91 99887-76655",
-      section: "A",
-    },
-  ]);
+  const [students, setStudents] = useState<StudentRecord[]>(
+    externalStudents || [],
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [studentToDelete, setStudentToDelete] = useState<any>(null);
+  useEffect(() => {
+    if (externalStudents) return;
+
+    const fetchStudents = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      const query = `
+        query GetStudentsAndClasses($filter: UsersFilterDto!, $schoolId: String) {
+          users(filter: $filter) {
+            total
+            items {
+              id
+              role
+              name
+              email
+              mobileNo
+              schoolId
+              admissionNumber
+              address
+              classId
+              isActive
+              createdAt
+            }
+          }
+          classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+            total
+            items {
+              id
+              name
+              section
+            }
+          }
+        }
+      `;
+
+      try {
+        const data = await graphqlRequest<{
+          users: {
+            total: number;
+            items: Array<{
+              id: string;
+              role: string;
+              name: string;
+              email?: string;
+              mobileNo?: string;
+              schoolId?: string;
+              admissionNumber?: string;
+              address?: string;
+              classId?: string;
+              isActive: boolean;
+              createdAt: string;
+            }>;
+          };
+          classes?: {
+            total?: number;
+            items: Array<{
+              id: string;
+              name: string;
+              section?: string;
+            }>;
+          };
+        }>(query, {
+          filter: {
+            role: "STUDENT",
+            schoolId: localStorage.getItem("school_id") || undefined,
+            isActive: true,
+            page: 1,
+            pageSize: 100,
+          },
+          schoolId: localStorage.getItem("school_id") || undefined,
+        });
+
+        const classesList = data.classes?.items || [];
+        const classMap = new Map(classesList.map((c) => [c.id, c]));
+        setOverviewTotals({
+          totalStudents:
+            data.users?.total !== undefined && data.users?.total !== null
+              ? String(data.users.total)
+              : "",
+          activePrograms:
+            data.classes?.total !== undefined && data.classes?.total !== null
+              ? String(data.classes.total)
+              : "",
+        });
+
+        // Client-side safety: exclude soft-deleted (isActive: false) users
+        const mappedStudents: StudentRecord[] = data.users.items
+          .filter((user) => user.isActive)
+          .map((user) => {
+            const matchedClass = user.classId
+              ? classMap.get(user.classId)
+              : null;
+            return {
+              name: user.name,
+              id: user.admissionNumber || user.id.slice(0, 8),
+              grade: matchedClass ? matchedClass.name : "Unassigned",
+              section: matchedClass ? matchedClass.section || "" : "",
+              participation: 75,
+              auraScore: 80,
+              status: user.isActive ? "Active" : "Inactive",
+              img: "/Avatar/Male Avatar Age16.png",
+              enrollmentDate: new Date(user.createdAt).toLocaleDateString(
+                "en-IN",
+                { month: "short", day: "2-digit", year: "numeric" },
+              ),
+              bloodGroup: "O+",
+              guardianName: "Guardian of " + user.name,
+              phone: user.mobileNo || "+91 99999-99999",
+              uid: user.id,
+            };
+          });
+
+        setStudents(mappedStudents);
+      } catch (err: unknown) {
+        console.error("Failed to fetch students:", err);
+        const errMsg =
+          err instanceof Error ? err.message : "Failed to load students.";
+        setError(errMsg);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, [externalStudents]);
+
+  const [studentToDelete, setStudentToDelete] = useState<StudentRecord | null>(
+    null,
+  );
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
 
-  const confirmDelete = () => {
-    if (studentToDelete && deleteConfirmationText === studentToDelete.name) {
-      setStudents(prev => prev.filter(s => s.id !== studentToDelete.id));
-      setStudentToDelete(null);
-      setDeleteConfirmationText("");
+  const confirmDelete = async () => {
+    if (deleteConfirmationText === studentToDelete?.name) {
+      const deleteMutation = `
+        mutation RemoveUser($id: ID!) {
+          removeUser(id: $id) {
+            id
+            name
+          }
+        }
+      `;
+      try {
+        await graphqlRequest(deleteMutation, {
+          id: studentToDelete.uid || studentToDelete.id,
+        });
+        setStudents((prev) => prev.filter((s) => s.id !== studentToDelete.id));
+        setStudentToDelete(null);
+        setDeleteConfirmationText("");
+      } catch (err: unknown) {
+        console.error("Delete failed:", err);
+        const errMsg =
+          err instanceof Error ? err.message : "Failed to delete student.";
+        alert(errMsg);
+      }
     }
   };
 
@@ -234,7 +357,7 @@ export const StudentsPage = ({
 
       const matchesGrade =
         gradeFilter === "Grade Level (All)" || student.grade === gradeFilter;
-      
+
       const matchesStatus =
         statusFilter === "Status (All)" || student.status === statusFilter;
 
@@ -261,14 +384,22 @@ export const StudentsPage = ({
           actions={
             <div className="flex items-center gap-3">
               <button className="h-10 px-5 rounded-[10px] bg-white border border-slate-100 text-[#444441] text-[13px] font-bold flex items-center gap-2 hover:bg-[#F7F8F4] transition-all shadow-sm shadow-slate-100/20">
-                <span className="material-symbols-outlined text-[18px]">file_download</span>
+                <span className="material-symbols-outlined text-[18px]">
+                  file_download
+                </span>
                 Export List
               </button>
               <button
-                onClick={() => onAddStudent ? onAddStudent() : navigate("/directory/enroll-student")}
+                onClick={() =>
+                  onAddStudent
+                    ? onAddStudent()
+                    : navigate("/directory/enroll-student")
+                }
                 className="h-10 px-6 rounded-xl bg-primary text-foreground text-[13px] font-bold flex items-center gap-2 hover:shadow-lg hover:shadow-primary/20 transition-all"
               >
-                <span className="material-symbols-outlined text-[18px]">person_add</span>
+                <span className="material-symbols-outlined text-[18px]">
+                  person_add
+                </span>
                 Enroll Student
               </button>
             </div>
@@ -279,20 +410,33 @@ export const StudentsPage = ({
       <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8 no-scrollbar">
         <div className="max-w-[1400px] mx-auto space-y-8">
           {/* Quick Stats */}
+          {/* Backend note: the current API returns counts only; aura and at-risk summaries are not exposed yet, so those cards remain blank. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: "Total Students", value: "1,240", icon: "group" },
-              { label: "Active Programs", value: "18", icon: "local_activity" },
-              { label: "Avg Aura Points", value: "82 pts", icon: "auto_awesome" },
-              { label: "Students At Risk", value: "24", icon: "warning", iconBg: "bg-[#FEE2E2]" },
-            ].map((stat, i) => (
-              <StatCard key={i} {...stat} />
+              {
+                label: "Total Students",
+                value: overviewTotals.totalStudents,
+                icon: "group",
+              },
+              {
+                label: "Active Programs",
+                value: overviewTotals.activePrograms,
+                icon: "local_activity",
+              },
+              { label: "Avg Aura Points", value: "", icon: "auto_awesome" },
+              {
+                label: "Students At Risk",
+                value: "",
+                icon: "warning",
+                iconBg: "bg-[#FEE2E2]",
+              },
+            ].map((stat) => (
+              <StatCard key={stat.label} {...stat} />
             ))}
           </div>
 
           {/* Unified Student Registry Card */}
           <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col">
-
             {/* Integrated Search and Filters */}
             <div className="p-3 flex items-center gap-3 border-b border-slate-100/50 rounded-t-[24px] relative z-20">
               <div className="flex-1">
@@ -314,33 +458,60 @@ export const StudentsPage = ({
                   value={gradeFilter}
                   trigger={
                     <button className="btn-outline gap-3">
-                      <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">calendar_view_day</span>
-                      {gradeFilter === "Grade Level (All)" ? "Grade" : gradeFilter}
+                      <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">
+                        calendar_view_day
+                      </span>
+                      {gradeFilter === "Grade Level (All)"
+                        ? "Grade"
+                        : gradeFilter}
                     </button>
                   }
                   items={[
-                    "Grade (All)", "12th Grade", "11th Grade", "10th Grade", "9th Grade"
-                  ].map(opt => ({ label: opt, onClick: () => setGradeFilter(opt === "Grade (All)" ? "Grade Level (All)" : opt) }))}
+                    "Grade (All)",
+                    "12th Grade",
+                    "11th Grade",
+                    "10th Grade",
+                    "9th Grade",
+                  ].map((opt) => ({
+                    label: opt,
+                    onClick: () =>
+                      setGradeFilter(
+                        opt === "Grade (All)" ? "Grade Level (All)" : opt,
+                      ),
+                  }))}
                   width="w-56"
                 />
                 <MenuDropdown
                   value={statusFilter}
                   trigger={
                     <button className="btn-outline gap-3">
-                      <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">radio_button_checked</span>
-                      {statusFilter === "Status (All)" ? "Status" : statusFilter}
+                      <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">
+                        radio_button_checked
+                      </span>
+                      {statusFilter === "Status (All)"
+                        ? "Status"
+                        : statusFilter}
                     </button>
                   }
-                  items={[
-                    "Status (All)", "Active", "At Risk", "Graduated"
-                  ].map(opt => ({ label: opt, onClick: () => setStatusFilter(opt) }))}
+                  items={["Status (All)", "Active", "At Risk", "Graduated"].map(
+                    (opt) => ({
+                      label: opt,
+                      onClick: () => setStatusFilter(opt),
+                    }),
+                  )}
                   width="w-48"
                 />
                 <button
-                  onClick={() => onAddStudent ? onAddStudent() : navigate("/directory/students/add")}
+                  onClick={() =>
+                    onAddStudent
+                      ? onAddStudent()
+                      : navigate("/directory/students/add")
+                  }
                   className="btn-primary gap-2 ml-1"
                 >
-                  <span className="material-symbols-outlined text-sm font-black">add</span>
+                  <span className="material-symbols-outlined text-sm font-black">
+                    add
+                  </span>
                   Enroll Student
                 </button>
               </div>
@@ -350,34 +521,76 @@ export const StudentsPage = ({
               <table className="w-full text-left border-collapse">
                 <thead className="border-b border-slate-100 bg-[#F7F8F4]/30">
                   <tr>
-                    {["Student Name", "Grade/Sec", "Aura Score", "Joining", "Blood Group", "Guardian/Phone", "Status", "Actions"].map((h, i) => (
-                      <th key={h} className={cn(
-                        "px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest",
-                        i === 7 ? "text-right" : ""
-                      )}>
+                    {[
+                      "Student Name",
+                      "Grade/Sec",
+                      "Aura Score",
+                      "Joining",
+                      "Blood Group",
+                      "Guardian/Phone",
+                      "Status",
+                      "Actions",
+                    ].map((h, i) => (
+                      <th
+                        key={h}
+                        className={cn(
+                          "px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest",
+                          i === 7 ? "text-right" : "",
+                        )}
+                      >
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {paginatedStudents.map((student) => (
-                    <StudentRow
-                      key={student.id}
-                      student={student}
-                      onClick={(s) => navigate(`/students/${s.id.replace("#", "")}`)}
-                      onDelete={(s) => {
-                        setStudentToDelete(s);
-                        setDeleteConfirmationText("");
-                      }}
-                    />
-                  ))}
-                  {filteredStudents.length === 0 && (
+                  {isLoading ? (
                     <tr>
                       <td colSpan={8} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-3 opacity-40">
-                          <span className="material-symbols-outlined text-5xl">person_search</span>
-                          <p className="text-[13px] font-bold text-[#B0AFA8]">No student records found</p>
+                          <span className="material-symbols-outlined text-5xl animate-spin">
+                            sync
+                          </span>
+                          <p className="text-[13px] font-bold text-[#B0AFA8]">
+                            Loading student records...
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-3 text-red-500">
+                          <span className="material-symbols-outlined text-5xl">
+                            error
+                          </span>
+                          <p className="text-[13px] font-bold">{error}</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedStudents.map((student) => (
+                      <StudentRow
+                        key={student.id}
+                        student={student}
+                        onClick={(s) => navigate(`/students/${s.uid || s.id}`)}
+                        onDelete={(s) => {
+                          setStudentToDelete(s);
+                          setDeleteConfirmationText("");
+                        }}
+                      />
+                    ))
+                  )}
+                  {!isLoading && !error && filteredStudents.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-3 opacity-40">
+                          <span className="material-symbols-outlined text-5xl">
+                            person_search
+                          </span>
+                          <p className="text-[13px] font-bold text-[#B0AFA8]">
+                            No student records found
+                          </p>
                         </div>
                       </td>
                     </tr>
@@ -420,19 +633,34 @@ export const StudentsPage = ({
             >
               <div className="p-8 text-center space-y-6">
                 <div className="size-20 rounded-[24px] bg-red-50 flex items-center justify-center text-red-600 mx-auto animate-pulse">
-                  <span className="material-symbols-outlined text-[40px]">delete_forever</span>
+                  <span className="material-symbols-outlined text-[40px]">
+                    delete_forever
+                  </span>
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-[20px] font-bold text-foreground">Remove student record?</h3>
+                  <h3 className="text-[20px] font-bold text-foreground">
+                    Remove student record?
+                  </h3>
                   <p className="text-[13px] text-[#444441] leading-relaxed">
-                    This will permanently remove <span className="font-bold text-foreground">{studentToDelete.name}</span> and all associated academic data. <span className="font-bold text-red-600">This action cannot be undone.</span>
+                    This will permanently remove{" "}
+                    <span className="font-bold text-foreground">
+                      {studentToDelete.name}
+                    </span>{" "}
+                    and all associated academic data.{" "}
+                    <span className="font-bold text-red-600">
+                      This action cannot be undone.
+                    </span>
                   </p>
                 </div>
 
                 <div className="space-y-3">
                   <p className="text-[11px] font-bold text-[#B0AFA8] capitalize tracking-normal">
-                    Type <span className="text-foreground">{studentToDelete.name}</span> to confirm
+                    Type{" "}
+                    <span className="text-foreground">
+                      {studentToDelete.name}
+                    </span>{" "}
+                    to confirm
                   </p>
                   <input
                     type="text"

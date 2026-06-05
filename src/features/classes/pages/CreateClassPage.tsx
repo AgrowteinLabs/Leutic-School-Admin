@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
@@ -6,6 +6,25 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
+interface TeacherUser {
+  id: string;
+  name: string;
+}
+
+interface StudentUser {
+  id: string;
+  name: string;
+  classId?: string;
+}
+
+interface StudentUI {
+  id: string;
+  name: string;
+  grade: string;
+  img: string;
+}
 
 export const CreateClassPage = () => {
     const navigate = useNavigate();
@@ -22,25 +41,75 @@ export const CreateClassPage = () => {
     const [capacity, setCapacity] = useState("40");
 
     // Step 2: Students
-    const [selectedStudents, setSelectedStudents] = useState<any[]>([]);
+    const [selectedStudents, setSelectedStudents] = useState<StudentUI[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
+    
+    // Live Data State
+    const [teachersList, setTeachersList] = useState<TeacherUser[]>([]);
+    const [studentsList, setStudentsList] = useState<StudentUser[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const mockStudents = [
-        { id: 1, name: "Aavya S.",  grade: "Grade 10", img: "/Avatar/Female Avatar Age10.png" },
-        { id: 2, name: "Ishaan K.", grade: "Grade 10", img: "/Avatar/Male Avatar Age10.png" },
-        { id: 3, name: "Meera V.",  grade: "Grade 10", img: "/Avatar/Female Avatar Age11.png" },
-        { id: 4, name: "Arjun T.",  grade: "Grade 10", img: "/Avatar/Male Avatar Age11.png" },
-        { id: 5, name: "Sneha R.",  grade: "Grade 10", img: "/Avatar/Female Avatar Age12.png" },
-        { id: 6, name: "Kabir M.",  grade: "Grade 10", img: "/Avatar/Male Avatar Age12.png" },
-        { id: 7, name: "Diya M.",   grade: "Grade 10", img: "/Avatar/Female Avatar Age13.png" },
-        { id: 8, name: "Rohan P.",  grade: "Grade 10", img: "/Avatar/Male Avatar Age13.png" },
-    ];
+    useEffect(() => {
+        const loadMetadata = async () => {
+            const schoolId = localStorage.getItem("school_id") || "";
+            
+            const teachersQuery = `
+                query GetTeachers($schoolId: String) {
+                  users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 200 }) {
+                    items {
+                      id
+                      name
+                    }
+                  }
+                }
+            `;
+            
+            const studentsQuery = `
+                query GetStudents($schoolId: String) {
+                  users(filter: { role: "STUDENT", schoolId: $schoolId, page: 1, pageSize: 2000 }) {
+                    items {
+                      id
+                      name
+                      classId
+                    }
+                  }
+                }
+            `;
+            
+            try {
+                const results = await Promise.allSettled([
+                    graphqlRequest<{ users: { items: TeacherUser[] } }>(teachersQuery, { schoolId: schoolId || undefined }),
+                    graphqlRequest<{ users: { items: StudentUser[] } }>(studentsQuery, { schoolId: schoolId || undefined })
+                ]);
+                
+                if (results[0].status === "fulfilled") {
+                    setTeachersList(results[0].value.users?.items || []);
+                }
+                
+                if (results[1].status === "fulfilled") {
+                    setStudentsList(results[1].value.users?.items || []);
+                }
+            } catch (err) {
+                console.error("Failed to load metadata:", err);
+            }
+        };
+        
+        loadMetadata();
+    }, []);
 
-    const filteredStudents = mockStudents.filter(s => 
+    const studentsMapped: StudentUI[] = studentsList.map((s, idx) => ({
+        id: s.id,
+        name: s.name,
+        grade: s.classId ? "Mapped" : "Unassigned",
+        img: `/Avatar/${idx % 2 === 0 ? "Male" : "Female"} Avatar Age1${idx % 8}.png`
+    }));
+
+    const filteredStudents = studentsMapped.filter(s => 
         s.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const toggleStudent = (student: any) => {
+    const toggleStudent = (student: StudentUI) => {
         if (selectedStudents.find(s => s.id === student.id)) {
             setSelectedStudents(selectedStudents.filter(s => s.id !== student.id));
         } else {
@@ -48,8 +117,82 @@ export const CreateClassPage = () => {
         }
     };
 
-    const handleFinalize = () => {
-        setShowSuccess(true);
+    const handleFinalize = async () => {
+        if (!gradeLevel || !sectionName) {
+            setError("Please fill in the required fields: Grade Level and Section Name.");
+            return;
+        }
+
+        setIsSaving(true);
+        setError(null);
+        
+        const schoolId = localStorage.getItem("school_id") || "";
+        const selectedTeacherObj = teachersList.find(t => t.name === classTeacher);
+        const classTeacherId = selectedTeacherObj ? selectedTeacherObj.id : undefined;
+        
+        const createClassMutation = `
+            mutation CreateClass(
+                $schoolId: String!
+                $name: String!
+                $section: String
+                $classTeacherId: String
+                $capacity: Int
+                $shift: String
+                $roomNumber: String
+            ) {
+                createClass(createClassInput: {
+                    schoolId: $schoolId
+                    name: $name
+                    section: $section
+                    classTeacherId: $classTeacherId
+                    capacity: $capacity
+                    shift: $shift
+                    roomNumber: $roomNumber
+                }) {
+                    id
+                    name
+                    section
+                }
+            }
+        `;
+        
+        try {
+            const data = await graphqlRequest<{ createClass: { id: string } }>(createClassMutation, {
+                schoolId,
+                name: gradeLevel,
+                section: sectionName,
+                classTeacherId,
+                capacity: capacity ? Number.parseInt(capacity, 10) : undefined,
+                shift,
+                roomNumber: room
+            });
+            
+            const classId = data.createClass.id;
+            
+            if (selectedStudents.length > 0) {
+                const updateStudentMutation = `
+                    mutation UpdateUser($id: ID!, $classId: String) {
+                        updateUser(id: $id, updateUserInput: { classId: $classId }) {
+                            id
+                        }
+                    }
+                `;
+                
+                await Promise.allSettled(
+                    selectedStudents.map(student => 
+                        graphqlRequest(updateStudentMutation, { id: student.id, classId })
+                    )
+                );
+            }
+            
+            setShowSuccess(true);
+        } catch (err: unknown) {
+            console.error("Failed to create class:", err);
+            const errMsg = err instanceof Error ? err.message : "Failed to establish new class section";
+            setError(errMsg);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const steps = [
@@ -64,8 +207,10 @@ export const CreateClassPage = () => {
                 subtitle="Establish a new academic section within the institution"
                 actions={
                     <div className="flex items-center gap-3">
-                        <PDSButton variant="text" onClick={() => navigate(-1)}>Cancel</PDSButton>
-                        <PDSButton variant="primary" icon="check_circle" onClick={handleFinalize} disabled={activeStep < 2}>Complete Setup</PDSButton>
+                        <PDSButton variant="text" onClick={() => navigate(-1)} disabled={isSaving}>Cancel</PDSButton>
+                        <PDSButton variant="primary" icon={isSaving ? "sync" : "check_circle"} onClick={handleFinalize} disabled={activeStep < 2 || isSaving}>
+                            {isSaving ? "Saving..." : "Complete Setup"}
+                        </PDSButton>
                     </div>
                 }
             />
@@ -73,6 +218,13 @@ export const CreateClassPage = () => {
             <div className="flex-1 overflow-y-auto no-scrollbar">
                 <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-10">
                     
+                    {error && (
+                        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 text-[13px] font-semibold flex items-center gap-3">
+                            <span className="material-symbols-outlined text-lg">error</span>
+                            {error}
+                        </div>
+                    )}
+
                     <div className="bg-white border border-slate-100 rounded-[32px] shadow-sm shadow-slate-100/50 overflow-visible relative z-10 flex flex-col">
                         
                         {steps.map((step, index) => {
@@ -143,7 +295,7 @@ export const CreateClassPage = () => {
                                                                 label="Class Teacher"
                                                                 type="select"
                                                                 searchable
-                                                                options={["Dr. Sarah Jenkins", "Prof. Michael Chen", "Ms. Elena Rodriguez", "Mr. David Thompson"]}
+                                                                options={teachersList.map(t => t.name)}
                                                                 placeholder="Select faculty..."
                                                                 icon="person_search"
                                                                 value={classTeacher}
@@ -177,36 +329,47 @@ export const CreateClassPage = () => {
                                                             </div>
 
                                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                                {filteredStudents.map((student) => (
-                                                                    <div
-                                                                        key={student.id}
-                                                                        onClick={() => toggleStudent(student)}
-                                                                        className={cn(
-                                                                            "p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-4 relative group/item",
-                                                                            selectedStudents.find(s => s.id === student.id)
-                                                                                ? "bg-emerald-50 border-emerald-100 ring-2 ring-emerald-500/10"
-                                                                                : "bg-white border-slate-100 hover:border-slate-200 hover:bg-[#F7F8F4]"
-                                                                        )}
-                                                                    >
-                                                                        <div className="size-10 rounded-xl overflow-hidden border border-slate-100 shrink-0">
-                                                                            <img src={student.img} className="size-full object-cover" />
-                                                                        </div>
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <p className="text-[13px] font-bold text-foreground truncate">{student.name}</p>
-                                                                            <p className="text-[11px] text-[#B0AFA8] font-bold uppercase tracking-wider">{student.grade}</p>
-                                                                        </div>
-                                                                        <div className={cn(
-                                                                            "size-5 rounded-full border-2 flex items-center justify-center transition-all",
-                                                                            selectedStudents.find(s => s.id === student.id)
-                                                                                ? "bg-emerald-500 border-emerald-500 text-white"
-                                                                                : "border-slate-200 group-hover/item:border-slate-300"
-                                                                        )}>
-                                                                            {selectedStudents.find(s => s.id === student.id) && (
-                                                                                <span className="material-symbols-outlined text-[14px] font-bold">check</span>
+                                                                {filteredStudents.map((student) => {
+                                                                    const isSelected = selectedStudents.some(s => s.id === student.id);
+                                                                    return (
+                                                                        <div
+                                                                            key={student.id}
+                                                                            onClick={() => toggleStudent(student)}
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === "Enter" || e.key === " ") {
+                                                                                    e.preventDefault();
+                                                                                    toggleStudent(student);
+                                                                                }
+                                                                            }}
+                                                                            role="button"
+                                                                            tabIndex={0}
+                                                                            className={cn(
+                                                                                "p-4 rounded-2xl border transition-all cursor-pointer flex items-center gap-4 relative group/item",
+                                                                                isSelected
+                                                                                    ? "bg-emerald-50 border-emerald-100 ring-2 ring-emerald-500/10"
+                                                                                    : "bg-white border-slate-100 hover:border-slate-200 hover:bg-[#F7F8F4]"
                                                                             )}
+                                                                        >
+                                                                            <div className="size-10 rounded-xl overflow-hidden border border-slate-100 shrink-0">
+                                                                                <img src={student.img} alt={student.name} className="size-full object-cover" />
+                                                                            </div>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <p className="text-[13px] font-bold text-foreground truncate">{student.name}</p>
+                                                                                <p className="text-[11px] text-[#B0AFA8] font-bold uppercase tracking-wider">{student.grade}</p>
+                                                                            </div>
+                                                                            <div className={cn(
+                                                                                "size-5 rounded-full border-2 flex items-center justify-center transition-all",
+                                                                                isSelected
+                                                                                    ? "bg-emerald-500 border-emerald-500 text-white"
+                                                                                    : "border-slate-200 group-hover/item:border-slate-300"
+                                                                            )}>
+                                                                                {isSelected && (
+                                                                                    <span className="material-symbols-outlined text-[14px] font-bold">check</span>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                ))}
+                                                                    );
+                                                                })}
                                                                 {filteredStudents.length === 0 && (
                                                                     <div className="col-span-full py-10 text-center">
                                                                         <p className="text-[13px] font-medium text-[#B0AFA8]">No students found matching "{searchQuery}"</p>

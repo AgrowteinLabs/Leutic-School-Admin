@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
@@ -6,9 +6,59 @@ import { PDSButton } from "../../../components/pds/PDSButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppDatePicker } from "../../../components/AppDatePicker";
 import { AppTimePicker } from "../../../components/AppTimePicker";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
+const GET_COMMUNITY_POSTS = `
+  query GetCommunityPosts($schoolId: String!) {
+    communityPosts(schoolId: $schoolId) {
+      id
+      schoolId
+      classId
+      authorId
+      authorRole
+      content
+      assetUrl
+      status
+      reactions
+      replies
+      createdAt
+    }
+  }
+`;
+
+const GET_SCHOOL_USERS = `
+  query GetSchoolUsers($schoolId: String) {
+    users(filter: { schoolId: $schoolId, page: 1, pageSize: 500 }) {
+      items {
+        id
+        name
+        role
+      }
+    }
+  }
+`;
+
+const CREATE_POST = `
+  mutation CreatePost($input: CreatePostDto!) {
+    createPost(createPostInput: $input) {
+      id
+      content
+      status
+    }
+  }
+`;
+
+const MODERATE_POST = `
+  mutation ModeratePost($postId: ID!, $status: PostStatus!) {
+    moderatePost(postId: $postId, status: $status) {
+      id
+      status
+    }
+  }
+`;
 
 interface Post {
-    id: number;
+    id: string | number;
     type: "announcement" | "competition" | "qa" | "poll";
     author: string;
     role: string;
@@ -29,6 +79,9 @@ interface Post {
         totalVotes?: number;
         pollOptions?: { label: string; votes: number; color?: string }[];
     };
+    status?: string;
+    category?: string;
+    replies?: any;
 }
 
 export const AuraButton = ({ isAuraed, onAura, isBursting }: { isAuraed: boolean, onAura: () => void, isBursting: boolean }) => {
@@ -381,7 +434,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const navigate = useNavigate();
     const activeTab = tab || "feed";
     const [activeCategory, setActiveCategory] = useState<"all" | "school" | "interschool" | "events">("all");
-    const [expandedModerationId, setExpandedModerationId] = useState<number | null>(null);
+    const [expandedModerationId, setExpandedModerationId] = useState<string | number | null>(null);
     const [postContent, setPostContent] = useState("");
     const [postCategory, setPostCategory] = useState("Academic");
     const [isExpanded, setIsExpanded] = useState(false);
@@ -448,60 +501,95 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         }
     }, [activeTab]);
 
-    const posts: Post[] = [
-        {
-            id: 1,
-            type: "announcement",
-            author: "St. Mary's Public School",
-            role: "Admin (You)",
-            avatar: "https://i.pravatar.cc/150?u=1",
-            content: "We are immensely proud to announce the stellar results of our students at St. Mary’s Public School, Kuruppampady. Your hard work, discipline, and perseverance have culminated in this magnificent achievement. Congratulations to our Toppers and Distinction holders for setting such a high benchmark!",
-            image: "/banner5.webp",
-            time: "2h ago",
-            reactions: 1200,
-            comments: 45,
-            isAcknowledged: true,
-            isVerified: true,
-        },
-        {
-            id: 2,
-            type: "competition",
-            author: "St. Mary's HSS",
-            role: "Inter-School",
-            avatar: "https://i.pravatar.cc/150?u=2",
-            content: "Regional Basketball Finals 🏆\nJoin us this Friday for the championship match. Music & food trucks on-site.",
-            time: "Just now",
-            reactions: 230,
-            comments: 12,
-            isVerified: true,
-            metadata: {
-                venue: "Main Court, St. Mary's",
-                date: "Friday, 12th Oct",
-                tags: ["Basketball", "Regional"]
-            }
-        },
-        {
-            id: 3,
-            type: "poll",
-            author: "Jayalakshmi",
-            role: "Grade 11 • Debate",
-            avatar: "https://i.pravatar.cc/150?u=3",
-            content: "Which state should host the next Inter-School Science Symposium? 🌍🔬",
-            time: "14m ago",
-            reactions: 48,
-            comments: 5,
-            metadata: {
-                pollOptions: [
-                    { label: "Odisha", votes: 42, color: "bg-primary" },
-                    { label: "Maharashtra", votes: 28, color: "bg-brand-navy" },
-                    { label: "Gujarat", votes: 15, color: "bg-slate-200" },
-                    { label: "Karnataka", votes: 15, color: "bg-slate-200" }
-                ],
-                totalVotes: 100,
-                isVoted: false
-            }
+    const [posts, setPosts] = useState<Post[]>([]);
+
+    const fetchData = async () => {
+        try {
+            const schoolId = localStorage.getItem("school_id") || "";
+            const [postsData, usersData] = await Promise.all([
+                graphqlRequest<any>(GET_COMMUNITY_POSTS, { schoolId }),
+                graphqlRequest<any>(GET_SCHOOL_USERS, { schoolId })
+            ]);
+
+            const userList = usersData.users?.items || [];
+            const newMap = new Map<string, any>(userList.map((u: any) => [u.id as string, u]));
+
+            const rawPosts = postsData.communityPosts || [];
+            const mapped = rawPosts.map((p: any) => {
+                let type: "announcement" | "competition" | "qa" | "poll" = "announcement";
+                let content = p.content;
+                let metadata: any = undefined;
+
+                if (content.startsWith("{") && content.endsWith("}")) {
+                    try {
+                        const parsed = JSON.parse(content);
+                        if (parsed.type) {
+                            type = parsed.type;
+                            content = parsed.content || "";
+                            metadata = parsed.metadata;
+                        }
+                    } catch (e) {}
+                }
+
+                const authorUser = newMap.get(p.authorId);
+                const authorName = authorUser ? authorUser.name : "St. Mary's Public School";
+                const authorRole = authorUser ? authorUser.role : p.authorRole || "Admin";
+
+                const timeStr = new Date(p.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit" });
+
+                let commentsCount = 0;
+                try {
+                    if (Array.isArray(p.replies)) {
+                        commentsCount = p.replies.length;
+                    } else if (p.replies && typeof p.replies === "object") {
+                        commentsCount = Object.keys(p.replies).length;
+                    }
+                } catch (e) {}
+
+                return {
+                    id: p.id,
+                    type,
+                    author: authorName,
+                    role: authorRole,
+                    avatar: authorUser?.role === "STUDENT" ? "/Avatar/Male Avatar Age16.png" : "/Avatar/Female Avatar Age35.png",
+                    content,
+                    image: p.assetUrl || undefined,
+                    time: timeStr,
+                    reactions: 0,
+                    comments: commentsCount,
+                    isVerified: p.status === "APPROVED",
+                    metadata,
+                    status: p.status,
+                    replies: p.replies
+                };
+            });
+            setPosts(mapped);
+        } catch (err) {
+            console.error("Error loading community data:", err);
         }
-    ];
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, [activeTab]);
+
+    const handleModerate = async (postId: string | number, status: "APPROVED" | "REJECTED") => {
+        try {
+            await graphqlRequest(MODERATE_POST, { postId, status });
+            fetchData();
+        } catch (err) {
+            console.error("Error moderating post:", err);
+            alert("Failed to moderate post.");
+        }
+    };
+
+    const approvedPosts = useMemo(() => {
+        return posts.filter(p => p.status === "APPROVED" || !p.status);
+    }, [posts]);
+
+    const pendingPosts = useMemo(() => {
+        return posts.filter(p => p.status === "PENDING");
+    }, [posts]);
 
     interface QnAResponse {
         id: string;
@@ -537,52 +625,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         responses?: QnAResponse[];
     }
 
-    const mockQuestions: QnAQuestion[] = [
-        {
-            id: "q1",
-            votes: 14,
-            answers: 2,
-            views: 204,
-            title: "How do I register for the upcoming Regional Science Fair?",
-            excerpt: "I've checked the portal but the science fair link seems to be directing me to last year's form. Has the registration opened yet?",
-            tags: ["Events", "Science Fair", "Registration"],
-            author: { name: "Rahul M.", avatar: "/Avatar/Male Avatar Age18.png", reputation: "1.2k" },
-            time: "asked 2 hours ago",
-            hasAcceptedAnswer: true,
-            responses: [
-                { id: "r1", author: "LetBot", avatar: "/logo_icon.png", role: "Institutional Assistant", content: "The 2024 Science Fair portal is currently undergoing a scheduled maintenance update. It will be officially live for registrations tomorrow at 9:00 AM.", time: "1h ago", isBot: true, depth: 0 },
-                { id: "r2", author: "Dr. Sarah Jenkins", avatar: "/Avatar/Female Avatar Age42.png", role: "Science Head", content: "Just to add to LetBot's response, we've also extended the early-bird deadline by two days due to this maintenance. Looking forward to seeing your projects!", time: "45m ago", isFaculty: true, isVerified: true, depth: 1, replyingToName: "LetBot" },
-                { id: "r2_1", author: "Rahul M.", avatar: "/Avatar/Male Avatar Age18.png", role: "Student", content: "Thanks for the update, Dr. Jenkins! Will the project categories remain the same as last year?", time: "30m ago", depth: 2, replyingToName: "Dr. Sarah Jenkins" }
-            ]
-        },
-        {
-            id: "q2",
-            votes: 5,
-            answers: 0,
-            views: 42,
-            title: "Is there a makeup date for the Grade 11 Chemistry practicals?",
-            excerpt: "I missed the session on Tuesday due to a sports tournament. Who should I contact for the makeup schedule?",
-            tags: ["Academics", "Grade 11", "Chemistry"],
-            author: { name: "Sneha P.", avatar: "/Avatar/Female Avatar Age19.png", reputation: "450" },
-            time: "asked 5 hours ago"
-        },
-        {
-            id: "q3",
-            votes: 32,
-            answers: 2,
-            views: 890,
-            title: "What are the rules for the inter-house debate competition this year?",
-            excerpt: "Last year we had a time limit of 3 minutes per speaker. I heard it was increased to 5 minutes. Can someone confirm?",
-            tags: ["Debate", "Inter-House", "Rules"],
-            author: { name: "Ananya S.", avatar: "/Avatar/Female Avatar Age20.png", reputation: "3.4k" },
-            time: "asked yesterday",
-            hasAcceptedAnswer: true,
-            responses: [
-                { id: "r3", author: "Vikram Seth", avatar: "/Avatar/Male Avatar Age25.png", role: "Debate Captain", content: "Yes, it's confirmed. Each speaker now gets 5 minutes. The first 1 minute and last 1 minute are protected (no POIs allowed).", time: "12h ago", isVerified: true, depth: 0 },
-                { id: "r4", author: "Arjun T.", avatar: "/Avatar/Male Avatar Age22.png", role: "Student", content: "Thanks Vikram! Are the topics being released 24 hours in advance like last time?", time: "2h ago", depth: 1, replyingToName: "Vikram Seth" }
-            ]
-        }
-    ];
+
 
     const ResponseNode = ({
         resp,
@@ -685,57 +728,88 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         const [expandedId, setExpandedId] = useState<string | null>(null);
         const [replyingTo, setReplyingTo] = useState<string | null>(null);
         const [replyText, setReplyText] = useState("");
-        const [questions, setQuestions] = useState<QnAQuestion[]>(mockQuestions);
 
-        const handlePostResponse = (questionId: string, targetAuthor?: string, targetIndex?: number) => {
+        const questions = useMemo(() => {
+            const qnaPosts = posts.filter(p => p.type === "qa" && (p.status === "APPROVED" || !p.status));
+            const mapped = qnaPosts.map(p => {
+                let parsedReplies: QnAResponse[] = [];
+                try {
+                    const rawReplies = typeof p.replies === "string" ? JSON.parse(p.replies) : p.replies;
+                    if (Array.isArray(rawReplies)) {
+                        parsedReplies = rawReplies.map((r: any) => ({
+                            id: r.id || String(Math.random()),
+                            author: r.authorName || r.author || "User",
+                            avatar: r.authorRole === "STUDENT" ? "/Avatar/Male Avatar Age16.png" : "/Avatar/Female Avatar Age35.png",
+                            role: r.authorRole || r.role || "Member",
+                            content: r.content || "",
+                            time: r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit" }) : "just now",
+                            isVerified: !!r.isVerified
+                        }));
+                    }
+                } catch (e) {}
+
+                return {
+                    id: String(p.id),
+                    votes: p.reactions || 0,
+                    answers: parsedReplies.length,
+                    views: 120,
+                    title: p.content.slice(0, 80) + (p.content.length > 80 ? "..." : ""),
+                    excerpt: p.content,
+                    tags: ["Discussions"],
+                    author: {
+                        name: p.author,
+                        avatar: p.avatar,
+                        reputation: "100"
+                    },
+                    time: p.time,
+                    hasAcceptedAnswer: parsedReplies.some(r => r.isVerified),
+                    responses: parsedReplies
+                } as QnAQuestion;
+            });
+
+            if (filter === "unanswered") {
+                return mapped.filter(q => q.answers === 0);
+            }
+            return mapped;
+        }, [posts, filter]);
+
+        const handlePostResponse = async (questionId: string, targetAuthor?: string) => {
             if (!replyText.trim()) return;
 
-            const newResponse: QnAResponse = {
-                id: Math.random().toString(36).substr(2, 9),
-                author: "Principal Admin",
-                avatar: "/Avatar/Male Avatar Age42.png",
-                role: "Principal",
-                content: replyText,
-                time: "just now",
-                isPrincipal: true,
-                replyingToName: targetAuthor
-            };
-
-            setQuestions(prev => prev.map(q => {
-                if (q.id === questionId) {
-                    const updatedResponses = [...(q.responses || [])];
-                    if (targetIndex !== undefined) {
-                        const parentDepth = updatedResponses[targetIndex].depth || 0;
-                        newResponse.depth = parentDepth + 1; // Allow infinite nesting
-                        updatedResponses.splice(targetIndex + 1, 0, newResponse);
-                    } else {
-                        newResponse.depth = 0;
-                        updatedResponses.push(newResponse);
+            try {
+                await graphqlRequest<any>(`
+                    mutation CreateReply($input: CreateReplyDto!) {
+                        createReply(createReplyInput: $input)
                     }
-                    return { ...q, answers: q.answers + 1, responses: updatedResponses };
-                }
-                return q;
-            }));
-
-            setReplyText("");
-            setReplyingTo(null);
-            setExpandedId(questionId);
+                `, {
+                    input: {
+                        postId: questionId,
+                        content: replyingTo ? `@${targetAuthor} ${replyText}` : replyText
+                    }
+                });
+                
+                setReplyText("");
+                setReplyingTo(null);
+                fetchData();
+                setExpandedId(questionId);
+            } catch (err) {
+                console.error("Failed to post reply:", err);
+                alert("Failed to submit reply.");
+            }
         };
 
-        const handleVerify = (questionId: string, responseId: string) => {
-            setQuestions(prev => prev.map(q => {
-                if (q.id === questionId) {
-                    return {
-                        ...q,
-                        hasAcceptedAnswer: true,
-                        responses: q.responses?.map(r => ({
-                            ...r,
-                            isVerified: r.id === responseId
-                        }))
-                    };
-                }
-                return q;
-            }));
+        const handleVerify = async (_questionId: string, responseId: string) => {
+            try {
+                await graphqlRequest<any>(`
+                    mutation VerifyReply($replyId: ID!) {
+                        verifyReply(replyId: $replyId)
+                    }
+                `, { replyId: responseId });
+                fetchData();
+            } catch (err) {
+                console.error("Failed to verify reply:", err);
+                alert("Failed to verify reply.");
+            }
         };
 
         return (
@@ -1469,17 +1543,63 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                         variant="primary"
                                                                         size="sm"
                                                                         disabled={(!postContent.trim() && attachments.length === 0) || (selectedAudiences.length === 0 && selectedClasses.length === 0)}
-                                                                        onClick={() => {
-                                                                            console.log("Posting:", { postContent, postCategory, selectedAudiences, selectedClasses, attachments, eventDetails, pollOptions });
-                                                                            setPostContent("");
-                                                                            setIsExpanded(false);
-                                                                            setSelectedAudiences(["School-wide"]);
-                                                                            setSelectedClasses([]);
-                                                                            setAttachments([]);
-                                                                            setEventDetails({ title: '', date: '', time: '', venue: '', rsvp: false, buttonText: '', buttonLink: '' });
-                                                                            setIsAdvancedEventOpen(false);
-                                                                            setPollOptions(['', '']);
-                                                                            setIsAudienceMenuOpen(false);
+                                                                        onClick={async () => {
+                                                                            try {
+                                                                                const schoolId = localStorage.getItem("school_id") || "";
+                                                                                let content = postContent;
+
+                                                                                const eventAtt = attachments.find(a => a.type === 'event');
+                                                                                const pollAtt = attachments.find(a => a.type === 'poll');
+
+                                                                                if (eventAtt) {
+                                                                                    content = JSON.stringify({
+                                                                                        type: "competition",
+                                                                                        content: postContent,
+                                                                                        metadata: {
+                                                                                            venue: eventDetails.venue,
+                                                                                            date: eventDetails.date,
+                                                                                            tags: [postCategory]
+                                                                                        }
+                                                                                    });
+                                                                                } else if (pollAtt) {
+                                                                                    content = JSON.stringify({
+                                                                                        type: "poll",
+                                                                                        content: postContent,
+                                                                                        metadata: {
+                                                                                            pollOptions: pollOptions.filter(o => o.trim() !== "").map(o => ({ label: o, votes: 0 })),
+                                                                                            totalVotes: 0,
+                                                                                            isVoted: false
+                                                                                        }
+                                                                                    });
+                                                                                }
+
+                                                                                const imgAtt = attachments.find(a => a.type === 'image');
+                                                                                const assetUrl = imgAtt ? imgAtt.url : undefined;
+
+                                                                                await graphqlRequest(CREATE_POST, {
+                                                                                    input: {
+                                                                                        schoolId,
+                                                                                        content,
+                                                                                        assetUrl,
+                                                                                        classId: selectedClasses.length > 0 ? selectedClasses[0] : undefined
+                                                                                    }
+                                                                                });
+
+                                                                                setPostContent("");
+                                                                                setIsExpanded(false);
+                                                                                setSelectedAudiences(["School-wide"]);
+                                                                                setSelectedClasses([]);
+                                                                                setAttachments([]);
+                                                                                setEventDetails({ title: '', date: '', time: '', venue: '', rsvp: false, buttonText: '', buttonLink: '' });
+                                                                                setIsAdvancedEventOpen(false);
+                                                                                setPollOptions(['', '']);
+                                                                                setIsAudienceMenuOpen(false);
+
+                                                                                fetchData();
+                                                                            } catch (err) {
+                                                                                console.error("Error creating post:", err);
+                                                                                alert("Failed to publish post.");
+                                                                            }
                                                                         }}
                                                                         className="px-8 rounded-xl h-10 shadow-lg shadow-primary/10"
                                                                     >
@@ -1505,7 +1625,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                 isActive
                                                                     ? "bg-[#152328] text-[#D9EA85] shadow-sm"
                                                                     : "bg-slate-50 text-muted-gray/60 hover:bg-slate-100 hover:text-brand-navy"
-                                                            )}
+                                                                )}
                                                         >
                                                             {cat}
                                                         </button>
@@ -1514,7 +1634,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                             </div>
 
                                             <div className="space-y-16">
-                                                {posts.map(post => (
+                                                {approvedPosts.map((post: Post) => (
                                                     <CommunityPost key={post.id} post={post} />
                                                 ))}
                                             </div>
@@ -1556,12 +1676,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                             </div>
 
                                             <div className="space-y-3">
-                                                {[
-                                                    { id: 1, author: "Teacher Anita", avatar: "/Avatar/Female Avatar Age35.png", category: "Academic", content: "Congratulations to our Class Level Toppers of the Chandra Dina Quiz! 🌕✨ Your knowledge about the lunar cycles and India's space missions is truly stellar. Proud of our Grade 8 stars!", time: "5 mins ago", status: "Pending", severity: "medium", image: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&q=80&w=600" },
-                                                    { id: 2, author: "Priya K.", avatar: "/Avatar/Female Avatar Age25.png", category: "Events", content: "This is a great initiative! Can we also include the secondary section in this fair? The students are very excited and have prepared some amazing stalls.", time: "25 mins ago", status: "Pending", severity: "medium" },
-                                                    { id: 3, author: "Ananya M.", avatar: "/Avatar/Female Avatar Age20.png", category: "Campus", content: "Found a lost water bottle near the basketball court. Left it at the reception. Please claim if yours by showing the identification tag.", time: "1 hour ago", status: "Pending", severity: "low", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400" },
-                                                    { id: 4, author: "Suresh P.", avatar: "/Avatar/Male Avatar Age45.png", category: "Academic", content: "When is the next parent-teacher meeting scheduled for Grade 8? Need to plan accordingly as some of us have travel plans.", time: "2 hours ago", status: "Pending", severity: "low" }
-                                                ].map((item) => {
+                                                {pendingPosts.map((item: Post) => {
                                                     const isExpanded = expandedModerationId === item.id;
                                                     return (
                                                         <div
@@ -1588,7 +1703,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                 <div className="flex-1 min-w-0 pt-0.5">
                                                                     <div className="flex items-center gap-3 mb-1">
                                                                         <span className="text-[14px] font-bold text-brand-navy tracking-tight">{item.author}</span>
-                                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-muted-gray uppercase tracking-widest">{item.category}</span>
+                                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-muted-gray uppercase tracking-widest">{item.category || "Campus"}</span>
                                                                         <span className="text-[11px] font-medium text-muted-gray/40">{item.time}</span>
                                                                         <span className={cn(
                                                                             "material-symbols-outlined text-[18px] text-muted-gray/30 ml-auto transition-transform",
@@ -1620,7 +1735,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                             variant="primary"
                                                                             size="sm"
                                                                             icon="check_circle"
-                                                                            onClick={(e) => { e.stopPropagation(); }}
+                                                                            onClick={(e) => { e.stopPropagation(); handleModerate(item.id, "APPROVED"); }}
                                                                         >
                                                                             Approve
                                                                         </PDSButton>
@@ -1628,7 +1743,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                             variant="ghost"
                                                                             size="sm"
                                                                             icon="cancel"
-                                                                            onClick={(e) => { e.stopPropagation(); }}
+                                                                            onClick={(e) => { e.stopPropagation(); handleModerate(item.id, "REJECTED"); }}
                                                                             className="hover:text-red-500 hover:bg-red-50/50"
                                                                         >
                                                                             Reject
@@ -1641,7 +1756,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                 })}
                                             </div>
                                             <div className="mt-8 flex justify-center">
-                                                <button className="text-[12px] font-bold text-muted-gray hover:text-brand-navy transition-all">View all pending items (12)</button>
+                                                <button className="text-[12px] font-bold text-muted-gray hover:text-brand-navy transition-all">View all pending items ({pendingPosts.length})</button>
                                             </div>
                                         </div>
                                     </motion.div>

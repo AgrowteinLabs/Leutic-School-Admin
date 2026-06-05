@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
 import { motion } from "framer-motion";
 
@@ -57,9 +57,14 @@ const NavSectionHeader = ({ label }: { label: string }) => (
 
 export const Sidebar = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const currentPath = location.pathname;
 
     const [now, setNow] = useState(new Date());
+    const [showUserMenu, setShowUserMenu] = useState(false);
+
+    const userName = localStorage.getItem("user_name") || "Principal";
+    const userRole = localStorage.getItem("user_role") || "ADMIN";
 
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
@@ -163,24 +168,45 @@ export const Sidebar = () => {
                 </div>
 
                 {/* Profile */}
-                <div className="flex items-center gap-3 p-2 -mx-1 rounded-2xl hover:bg-[#F7F8F4] transition-colors cursor-pointer border border-transparent hover:border-slate-100 group">
-                    <div
-                        className="size-10 rounded-full bg-slate-200 bg-cover bg-center ring-2 ring-white shadow-sm"
-                        style={{
-                            backgroundImage: "url('/Avatar/Male Avatar Age40.png')",
-                        }}
-                    ></div>
-                    <div className="flex flex-col overflow-hidden">
-                        <p className="text-[13px] font-bold text-foreground truncate">
-                            Principal
-                        </p>
-                        <p className="text-[11px] text-[#B0AFA8] mt-0.5 font-medium">
-                            Principal Account
-                        </p>
-                    </div>
-                    <span className="material-symbols-outlined text-[#B0AFA8] ml-auto text-[18px]">
-                        unfold_more
-                    </span>
+                <div className="relative">
+                    {/* User Menu Dropdown */}
+                    {showUserMenu && (
+                        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-slate-100 rounded-2xl p-2 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
+                            <button
+                                onClick={() => {
+                                    localStorage.clear();
+                                    navigate("/login");
+                                }}
+                                className="w-full flex items-center gap-1.5 px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">logout</span>
+                                <span>Sign Out</span>
+                            </button>
+                        </div>
+                    )}
+                    <button
+                        type="button"
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                        className="w-full flex items-center gap-3 p-2 -mx-1 rounded-2xl hover:bg-[#F7F8F4] transition-colors cursor-pointer border border-transparent hover:border-slate-100 group text-left outline-none"
+                    >
+                        <div
+                            className="size-10 rounded-full bg-slate-200 bg-cover bg-center ring-2 ring-white shadow-sm"
+                            style={{
+                                backgroundImage: `url("${userRole === "TEACHER" ? "/Avatar/Female Avatar Age35.png" : "/Avatar/Male Avatar Age40.png"}")`,
+                            }}
+                        ></div>
+                        <div className="flex flex-col overflow-hidden">
+                            <p className="text-[13px] font-bold text-foreground truncate">
+                                {userName}
+                            </p>
+                            <p className="text-[10px] text-[#B0AFA8] mt-0.5 font-medium uppercase tracking-wider">
+                                {userRole ? userRole.replace("_", " ") : "Principal Account"}
+                            </p>
+                        </div>
+                        <span className="material-symbols-outlined text-[#B0AFA8] ml-auto text-[18px]">
+                            unfold_more
+                        </span>
+                    </button>
                 </div>
             </div>
         </aside>

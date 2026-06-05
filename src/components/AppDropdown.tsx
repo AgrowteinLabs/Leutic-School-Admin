@@ -41,15 +41,12 @@ export const AppDropdown = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setSearchQuery("");
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    if (!isOpen) setSearchQuery(value || "");
-  }, [isOpen, value]);
 
   const displayValue = (searchable && isOpen) ? searchQuery : (value || "");
 
@@ -82,7 +79,7 @@ export const AppDropdown = ({
             type="text"
             value={displayValue}
             onChange={(e) => { setSearchQuery(e.target.value); if (!isOpen) setIsOpen(true); }}
-            onFocus={() => setIsOpen(true)}
+            onFocus={() => { setIsOpen(true); setSearchQuery(""); }}
             placeholder={placeholder}
             className={cn(
               "w-full h-full bg-transparent outline-none text-[length:var(--font-size-input)] font-[var(--font-weight-input)] text-foreground placeholder-[#B0AFA8] placeholder:font-medium z-10 transition-all",
@@ -91,7 +88,7 @@ export const AppDropdown = ({
           />
         ) : (
           <div
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={() => { setIsOpen(!isOpen); setSearchQuery(""); }}
             className={cn(
               "w-full text-[length:var(--font-size-input)] transition-colors flex items-center h-full", 
               value && value !== placeholder ? "text-foreground font-[var(--font-weight-input)]" : "text-[#B0AFA8] font-medium",
@@ -103,7 +100,7 @@ export const AppDropdown = ({
           </div>
         )}
         <span
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => { setIsOpen(!isOpen); setSearchQuery(""); }}
           className={cn("material-symbols-outlined text-[#B0AFA8] absolute right-4 top-1/2 -translate-y-1/2 transition-transform duration-500 z-0", isOpen && "rotate-180 text-primary")}
         >
           expand_more
@@ -119,7 +116,7 @@ export const AppDropdown = ({
                 return (
                   <div
                     key={opt}
-                    onClick={() => { onChange?.(opt); setIsOpen(false); }}
+                    onClick={() => { onChange?.(opt); setIsOpen(false); setSearchQuery(""); }}
                     className={cn(
                       "px-4 py-3 mx-2 my-1 rounded-[10px] text-[length:var(--font-size-input)] font-[var(--font-weight-input)] cursor-pointer transition-all flex items-center justify-between group",
                       isSelected

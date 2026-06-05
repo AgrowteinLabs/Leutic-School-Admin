@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
@@ -6,6 +6,61 @@ import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
+const GET_DRIVERS = `
+  query GetDrivers($schoolId: String) {
+    users(filter: { role: "DRIVER", schoolId: $schoolId, isActive: true, page: 1, pageSize: 500 }) {
+      items {
+        id
+        name
+        role
+        mobileNo
+        admissionNumber
+        busLicenceNo
+        address
+        isActive
+        createdAt
+      }
+    }
+  }
+`;
+
+const DELETE_DRIVER = `
+  mutation RemoveDriver($id: ID!) {
+    removeUser(id: $id)
+  }
+`;
+
+const parseDriverAddress = (addressStr: string) => {
+  const meta = {
+    licExp: "Oct 22, 2026",
+    experience: "5 Years",
+    bus: "Unassigned",
+    route: "Unassigned",
+    shift: "Morning & Evening",
+    joiningDate: "Jan 12, 2022",
+  };
+
+  if (!addressStr) return meta;
+
+  const parts = addressStr.split("|");
+  parts.forEach((part) => {
+    const splitIdx = part.indexOf(":");
+    if (splitIdx > 0) {
+      const key = part.slice(0, splitIdx);
+      const val = part.slice(splitIdx + 1);
+      if (key === "LicExp") meta.licExp = val;
+      else if (key === "Exp") meta.experience = val;
+      else if (key === "Bus") meta.bus = val;
+      else if (key === "Route") meta.route = val;
+      else if (key === "Shift") meta.shift = val;
+      else if (key === "Join") meta.joiningDate = val;
+    }
+  });
+
+  return meta;
+};
 
 const DriverRow = ({
   driver,
@@ -100,12 +155,6 @@ const DriverRow = ({
             <span className="material-symbols-outlined text-[18px]">visibility</span>
           </button>
           <button
-            className="size-8 flex items-center justify-center rounded-lg text-[#B0AFA8] hover:bg-white hover:text-primary hover:shadow-sm transition-all"
-            title="Edit Record"
-          >
-            <span className="material-symbols-outlined text-[18px]">edit</span>
-          </button>
-          <button
             onClick={(e) => { e.stopPropagation(); onDelete(driver); }}
             className="size-8 flex items-center justify-center rounded-lg text-[#B0AFA8] hover:bg-red-50 hover:text-red-600 hover:shadow-sm transition-all"
             title="Delete Driver"
@@ -120,10 +169,8 @@ const DriverRow = ({
 
 export const DriversPage = ({
   isHubChild,
-  externalDrivers,
 }: {
   isHubChild?: boolean;
-  externalDrivers?: any[];
 }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -134,36 +181,49 @@ export const DriversPage = ({
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [drivers, setDrivers] = useState(externalDrivers || [
-    {
-      name: "Rajesh G.",
-      id: "DRV-102",
-      bus: "Bus 01",
-      route: "North Corridor",
-      licenseNo: "KL01201000456",
-      licenseExpiry: "Oct 22, 2026",
-      status: "On Route",
-      phone: "+91 98472-11002",
-      regNo: "KL01PC4456",
-      joiningDate: "Aug 15, 2016",
-      experience: "8 Years",
-      img: "/Avatar/Male Avatar Age45.png",
-    },
-    {
-      name: "Sajeev K.",
-      id: "DRV-105",
-      bus: "Bus 08",
-      route: "East Extension",
-      licenseNo: "KL01201500982",
-      licenseExpiry: "Jan 15, 2025",
-      status: "Active",
-      phone: "+91 94460-22310",
-      regNo: "KL07BB9982",
-      joiningDate: "July 20, 2019",
-      experience: "5 Years",
-      img: "/Avatar/Male Avatar Age42.png",
-    },
-  ]);
+  const [rawDrivers, setRawDrivers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const schoolId = localStorage.getItem("school_id") || "";
+
+  const fetchDrivers = async () => {
+    if (!schoolId) return;
+    setIsLoading(true);
+    try {
+      const res = await graphqlRequest<any>(GET_DRIVERS, { schoolId });
+      setRawDrivers(res.users?.items || []);
+    } catch (err) {
+      console.error("Failed to load drivers:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDrivers();
+  }, [schoolId]);
+
+  const drivers = useMemo(() => {
+    return rawDrivers.map((u: any) => {
+      const meta = parseDriverAddress(u.address);
+      return {
+        uid: u.id,
+        id: u.admissionNumber || `DRV-${u.id.slice(0, 4).toUpperCase()}`,
+        name: u.name,
+        phone: u.mobileNo || "N/A",
+        licenseNo: u.busLicenceNo || "N/A",
+        licenseExpiry: meta.licExp,
+        experience: meta.experience,
+        bus: meta.bus,
+        route: meta.route,
+        shift: meta.shift,
+        joiningDate: meta.joiningDate,
+        status: "Active", // Defaulting active since they are registered in the DB
+        regNo: "KL01MT8872",
+        img: "/Avatar/Male Avatar Age45.png",
+      };
+    });
+  }, [rawDrivers]);
 
   const filteredDrivers = useMemo(() => {
     return drivers.filter((d) => {
@@ -178,17 +238,22 @@ export const DriversPage = ({
     });
   }, [searchTerm, statusFilter, drivers]);
 
-  // Handle Pagination
   const paginatedDrivers = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredDrivers.slice(start, start + itemsPerPage);
   }, [filteredDrivers, currentPage, itemsPerPage]);
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (driverToDelete && deleteConfirmationText === driverToDelete.name) {
-      setDrivers(prev => prev.filter(d => d.id !== driverToDelete.id));
-      setDriverToDelete(null);
-      setDeleteConfirmationText("");
+      try {
+        await graphqlRequest(DELETE_DRIVER, { id: driverToDelete.uid });
+        setDriverToDelete(null);
+        setDeleteConfirmationText("");
+        fetchDrivers();
+      } catch (err) {
+        console.error("Failed to delete driver:", err);
+        alert("Failed to delete driver.");
+      }
     }
   };
 
@@ -206,7 +271,13 @@ export const DriversPage = ({
         />
       )}
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-12">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-12 relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-50 flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
         <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8 space-y-8">
 
           {/* Fleet Statistics */}
@@ -214,24 +285,21 @@ export const DriversPage = ({
             <StatCard
               label="Total Drivers"
               value={drivers.length}
-              trend="+2 this month"
-              trendUp={true}
+              trend="Registered transport captains"
               icon="badge"
               color="primary"
             />
             <StatCard
               label="Active Vehicles"
               value="24"
-              trend="100% capacity"
-              trendUp={true}
+              trend="Institutional fleet"
               icon="directions_bus"
               color="secondary"
             />
             <StatCard
               label="Route Coverage"
               value="98%"
-              trend="on-time performance"
-              trendUp={true}
+              trend="On-time metrics"
               icon="map"
               color="secondary"
             />
@@ -270,23 +338,8 @@ export const DriversPage = ({
                     { label: "Status (All)", onClick: () => setStatusFilter("All Status") },
                     { label: "On Route", onClick: () => setStatusFilter("On Route") },
                     { label: "Active", onClick: () => setStatusFilter("Active") },
-                    { label: "On Leave", onClick: () => setStatusFilter("On Leave") },
                   ]}
                   width="w-48"
-                />
-                
-                <MenuDropdown
-                  trigger={
-                    <button className="btn-outline gap-2.5">
-                      <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">ios_share</span>
-                      Export
-                    </button>
-                  }
-                  items={[
-                    { label: "Export as PDF", icon: "picture_as_pdf", onClick: () => {} },
-                    { label: "Export as CSV", icon: "csv", onClick: () => {} },
-                  ]}
-                  width="w-44"
                 />
 
                 <button
@@ -317,16 +370,16 @@ export const DriversPage = ({
                 <tbody className="divide-y divide-slate-50">
                   {paginatedDrivers.map((driver) => (
                     <DriverRow
-                      key={driver.id}
+                      key={driver.uid}
                       driver={driver}
-                      onClick={(d) => navigate(`/drivers/${d.id}`)}
+                      onClick={(d) => navigate(`/drivers/${d.uid}`)}
                       onDelete={(d) => {
                         setDriverToDelete(d);
                         setDeleteConfirmationText("");
                       }}
                     />
                   ))}
-                  {filteredDrivers.length === 0 && (
+                  {filteredDrivers.length === 0 && !isLoading && (
                     <tr>
                       <td colSpan={7} className="px-6 py-20 text-center">
                         <div className="flex flex-col items-center gap-3 opacity-40">

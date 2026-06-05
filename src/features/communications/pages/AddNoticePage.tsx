@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
@@ -7,6 +7,14 @@ import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import Lottie from "lottie-react";
 import successAnimation from "../../../assets/animations/success.json";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
+interface DBClass {
+  id: string;
+  name: string;
+  section?: string;
+}
+
 export const AddNoticePage = () => {
   const navigate = useNavigate();
 
@@ -19,17 +27,88 @@ export const AddNoticePage = () => {
   });
 
   const [isDragging, setIsDragging] = useState(false);
-
   const [modalState, setModalState] = useState<"idle" | "confirm" | "success">("idle");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [classesList, setClassesList] = useState<DBClass[]>([]);
 
-  const handlePost = () => {
+  useEffect(() => {
+    const fetchClasses = async () => {
+      const schoolId = localStorage.getItem("school_id") || undefined;
+      try {
+        interface GetNoticeClassesResponse {
+          classes: {
+            items: DBClass[];
+          };
+        }
+        const res = await graphqlRequest<GetNoticeClassesResponse>(`
+          query GetNoticeClasses($schoolId: String) {
+            classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+              items {
+                id
+                name
+                section
+              }
+            }
+          }
+        `, { schoolId });
+        setClassesList(res.classes?.items || []);
+      } catch (err) {
+        console.error("Failed to load classes for notices:", err);
+      }
+    };
+    fetchClasses();
+  }, []);
+
+  const recipientOptions = [
+    "All School",
+    ...classesList.map(c => `Class: ${c.name} (${c.section || ""})`)
+  ];
+
+  const handlePost = async () => {
     setIsPublishing(true);
-    // Mock publishing delay
-    setTimeout(() => {
+    const schoolId = localStorage.getItem("school_id") || "";
+    
+    const targetRoles = noticeData.audiences.flatMap(aud => {
+      if (aud === "Everyone") return ["STUDENT", "PARENT", "TEACHER", "DRIVER", "STAFF"];
+      if (aud === "Students") return ["STUDENT"];
+      if (aud === "Parents") return ["PARENT"];
+      if (aud === "Teachers") return ["TEACHER"];
+      return [aud.toUpperCase()];
+    });
+
+    let classId: string | undefined = undefined;
+    if (noticeData.recipient !== "All School") {
+      const selectedIndex = recipientOptions.indexOf(noticeData.recipient) - 1;
+      if (selectedIndex >= 0 && classesList[selectedIndex]) {
+        classId = classesList[selectedIndex].id;
+      }
+    }
+
+    try {
+      await graphqlRequest<any>(`
+        mutation CreateAnnouncement($input: CreateAnnouncementDto!) {
+          createAnnouncement(createAnnouncementInput: $input) {
+            id
+            title
+          }
+        }
+      `, {
+        input: {
+          title: noticeData.title,
+          content: noticeData.content,
+          targetRoles,
+          schoolId,
+          classId
+        }
+      });
       setIsPublishing(false);
       setModalState("success");
-    }, 1500);
+    } catch (err: unknown) {
+      console.error("Failed to create announcement:", err);
+      setIsPublishing(false);
+      const errMsg = err instanceof Error ? err.message : "Failed to publish notice.";
+      alert("Failed to publish notice: " + errMsg);
+    }
   };
 
   const handleFiles = (files: FileList | null) => {
@@ -59,20 +138,6 @@ export const AddNoticePage = () => {
     setIsDragging(false);
     handleFiles(e.dataTransfer.files);
   };
-
-  const recipientOptions = [
-    "All School",
-    "Tier: Pre-Primary",
-    "Tier: Primary",
-    "Tier: Middle School",
-    "Tier: High School",
-    "Tier: Senior Secondary",
-    "Class: Grade 10-A",
-    "Class: Grade 10-B",
-    "Class: Grade 11-A",
-    "Class: Grade 11-B",
-    "Class: Grade 12-A",
-  ];
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB] font-sans">

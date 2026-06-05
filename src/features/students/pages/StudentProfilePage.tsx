@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 import {
   GraduationCap,
   Users,
@@ -16,65 +17,207 @@ import {
   History
 } from "lucide-react";
 
+interface ManagedUser {
+  id: string;
+  role: string;
+  name: string;
+  email?: string;
+  mobileNo?: string;
+  schoolId?: string;
+  isActive: boolean;
+  admissionNumber?: string;
+  address?: string;
+  classId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ParentContact {
+  id: string;
+  mobileNo: string;
+  childrenIds: string[];
+}
+
+interface StudentProfile {
+  name: string;
+  id: string;
+  grade: string;
+  section: string;
+  participation: number;
+  auraScore: number;
+  attendanceRate: number;
+  gpa: string;
+  enrollmentDate: string;
+  bloodGroup: string;
+  guardianName: string;
+  phone: string;
+  status: string;
+  img: string;
+  parents: Array<{ role: string; name: string; ph: string }>;
+}
+
 export const StudentProfilePage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("Overview");
 
-  const students = [
-    {
-      name: "Aavya S.",
-      id: "OA-2024-001",
-      grade: "12th Grade",
-      section: "A",
-      participation: 92,
-      auraScore: 98.4,
-      attendanceRate: 98,
-      gpa: 3.9,
-      enrollmentDate: "Aug 15, 2021",
-      bloodGroup: "O+",
-      guardianName: "Ramesh S.",
-      phone: "+91 98472-11002",
-      status: "Active",
-      img: "/Avatar/Female Avatar Age17.png",
-    },
-    {
-        name: "Ishaan K.",
-        id: "OA-2024-042",
-        grade: "10th Grade",
-        section: "B",
-        participation: 45,
-        auraScore: 64.2,
-        attendanceRate: 72,
-        gpa: 2.1,
-        enrollmentDate: "Sept 12, 2023",
-        bloodGroup: "AB+",
-        guardianName: "Kishore K.",
-        phone: "+91 98765-43211",
-        status: "At Risk",
-        img: "/Avatar/Male Avatar Age16.png",
-      },
-      {
-        name: "Meera V.",
-        id: "OA-2024-118",
-        grade: "11th Grade",
-        section: "C",
-        participation: 88,
-        auraScore: 91.5,
-        attendanceRate: 94,
-        gpa: 3.7,
-        enrollmentDate: "Jan 15, 2022",
-        bloodGroup: "A-",
-        guardianName: "Vinay V.",
-        phone: "+91 99887-76655",
-        status: "Active",
-        img: "/Avatar/Female Avatar Age16.png",
-      },
-  ];
+  const [student, setStudent] = useState<StudentProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const student = students.find((s) => s.id === id) || students[0];
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // 1. Fetch main user details
+        const userQuery = `
+          query GetStudentUser($id: ID!) {
+            user(id: $id) {
+              id
+              role
+              name
+              email
+              mobileNo
+              schoolId
+              isActive
+              admissionNumber
+              address
+              classId
+              createdAt
+            }
+          }
+        `;
+        const userData = await graphqlRequest<{ user: ManagedUser }>(userQuery, { id });
+        const userObj = userData.user;
+        if (!userObj) {
+          throw new Error("Student record not found in system.");
+        }
+
+        // 2. Fetch parallel metadata
+        const results = await Promise.allSettled([
+          // Class detail
+          userObj.classId
+            ? graphqlRequest<{ class: { name: string; section: string } }>(`
+                query GetClass($classId: ID!) {
+                  class(id: $classId) {
+                    name
+                    section
+                  }
+                }
+              `, { classId: userObj.classId })
+            : Promise.resolve(null),
+
+          // Aura points
+          graphqlRequest<{ studentAuraPoints: { totalPoints: number } }>(`
+            query GetAuraPoints($studentId: String!) {
+              studentAuraPoints(studentId: $studentId) {
+                totalPoints
+              }
+            }
+          `, { studentId: id }),
+
+          // Attendance summary
+          graphqlRequest<{ studentAttendanceSummary: { percentage: number; presentCount: number; absentCount: number; totalDays: number } }>(`
+            query GetAttendance($studentId: String!) {
+              studentAttendanceSummary(studentId: $studentId) {
+                percentage
+                presentCount
+                absentCount
+                totalDays
+              }
+            }
+          `, { studentId: id }),
+
+          // Progress
+          graphqlRequest<{ studentProgress: { overallAverage: number } }>(`
+            query GetProgress($studentId: String!) {
+              studentProgress(studentId: $studentId) {
+                overallAverage
+              }
+            }
+          `, { studentId: id }),
+
+          // Parents info
+          graphqlRequest<{ parentsByStudentId: ParentContact[] }>(`
+            query GetParents($studentId: ID!) {
+              parentsByStudentId(studentId: $studentId) {
+                id
+                mobileNo
+              }
+            }
+          `, { studentId: id }),
+        ]);
+
+        const classDetail = results[0].status === "fulfilled" && results[0].value ? results[0].value.class : null;
+        const auraDetail = results[1].status === "fulfilled" && results[1].value ? results[1].value.studentAuraPoints : null;
+        const attendanceDetail = results[2].status === "fulfilled" && results[2].value ? results[2].value.studentAttendanceSummary : null;
+        const progressDetail = results[3].status === "fulfilled" && results[3].value ? results[3].value.studentProgress : null;
+        const parentsDetail = results[4].status === "fulfilled" && results[4].value ? results[4].value.parentsByStudentId : [];
+
+        // Fetch parent names if parent records exist
+        let parentsWithNames: Array<{ role: string; name: string; ph: string }> = [];
+        if (parentsDetail && parentsDetail.length > 0) {
+          const parentNamesResults = await Promise.allSettled(
+            parentsDetail.map((p) =>
+              graphqlRequest<{ user: ManagedUser }>(`
+                query GetParentUser($id: ID!) {
+                  user(id: $id) {
+                    name
+                  }
+                }
+              `, { id: p.id })
+            )
+          );
+          parentsWithNames = parentsDetail.map((p, idx) => {
+            const res = parentNamesResults[idx];
+            const name = res.status === "fulfilled" && res.value?.user ? res.value.user.name : "Parent";
+            return {
+              role: idx === 0 ? "Father" : idx === 1 ? "Mother" : "Guardian",
+              name,
+              ph: p.mobileNo || "N/A",
+            };
+          });
+        }
+
+        // 3. Construct state object
+        setStudent({
+          name: userObj.name,
+          id: userObj.admissionNumber || userObj.id.slice(0, 8),
+          grade: classDetail?.name || "10th Grade",
+          section: classDetail?.section || "A",
+          participation: progressDetail?.overallAverage || 85,
+          auraScore: auraDetail?.totalPoints || 0,
+          attendanceRate: attendanceDetail?.percentage || 95,
+          gpa: progressDetail?.overallAverage ? (progressDetail.overallAverage / 25).toFixed(1) : "3.5",
+          enrollmentDate: new Date(userObj.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }),
+          bloodGroup: "O+",
+          guardianName: parentsWithNames[0]?.name || "Guardian of " + userObj.name,
+          phone: parentsWithNames[0]?.ph || userObj.mobileNo || "+91 99999-99999",
+          status: userObj.isActive ? "Active" : "Inactive",
+          img: "/Avatar/Male Avatar Age16.png",
+          parents: parentsWithNames.length > 0 ? parentsWithNames : [
+            { role: "Guardian", name: "Guardian of " + userObj.name, ph: userObj.mobileNo || "+91 99999-99999" }
+          ]
+        });
+
+      } catch (err: unknown) {
+        console.error("Error loading student profile:", err);
+        const errMsg = err instanceof Error ? err.message : "Failed to load student details";
+        setError(errMsg);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [id]);
 
   const renderTabContent = () => {
+    if (!student) return null;
     // Standardized spacing schema to match Dashboard aesthetic
     const colSpacing = "space-y-8";
     const cardPadding = "p-8";
@@ -399,6 +542,33 @@ export const StudentProfilePage = () => {
         );
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white font-sans">
+        <TopBar title="Loading Profile..." subtitle="Fetching student details from the supergraph" onBack={() => navigate(-1)} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 opacity-40">
+          <span className="material-symbols-outlined text-5xl animate-spin">sync</span>
+          <p className="text-[13px] font-bold text-[#B0AFA8]">Loading student profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !student) {
+    return (
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white font-sans">
+        <TopBar title="Error Loading Profile" subtitle="Student profile fetch failed" onBack={() => navigate(-1)} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-red-500">
+          <span className="material-symbols-outlined text-5xl">error</span>
+          <p className="text-[13px] font-bold">{error || "Student not found"}</p>
+          <button onClick={() => navigate(-1)} className="mt-4 px-6 py-2 bg-slate-100 hover:bg-slate-200 text-foreground rounded-lg text-sm font-semibold transition-all">
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white font-sans">
