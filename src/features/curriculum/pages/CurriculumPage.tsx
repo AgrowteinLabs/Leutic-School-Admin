@@ -128,6 +128,7 @@ const GET_GRADE_CONFIGS = `
       periodsPerDay
       periodDurationMinutes
       teachingHoursPerWeek
+      subjects
     }
   }
 `;
@@ -140,6 +141,7 @@ const SAVE_GRADE_CONFIG = `
       periodsPerDay
       periodDurationMinutes
       teachingHoursPerWeek
+      subjects
     }
   }
 `;
@@ -1473,6 +1475,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               periodsPerDay: number;
               periodDurationMinutes?: number;
               teachingHoursPerWeek?: number;
+              subjects: string[];
             }>;
           }>(GET_GRADE_CONFIGS, { schoolId }),
           graphqlRequest<{
@@ -1512,12 +1515,11 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       if (gradeConfigsResult.status === "fulfilled") {
         const fetchedGCs = gradeConfigsResult.value.gradeConfigs || [];
         setGradeConfigs((prev) => {
-          // Merge backend periodsPerDay into existing frontend configs (preserve subjects[] join)
+          // Merge backend periodsPerDay and subjects into existing frontend configs
           const merged = fetchedGCs.map((gc) => {
-            const existing = prev.find((p) => p.grade === gc.gradeName);
             return {
               grade: gc.gradeName,
-              subjects: existing?.subjects || [],
+              subjects: gc.subjects || [],
               periodsPerDay: gc.periodsPerDay,
               periodDurationMinutes: gc.periodDurationMinutes,
               teachingHoursPerWeek: gc.teachingHoursPerWeek,
@@ -1817,6 +1819,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           id: string;
           gradeName: string;
           periodsPerDay: number;
+          subjects: string[];
         };
       }>(SAVE_GRADE_CONFIG, {
         input: {
@@ -1828,6 +1831,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             scheduleConfig.defaultDuration ||
             undefined,
           teachingHoursPerWeek: newConfig.teachingHoursPerWeek || undefined,
+          subjects: newConfig.subjects || [],
         },
       });
       setGradeConfigs((prev) => [
