@@ -41,9 +41,12 @@ const GET_CURRICULUM_DATA = `
         id
         schoolId
         classId
+        grade
+        section
+        subjectId
         teacherId
-        subject
-        academicYear
+        hoursPerWeek
+        isAdditional
       }
       total
     }
@@ -51,7 +54,7 @@ const GET_CURRICULUM_DATA = `
 `;
 
 const CREATE_CURRICULUM_MAPPING = `
-  mutation CreateCurriculumMapping($input: CreateCurriculumMappingDto!) {
+  mutation CreateCurriculumMapping($input: CreateCurriculumMappingInput!) {
     createCurriculumMapping(createCurriculumMappingInput: $input) {
       id
     }
@@ -59,9 +62,10 @@ const CREATE_CURRICULUM_MAPPING = `
 `;
 
 const UPDATE_CURRICULUM_MAPPING = `
-  mutation UpdateCurriculumMapping($id: ID!, $input: UpdateCurriculumMappingDto!) {
+  mutation UpdateCurriculumMapping($id: ID!, $input: UpdateCurriculumMappingInput!) {
     updateCurriculumMapping(id: $id, updateCurriculumMappingInput: $input) {
       id
+      teacherId
     }
   }
 `;
@@ -82,7 +86,7 @@ const GET_SUBJECTS = `
       name
       code
       category
-      specialization
+      department
     }
   }
 `;
@@ -94,7 +98,7 @@ const CREATE_SUBJECT = `
       name
       code
       category
-      specialization
+      department
     }
   }
 `;
@@ -106,7 +110,7 @@ const UPDATE_SUBJECT = `
       name
       code
       category
-      specialization
+      department
     }
   }
 `;
@@ -124,7 +128,7 @@ const GET_GRADE_CONFIGS = `
   query GetGradeConfigs($schoolId: String!) {
     gradeConfigs(schoolId: $schoolId) {
       id
-      gradeName
+      grade
       periodsPerDay
       periodDurationMinutes
       teachingHoursPerWeek
@@ -137,11 +141,20 @@ const SAVE_GRADE_CONFIG = `
   mutation SaveGradeConfig($input: SetGradeConfigInput!) {
     saveGradeConfig(input: $input) {
       id
-      gradeName
+      grade
       periodsPerDay
       periodDurationMinutes
       teachingHoursPerWeek
       subjects
+    }
+  }
+`;
+
+const REMOVE_GRADE_CONFIG = `
+  mutation RemoveGradeConfig($schoolId: String!, $grade: String!) {
+    removeGradeConfig(schoolId: $schoolId, grade: $grade) {
+      id
+      grade
     }
   }
 `;
@@ -151,12 +164,15 @@ const GET_CLASS_TIMETABLE = `
   query GetClassTimetable($classId: String!) {
     classTimetable(classId: $classId) {
       id
-      dayOfWeek
-      periodIndex
-      subject
+      classId
+      day
+      period
+      subjectId
+      subjectName
       teacherId
-      startTime
-      endTime
+      teacherName
+      curriculumMappingId
+      spanPeriods
     }
   }
 `;
@@ -165,12 +181,12 @@ const SAVE_CLASS_TIMETABLE = `
   mutation SaveClassTimetable($input: SaveClassTimetableInput!) {
     saveClassTimetable(input: $input) {
       id
-      dayOfWeek
-      periodIndex
-      subject
-      teacherId
-      startTime
-      endTime
+      day
+      period
+      subjectName
+      teacherName
+      curriculumMappingId
+      spanPeriods
     }
   }
 `;
@@ -184,14 +200,12 @@ interface Subject {
   name: string;
   code: string;
   category: string;
-  specialization?: string; // from backend (maps to department for display)
-  department: string; // frontend display field, derived from specialization
+  department: string;
 }
 
 interface GradeConfig {
   grade: string;
   subjects: string[]; // Subject IDs (frontend-only join from mappings)
-  // Backend synced fields:
   periodsPerDay?: number;
   periodDurationMinutes?: number;
   teachingHoursPerWeek?: number;
@@ -240,6 +254,7 @@ interface TimetableEntry {
   subjectName: string;
   teacherId: string;
   teacherName: string;
+  curriculumMappingId: string;
   spanPeriods?: number;
 }
 
@@ -281,6 +296,7 @@ const SlotSearchInput = ({
     subjectName: string;
     teacherId: string;
     teacherName: string;
+    curriculumMappingId: string;
   }) => void;
 }) => {
   const [query, setQuery] = useState("");
@@ -328,6 +344,7 @@ const SlotSearchInput = ({
                       subjectName: sub?.name ?? "",
                       teacherId: m.teacherId,
                       teacherName: teacher?.name ?? m.teacherId,
+                      curriculumMappingId: m.id,
                     });
                   }}
                   className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt"
@@ -1121,6 +1138,7 @@ const TimetableGrid = memo(
                                   subjectName,
                                   teacherId,
                                   teacherName,
+                                  curriculumMappingId,
                                 }) => {
                                   onEntriesChange((prev) => [
                                     ...prev,
@@ -1132,6 +1150,7 @@ const TimetableGrid = memo(
                                       subjectName,
                                       teacherId,
                                       teacherName,
+                                      curriculumMappingId,
                                     },
                                   ]);
                                   setAssigningSlot(null);
@@ -1418,7 +1437,9 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     if (cached) {
       try {
         return JSON.parse(cached);
-      } catch (e) {}
+      } catch {
+        // Ignore JSON parsing errors
+      }
     }
     return [
       {
@@ -1465,13 +1486,13 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               name: string;
               code: string;
               category: string;
-              specialization?: string;
+              department: string;
             }>;
           }>(GET_SUBJECTS, { schoolId }),
           graphqlRequest<{
             gradeConfigs: Array<{
               id: string;
-              gradeName: string;
+              grade: string;
               periodsPerDay: number;
               periodDurationMinutes?: number;
               teachingHoursPerWeek?: number;
@@ -1488,9 +1509,12 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 id: string;
                 schoolId: string;
                 classId: string;
+                grade: string;
+                section: string;
+                subjectId: string;
                 teacherId: string;
-                subject: string;
-                academicYear: string;
+                hoursPerWeek?: number;
+                isAdditional?: boolean;
               }>;
             };
           }>(GET_CURRICULUM_DATA, { schoolId }),
@@ -1504,9 +1528,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           name: s.name,
           code: s.code,
           category: s.category,
-          specialization: s.specialization,
-          // Map specialization to department for display; fallback to category
-          department: s.specialization || s.category || "General",
+          department: s.department || "General",
         }));
         setSubjects(mappedSubjects);
       }
@@ -1518,7 +1540,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           // Merge backend periodsPerDay and subjects into existing frontend configs
           const merged = fetchedGCs.map((gc) => {
             return {
-              grade: gc.gradeName,
+              grade: gc.grade,
               subjects: gc.subjects || [],
               periodsPerDay: gc.periodsPerDay,
               periodDurationMinutes: gc.periodDurationMinutes,
@@ -1526,7 +1548,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             };
           });
           // Keep any existing grades not yet in backend (locally-created ones)
-          const backendGrades = new Set(fetchedGCs.map((gc) => gc.gradeName));
+          const backendGrades = new Set(fetchedGCs.map((gc) => gc.grade));
           const localOnly = prev.filter((p) => !backendGrades.has(p.grade));
           return [...merged, ...localOnly];
         });
@@ -1536,7 +1558,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           setNumPeriods(firstGC.periodsPerDay);
         }
         if (fetchedGCs.length > 0) {
-          setSelectedTimetableGrade((prev) => prev || fetchedGCs[0].gradeName);
+          setSelectedTimetableGrade((prev) => prev || fetchedGCs[0].grade);
         }
       }
 
@@ -1594,14 +1616,14 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           (m) => m.schoolId === schoolId,
         );
         const frontendMappings: Mapping[] = schoolMappings.map((m) => {
-          const cls = fetchedClasses.find((c) => c.id === m.classId);
           return {
             id: m.id,
-            grade: cls ? cls.name : "",
-            section: cls ? cls.section : "",
-            subjectId: m.subject,
+            grade: m.grade || "",
+            section: m.section || "",
+            subjectId: m.subjectId,
             teacherId: m.teacherId,
-            hoursPerWeek: 4,
+            hoursPerWeek: m.hoursPerWeek || 4,
+            isAdditional: m.isAdditional || false,
           };
         });
         setInitialMappings(frontendMappings);
@@ -1717,12 +1739,22 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     setGradeToDelete(config);
   };
 
-  const onConfirmDeleteGrade = () => {
-    if (gradeToDelete) {
+  const onConfirmDeleteGrade = async () => {
+    if (!gradeToDelete) return;
+    const schoolId = localStorage.getItem("school_id") || "";
+    if (!schoolId) return;
+    try {
+      await graphqlRequest(REMOVE_GRADE_CONFIG, {
+        schoolId,
+        grade: gradeToDelete.grade,
+      });
       setGradeConfigs((prev) =>
         prev.filter((g) => g.grade !== gradeToDelete.grade),
       );
       setGradeToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete grade config:", err);
+      alert(err instanceof Error ? err.message : "Failed to delete grade config.");
     }
   };
 
@@ -1743,16 +1775,13 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             name: string;
             code: string;
             category: string;
-            specialization?: string;
+            department: string;
           };
         }>(UPDATE_SUBJECT, {
           id: editingSubject.id,
           input: {
             name: subjectData.name,
-            code: subjectData.code,
-            category: subjectData.category,
-            specialization:
-              subjectData.specialization || subjectData.department || undefined,
+            department: subjectData.department || "General",
           },
         });
         const updated = result.updateSubject;
@@ -1762,11 +1791,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               ? {
                   ...s,
                   name: updated.name,
-                  code: updated.code,
-                  category: updated.category,
-                  specialization: updated.specialization,
-                  department:
-                    updated.specialization || updated.category || s.department,
+                  department: updated.department,
                 }
               : s,
           ),
@@ -1779,16 +1804,15 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             name: string;
             code: string;
             category: string;
-            specialization?: string;
+            department: string;
           };
         }>(CREATE_SUBJECT, {
           input: {
             schoolId,
             name: subjectData.name,
             code: subjectData.code,
-            category: subjectData.category || undefined,
-            specialization:
-              subjectData.specialization || subjectData.department || undefined,
+            category: subjectData.category,
+            department: subjectData.department || "General",
           },
         });
         const created = result.createSubject;
@@ -1797,8 +1821,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           name: created.name,
           code: created.code,
           category: created.category,
-          specialization: created.specialization,
-          department: created.specialization || created.category || "General",
+          department: created.department,
         };
         setSubjects((prev) => [newSubject, ...prev]);
       }
@@ -1817,14 +1840,14 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       await graphqlRequest<{
         saveGradeConfig: {
           id: string;
-          gradeName: string;
-          periodsPerDay: number;
+          grade: string;
+          periodsPerDay?: number;
           subjects: string[];
         };
       }>(SAVE_GRADE_CONFIG, {
         input: {
           schoolId,
-          gradeName: newConfig.grade,
+          grade: newConfig.grade,
           periodsPerDay: newConfig.periodsPerDay || numPeriods,
           periodDurationMinutes:
             newConfig.periodDurationMinutes ||
@@ -1903,26 +1926,19 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               schoolId,
               classId: classObj.id,
               teacherId: m.teacherId,
-              subject: m.subjectId,
-              academicYear: "2026",
-              studentIds: [],
+              subjectId: m.subjectId,
+              grade: m.grade,
+              section: m.section,
+              hoursPerWeek: m.hoursPerWeek || 4,
+              isAdditional: m.isAdditional || false,
             },
           });
         }),
         ...toUpdate.map((m) => {
-          const classObj = backendClasses.find(
-            (c) => c.name === m.grade && c.section === m.section,
-          );
-          if (!classObj) return Promise.resolve();
           return graphqlRequest(UPDATE_CURRICULUM_MAPPING, {
             id: m.id,
             input: {
-              schoolId,
-              classId: classObj.id,
               teacherId: m.teacherId,
-              subject: m.subjectId,
-              academicYear: "2026",
-              studentIds: [],
             },
           });
         }),
@@ -1956,29 +1972,30 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     graphqlRequest<{
       classTimetable: Array<{
         id: string;
-        dayOfWeek: string;
-        periodIndex: number;
-        subject: string;
+        classId: string;
+        day: string;
+        period: number;
+        subjectId: string;
+        subjectName: string;
         teacherId: string;
-        startTime?: string;
-        endTime?: string;
+        teacherName: string;
+        curriculumMappingId: string;
+        spanPeriods?: number;
       }>;
     }>(GET_CLASS_TIMETABLE, { classId })
       .then((data) => {
         const slots = data.classTimetable || [];
         const entries: TimetableEntry[] = slots.map((slot) => {
-          const teacher = teachers.find((t) => t.id === slot.teacherId);
-          const sub = subjects.find(
-            (s) => s.name === slot.subject || s.id === slot.subject,
-          );
           return {
             section: selectedTimetableSection,
-            day: slot.dayOfWeek,
-            period: slot.periodIndex,
-            subjectId: sub?.id || slot.subject,
-            subjectName: sub?.name || slot.subject,
+            day: slot.day,
+            period: slot.period,
+            subjectId: slot.subjectId,
+            subjectName: slot.subjectName,
             teacherId: slot.teacherId,
-            teacherName: teacher?.name || slot.teacherId,
+            teacherName: slot.teacherName || "Unassigned",
+            curriculumMappingId: slot.curriculumMappingId,
+            spanPeriods: slot.spanPeriods || 1,
           };
         });
         setTimetableEntries((prev) => [
@@ -1988,7 +2005,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       })
       .catch((err) => console.error("Failed to load timetable:", err))
       .finally(() => setIsTimetableLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTimetableSection, sections]);
 
   const handleSaveSchedule = async () => {
@@ -2006,12 +2022,25 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const sectionEntries = timetableEntries.filter(
       (e) => e.section === selectedTimetableSection,
     );
-    const slots = sectionEntries.map((e) => ({
-      dayOfWeek: e.day,
-      periodIndex: e.period,
-      subject: e.subjectName,
-      teacherId: e.teacherId,
-    }));
+    const slots = sectionEntries.map((e) => {
+      let mappingId = e.curriculumMappingId;
+      if (!mappingId) {
+        const mapping = mappings.find(
+          (m) =>
+            m.grade === section.grade &&
+            m.section === section.id &&
+            m.subjectId === e.subjectId &&
+            m.teacherId === e.teacherId,
+        );
+        mappingId = mapping ? mapping.id : "";
+      }
+      return {
+        day: e.day,
+        period: e.period,
+        curriculumMappingId: mappingId,
+        spanPeriods: e.spanPeriods || 1,
+      };
+    });
 
     setIsSaving(true);
     try {
@@ -4340,10 +4369,12 @@ const MappingForm = ({
   // Update when initialData changes (for contextual + button)
   useEffect(() => {
     if (initialData) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       if (initialData.grade) setGrade(initialData.grade);
       if (initialData.section) setSection(initialData.section);
       if (initialData.subjectId) setSubjectId(initialData.subjectId);
       if (initialData.teacherId) setTeacherId(initialData.teacherId);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [initialData]);
 
@@ -4780,12 +4811,13 @@ const FormGroup = ({
             const selected = opts.find(
               (o) => (typeof o === "string" ? o : o.label) === val,
             );
-            onChange &&
+            if (onChange) {
               onChange(
                 typeof selected === "string"
                   ? selected
                   : ((selected as { val: string } | undefined)?.val ?? ""),
               );
+            }
           }}
           placeholder={placeholder}
           icon={icon}
