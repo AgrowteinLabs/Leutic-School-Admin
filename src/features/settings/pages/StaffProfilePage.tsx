@@ -73,7 +73,7 @@ export const StaffProfilePage = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FBFBFA] font-sans">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB] font-sans">
       <TopBar
         title="Faculty Profile"
         subtitle={`${staff.id} • ${staff.department}`}

@@ -5,10 +5,11 @@ import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransportationPage } from "./TransportationPage";
 import { VehiclesPage } from "./VehiclesPage";
+import { RoutesPage } from "./RoutesPage";
 
 export const TransportationHubPage = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"tracking" | "fleet">(
+  const [activeTab, setActiveTab] = useState<"tracking" | "fleet" | "routes">(
     "tracking",
   );
 
@@ -39,6 +40,7 @@ export const TransportationHubPage = () => {
               {[
                 { id: "tracking", label: "Live Tracking", icon: "location_on" },
                 { id: "fleet", label: "Fleet List", icon: "directions_bus" },
+                { id: "routes", label: "Manage Routes", icon: "route" },
               ].map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -82,6 +84,7 @@ export const TransportationHubPage = () => {
             <div className="flex-1 overflow-y-auto no-scrollbar">
               {activeTab === "tracking" && <TransportationPage isHubChild />}
               {activeTab === "fleet" && <VehiclesPage isHubChild />}
+              {activeTab === "routes" && <RoutesPage isHubChild />}
             </div>
           </motion.div>
         </AnimatePresence>

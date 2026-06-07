@@ -33,6 +33,7 @@ import { CreateQuizPage } from "./features/quizzes/pages/CreateQuizPage";
 import { QuizViewPage } from "./features/quizzes/pages/QuizViewPage";
 import { AddProgramPage } from "./features/programs/pages/AddProgramPage";
 import { SettingsPage } from "./features/settings/pages/SettingsPage";
+import { GradeConfigurationPage } from "./features/settings/pages/GradeConfigurationPage";
 
 function App() {
   useEffect(() => {
@@ -79,6 +80,7 @@ function App() {
           <Route path="/community/:tab?" element={<CommunityPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/grades" element={<GradeConfigurationPage />} />
           <Route path="/know-your-student" element={<KnowYourStudentPage />} />
           
           <Route path="*" element={<Navigate to="/" replace />} />

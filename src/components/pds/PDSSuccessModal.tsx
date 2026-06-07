@@ -56,7 +56,7 @@ export const PDSSuccessModal = ({
           </div>
 
           <h3 className="text-[24px] font-bold text-[#3D6B2C] tracking-tight mb-2">{title}</h3>
-          <p className="text-[#B0AFA8] text-[15px] font-medium leading-relaxed mb-10 px-4">
+          <p className="text-[#B0AFA8] text-[15px] font-medium leading-relaxed mb-10 px-4 whitespace-pre-line">
             {description}
           </p>
 

@@ -197,17 +197,14 @@ const TimetableGrid = memo(({
 
   if (!selectedTimetableSection) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-20 text-center relative overflow-hidden rounded-b-[23px]">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[400px] font-black text-slate-50/50 select-none pointer-events-none">Schedule</div>
-        <div className="relative z-10 space-y-8 max-w-md animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          <div className="size-24 rounded-[40px] bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center text-primary mx-auto">
-            <span className="material-symbols-outlined text-[48px] animate-pulse">calendar_view_day</span>
-          </div>
-          <div className="space-y-3">
-            <h3 className="text-[32px] font-semibold text-secondary tracking-tight">Academic rhythm</h3>
-            <p className="text-[15px] font-medium text-slate-400 leading-relaxed">Select an institutional roster above to visualize and manage the weekly academic flow for your students.</p>
-          </div>
+      <div className="flex-1 flex flex-col items-center justify-center py-24 px-6 text-center bg-white rounded-b-[24px]">
+        <div className="size-20 rounded-[32px] bg-[#F7F8F4] flex items-center justify-center text-[#B0AFA8] mb-6">
+          <span className="material-symbols-outlined text-[40px]">calendar_view_day</span>
         </div>
+        <h4 className="text-[length:var(--font-size-h3)] font-bold text-foreground">Academic Rhythm</h4>
+        <p className="text-[14px] font-medium text-[#B0AFA8] mt-1 max-w-xs">
+          Select a class section from the index above to display and configure its weekly academic timetable.
+        </p>
       </div>
     );
   }
@@ -888,8 +885,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           </>
         )}
 
-        <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 pb-10">
-          <div className="max-w-[1400px] mx-auto space-y-6 pt-4">
+        <div className="flex-1 overflow-y-auto no-scrollbar px-6 lg:px-10 py-8">
+          <div className="max-w-[1400px] mx-auto space-y-8">
 
             <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm shadow-slate-100/30 flex flex-col min-h-[500px]">
 

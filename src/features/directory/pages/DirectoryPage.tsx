@@ -347,7 +347,7 @@ export const DirectoryPage = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB]">
       <div className="shrink-0">
         <TopBar
           title="Student & Staff"

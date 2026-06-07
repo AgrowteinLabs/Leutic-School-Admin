@@ -112,7 +112,7 @@ export const ExamDetailsPage = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB]">
       <TopBar
         title={examData.title || "Examination Detail"}
         subtitle={`${examData.date || "Academic Year 2024"} • ${examData.type || "Final Assessment"} • ID: ${examData.id}`}
@@ -211,7 +211,15 @@ export const ExamDetailsPage = () => {
                           </div>
                         </div>
 
-                        <PDSButton variant="primary" size="sm" icon="upload" className="h-10 px-6 text-[12px] font-bold shadow-lg shadow-primary/20">Upload Marks</PDSButton>
+                        <PDSButton
+                          onClick={() => navigate("/academics/marks")}
+                          variant="primary"
+                          size="sm"
+                          icon="upload"
+                          className="h-10 px-6 text-[12px] font-bold shadow-lg shadow-primary/20"
+                        >
+                          Upload Marks
+                        </PDSButton>
                      </div>
                   </div>
                </div>
