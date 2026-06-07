@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 
-
 export const SettingsPage = () => {
+    const navigate = useNavigate();
     const [fontSize, setFontSize] = useState(localStorage.getItem('pds-font-size') || 'theme-small');
 
     const handleFontSizeChange = (size: string) => {
@@ -19,10 +20,10 @@ export const SettingsPage = () => {
     };
 
     const sizeOptions = [
-        { id: 'theme-small', label: 'Small', desc: 'Modern & Compact', preview: 'The quick brown fox jumps over the lazy dog.' },
-        { id: 'theme-medium', label: 'Medium', desc: 'Standard Comfort', preview: 'The quick brown fox jumps over the lazy dog.' },
-        { id: 'theme-large', label: 'Large', desc: 'High Visibility', preview: 'The quick brown fox jumps over the lazy dog.' },
-        { id: 'theme-xl', label: 'Extra Large', desc: 'Maximum Clarity', preview: 'The quick brown fox jumps over the lazy dog.' },
+        { id: 'theme-small', label: 'Small', desc: 'Compact view' },
+        { id: 'theme-medium', label: 'Medium', desc: 'Default comfort' },
+        { id: 'theme-large', label: 'Large', desc: 'High visibility' },
+        { id: 'theme-xl', label: 'Extra Large', desc: 'Maximum clarity' },
     ];
 
     return (
@@ -36,82 +37,109 @@ export const SettingsPage = () => {
                 <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-12">
                     
                     <div className="space-y-12">
-                        {/* Section 1: Appearance */}
-                        <div className="space-y-8">
+                        {/* Section 1: Institutional Profile */}
+                        <div className="space-y-6">
+                            <div className="flex flex-col gap-1">
+                                <h2 className="text-[20px] font-bold text-foreground tracking-tight">Institutional Profile</h2>
+                                <p className="text-[13px] font-medium text-[#B0AFA8]">Update basic school details and academic structures</p>
+                            </div>
+
+                            <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100 max-w-3xl">
+                                {/* School Info Row */}
+                                <div className="p-6 flex items-center justify-between group hover:bg-[#F7F8F4]/30 transition-colors">
+                                    <div className="flex items-center gap-5">
+                                        <div className="size-11 rounded-xl bg-slate-50 flex items-center justify-center text-[#B0AFA8] group-hover:bg-[#152328]/5 group-hover:text-[#152328] transition-all duration-300">
+                                            <span className="material-symbols-outlined text-[22px]">school</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-[14px] font-bold text-foreground">School Information</p>
+                                            <p className="text-[12px] text-[#B0AFA8] font-medium mt-0.5">Manage logo, address and contact details</p>
+                                        </div>
+                                    </div>
+                                    <button className="px-4 h-9 rounded-xl border border-slate-200 text-[11.5px] font-bold text-foreground hover:bg-slate-50 transition-colors shrink-0">
+                                        Edit Profile
+                                    </button>
+                                </div>
+
+                                {/* Grade Setup Row */}
+                                <div className="p-6 flex items-center justify-between group hover:bg-[#F7F8F4]/30 transition-colors">
+                                    <div className="flex items-center gap-5">
+                                        <div className="size-11 rounded-xl bg-slate-50 flex items-center justify-center text-[#B0AFA8] group-hover:bg-[#152328]/5 group-hover:text-[#152328] transition-all duration-300">
+                                            <span className="material-symbols-outlined text-[22px]">tune</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-[14px] font-bold text-foreground">Grade & Grading Setup</p>
+                                            <p className="text-[12px] text-[#B0AFA8] font-medium mt-0.5">Configure active class levels and scoring boundaries</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => navigate("/settings/grades")} 
+                                        className="px-4 h-9 rounded-xl bg-[#152328] text-[11.5px] font-bold text-[#D9EA85] hover:bg-[#1E353D] transition-colors shrink-0"
+                                    >
+                                        Configure Setup
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section 2: Display & Accessibility */}
+                        <div className="pt-12 border-t border-slate-100 space-y-6">
                             <div className="flex flex-col gap-1">
                                 <h2 className="text-[20px] font-bold text-foreground tracking-tight">Display & Accessibility</h2>
                                 <p className="text-[13px] font-medium text-[#B0AFA8]">Adjust the interface font size for your visual comfort</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl">
                                 {sizeOptions.map((opt) => (
                                     <button 
                                         key={opt.id}
                                         onClick={() => handleFontSizeChange(opt.id)}
                                         className={cn(
-                                            "group relative flex flex-col text-left bg-white border rounded-[32px] overflow-hidden transition-all duration-500",
+                                            "group relative flex flex-col items-start p-5 bg-white border rounded-[22px] transition-all duration-300 hover:shadow-md",
                                             fontSize === opt.id 
-                                                ? "border-primary ring-4 ring-primary/5 shadow-xl shadow-primary/5" 
+                                                ? "border-[#152328] bg-[#F7F8F4] ring-4 ring-[#152328]/5 shadow-sm" 
                                                 : "border-slate-100 hover:border-slate-200"
                                         )}
                                     >
-                                        <div className="p-8 pb-4 flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
+                                        <div className="flex items-center justify-between w-full mb-3">
+                                            <div className="flex items-center gap-3">
                                                 <div className={cn(
-                                                    "size-10 rounded-xl flex items-center justify-center transition-colors",
-                                                    fontSize === opt.id ? "bg-primary text-white" : "bg-slate-50 text-[#B0AFA8]"
+                                                    "size-4 rounded-full border flex items-center justify-center shrink-0 transition-colors",
+                                                    fontSize === opt.id ? "border-[#152328] bg-[#152328] text-white" : "border-slate-300 bg-white"
                                                 )}>
-                                                    <span className="material-symbols-outlined text-[20px]">text_fields</span>
+                                                    {fontSize === opt.id && (
+                                                        <div className="size-1.5 rounded-full bg-white" />
+                                                    )}
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[15px] font-bold text-foreground">{opt.label}</span>
-                                                    <span className="text-[11px] font-medium text-[#B0AFA8]">{opt.desc}</span>
-                                                </div>
+                                                <span className="text-[14px] font-bold text-foreground">{opt.label}</span>
                                             </div>
-                                            {fontSize === opt.id && (
-                                                <div className="size-6 rounded-full bg-primary flex items-center justify-center">
-                                                    <span className="material-symbols-outlined text-[14px] text-white font-bold">check</span>
-                                                </div>
-                                            )}
+                                            <span className={cn(
+                                                "font-black text-slate-400 group-hover:text-primary transition-colors select-none",
+                                                opt.id === 'theme-small' && "text-[12px]",
+                                                opt.id === 'theme-medium' && "text-[14px]",
+                                                opt.id === 'theme-large' && "text-[16px]",
+                                                opt.id === 'theme-xl' && "text-[18px]",
+                                            )}>
+                                                Aa
+                                            </span>
                                         </div>
-
-                                        <div className="px-8 pb-8">
-                                            <div className="bg-slate-50/50 rounded-2xl p-6 border border-slate-50">
-                                                <p className={cn(
-                                                    "font-medium leading-relaxed transition-all",
-                                                    opt.id === 'theme-small' && "text-[12px]",
-                                                    opt.id === 'theme-medium' && "text-[14px]",
-                                                    opt.id === 'theme-large' && "text-[16px]",
-                                                    opt.id === 'theme-xl' && "text-[18px]",
-                                                    fontSize === opt.id ? "text-foreground" : "text-[#B0AFA8]"
-                                                )}>
-                                                    {opt.preview}
-                                                </p>
-                                            </div>
+                                        
+                                        <p className="text-[11px] font-medium text-[#B0AFA8] text-left mb-4">{opt.desc}</p>
+                                        
+                                        <div className="mt-auto pt-3 border-t border-slate-100 w-full text-left">
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#B0AFA8] block mb-1">Preview</span>
+                                            <p className={cn(
+                                                "font-semibold text-foreground leading-snug",
+                                                opt.id === 'theme-small' && "text-[12px]",
+                                                opt.id === 'theme-medium' && "text-[14px]",
+                                                opt.id === 'theme-large' && "text-[16px]",
+                                                opt.id === 'theme-xl' && "text-[18px]",
+                                            )}>
+                                                This is sample text.
+                                            </p>
                                         </div>
                                     </button>
                                 ))}
-                            </div>
-                        </div>
-
-                        {/* Section 2: Other Settings */}
-                        <div className="pt-12 border-t border-slate-100 space-y-6">
-                            <div className="flex flex-col gap-1">
-                                <h2 className="text-[20px] font-bold text-foreground tracking-tight">Institutional Profile</h2>
-                                <p className="text-[13px] font-medium text-[#B0AFA8]">Update school details and academic sessions</p>
-                            </div>
-
-                            <div className="bg-white border border-slate-100 rounded-[32px] p-10 flex items-center justify-between group hover:border-primary/20 transition-colors">
-                                <div className="flex items-center gap-6">
-                                    <div className="size-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-all">
-                                        <span className="material-symbols-outlined text-[28px]">school</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-[15px] font-bold text-foreground">School Information</p>
-                                        <p className="text-[13px] text-[#B0AFA8] font-medium">Manage logo, address and contact details</p>
-                                    </div>
-                                </div>
-                                <button className="px-6 h-10 rounded-xl bg-slate-50 text-[12px] font-bold text-[#71716A] hover:bg-slate-100 transition-colors">Edit Profile</button>
                             </div>
                         </div>
                     </div>
