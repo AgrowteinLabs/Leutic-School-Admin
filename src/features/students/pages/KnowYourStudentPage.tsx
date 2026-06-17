@@ -10,7 +10,7 @@ const GET_CLASSES = `
     classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
       items {
         id
-        name
+        grade
         section
       }
     }
@@ -139,9 +139,9 @@ export const KnowYourStudentPage = () => {
     }, [students]);
 
     const classesMap = useMemo(() => {
-        const m: Record<string, { name: string; section?: string }> = {};
+        const m: Record<string, { grade: string; section?: string }> = {};
         classes.forEach(c => {
-            m[c.id] = { name: c.name, section: c.section };
+            m[c.id] = { grade: c.grade, section: c.section };
         });
         return m;
     }, [classes]);
@@ -149,7 +149,7 @@ export const KnowYourStudentPage = () => {
     const uniqueGrades = useMemo(() => {
         const grades = new Set<string>();
         classes.forEach(c => {
-            if (c.name) grades.add(c.name);
+            if (c.grade) grades.add(c.grade);
         });
         return Array.from(grades).sort();
     }, [classes]);
@@ -170,7 +170,7 @@ export const KnowYourStudentPage = () => {
                                  (s.admissionNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
                                  s.id.toLowerCase().includes(searchTerm.toLowerCase());
             
-            const matchesGrade = selectedGrade === "All Grades" || (studentClass && studentClass.name === selectedGrade);
+            const matchesGrade = selectedGrade === "All Grades" || (studentClass && studentClass.grade === selectedGrade);
             const matchesSection = selectedSection === "All Sections" || (studentClass && studentClass.section === selectedSection);
             
             return matchesSearch && matchesGrade && matchesSection;
@@ -293,7 +293,7 @@ export const KnowYourStudentPage = () => {
                             {filteredStudents.map((s, idx) => {
                                 const metrics = metricsMap[s.id] || { aura: 80, attendance: 100 };
                                 const sClass = classesMap[s.classId || ""];
-                                const gradeText = sClass ? sClass.name : "Unassigned";
+                                const gradeText = sClass ? sClass.grade : "Unassigned";
                                 const sectionText = sClass?.section ? `Section ${sClass.section}` : "";
                                 const isAtRisk = metrics.attendance < 85;
                                 const imgUrl = getStudentAvatar(s.id, idx);

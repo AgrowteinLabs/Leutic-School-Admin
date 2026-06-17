@@ -10,7 +10,7 @@ import { graphqlRequest } from "../../../lib/graphqlClient";
 
 interface ClassItem {
   id: string;
-  name: string;
+  grade: string;
   section: string;
 }
 
@@ -60,7 +60,7 @@ export const AddStaffPage = () => {
                   classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
                     items {
                       id
-                      name
+                      grade
                       section
                     }
                   }
@@ -96,7 +96,7 @@ export const AddStaffPage = () => {
     const mappedClassIds = assignedClasses
       .map((opt) => {
         const foundClass = classesList.find(
-          (c) => `${c.name} - ${c.section}` === opt,
+          (c) => `${c.grade} - ${c.section}` === opt,
         );
         return foundClass ? foundClass.id : null;
       })
@@ -633,7 +633,7 @@ export const AddStaffPage = () => {
                                     label=""
                                     type="chips"
                                     options={classesList.map(
-                                      (c) => `${c.name} - ${c.section}`,
+                                      (c) => `${c.grade} - ${c.section}`,
                                     )}
                                     value={assignedClasses}
                                     onChange={setAssignedClasses}

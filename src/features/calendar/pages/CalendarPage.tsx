@@ -101,7 +101,6 @@ export const CalendarPage = () => {
           classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
             items {
               id
-              name
               grade
               section
             }
@@ -111,7 +110,7 @@ export const CalendarPage = () => {
       const loadedClasses = classesRes.classes?.items || [];
       setClassesList(loadedClasses);
       if (loadedClasses.length > 0 && !selectedClass) {
-        setSelectedClass(loadedClasses[0].name || `${loadedClasses[0].grade}${loadedClasses[0].section || ""}`);
+        setSelectedClass(loadedClasses[0].section ? `${loadedClasses[0].grade}-${loadedClasses[0].section}` : loadedClasses[0].grade);
       }
 
       // 3. Get Calendars & Events
@@ -451,8 +450,8 @@ export const CalendarPage = () => {
                   >
                     {activeView === "class" ? (
                       classesList.map((c) => (
-                        <option key={c.id} value={c.name}>
-                          {c.name || `${c.grade}-${c.section}`}
+                        <option key={c.id} value={c.section ? `${c.grade}-${c.section}` : c.grade}>
+                          {c.section ? `${c.grade}-${c.section}` : c.grade}
                         </option>
                       ))
                     ) : (

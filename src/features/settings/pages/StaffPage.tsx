@@ -205,7 +205,7 @@ export const StaffPage = ({
 
     const query = `
       query GetTeachers($schoolId: String) {
-        users(filter: { role: "TEACHER", schoolId: $schoolId, isActive: true, page: 1, pageSize: 200 }) {
+        users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 200 }) {
           items {
             id
             role

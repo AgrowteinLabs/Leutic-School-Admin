@@ -219,7 +219,7 @@ export const StudentsPage = ({
             total
             items {
               id
-              name
+              grade
               section
             }
           }
@@ -248,7 +248,7 @@ export const StudentsPage = ({
             total?: number;
             items: Array<{
               id: string;
-              name: string;
+              grade: string;
               section?: string;
             }>;
           };
@@ -256,7 +256,6 @@ export const StudentsPage = ({
           filter: {
             role: "STUDENT",
             schoolId: localStorage.getItem("school_id") || undefined,
-            isActive: true,
             page: 1,
             pageSize: 100,
           },
@@ -286,7 +285,7 @@ export const StudentsPage = ({
             return {
               name: user.name,
               id: user.admissionNumber || user.id.slice(0, 8),
-              grade: matchedClass ? matchedClass.name : "Unassigned",
+              grade: matchedClass ? matchedClass.grade : "Unassigned",
               section: matchedClass ? matchedClass.section || "" : "",
               participation: 75,
               auraScore: 80,

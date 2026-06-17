@@ -48,7 +48,7 @@ export const EnrollStudentPage = () => {
 
   // Database Classes State
   const [dbClasses, setDbClasses] = useState<
-    Array<{ id: string; name: string; section: string }>
+    Array<{ id: string; grade: string; section: string }>
   >([]);
   const [classOptions, setClassOptions] = useState<string[]>([]);
 
@@ -66,7 +66,7 @@ export const EnrollStudentPage = () => {
         try {
           const classesData = await graphqlRequest<{
             classes: {
-              items: Array<{ id: string; name: string; section: string }>;
+              items: Array<{ id: string; grade: string; section: string }>;
             };
           }>(
             `
@@ -74,7 +74,7 @@ export const EnrollStudentPage = () => {
                             classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
                                 items {
                                     id
-                                    name
+                                    grade
                                     section
                                 }
                             }
@@ -89,7 +89,7 @@ export const EnrollStudentPage = () => {
           ) {
             setDbClasses(classesData.classes.items);
             const options = classesData.classes.items.map(
-              (c) => `${c.name} - ${c.section}`,
+              (c) => `${c.grade} - ${c.section}`,
             );
             setClassOptions(options);
             setAdmissionGrade(options[0]);
@@ -118,7 +118,7 @@ export const EnrollStudentPage = () => {
         return;
       }
       const selectedClass = dbClasses.find(
-        (c) => `${c.name} - ${c.section}` === admissionGrade,
+        (c) => `${c.grade} - ${c.section}` === admissionGrade,
       );
       const resolvedClassId = selectedClass ? selectedClass.id : undefined;
       const finalAdmissionNo =

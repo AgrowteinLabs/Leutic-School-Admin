@@ -10,12 +10,13 @@ interface TeacherUser {
 interface CreateClassResponse {
   id: string;
   schoolId: string;
-  name: string;
+  grade: string;
   section: string;
+  academicSession: string;
+  displayLabel?: string;
   classTeacherId: string;
   roomNumber?: string;
   shift?: string;
-  createdAt: string;
 }
 
 interface CreateClassModalProps {
@@ -60,6 +61,13 @@ export const CreateClassModal = ({ isOpen, onClose, onCreated }: CreateClassModa
 
   if (!isOpen) return null;
 
+  const mapShiftToEnum = (s: string) => {
+    if (s.toLowerCase().includes("morning")) return "MORNING";
+    if (s.toLowerCase().includes("afternoon")) return "AFTERNOON";
+    if (s.toLowerCase().includes("evening")) return "EVENING";
+    return "MORNING";
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!gradeLevel || !section) {
@@ -77,28 +85,31 @@ export const CreateClassModal = ({ isOpen, onClose, onCreated }: CreateClassModa
     const createClassMutation = `
       mutation CreateClass(
         $schoolId: String!
-        $name: String!
-        $section: String
+        $grade: String!
+        $section: String!
+        $academicSession: String!
         $classTeacherId: String
-        $shift: String
+        $shift: ClassShift
         $roomNumber: String
       ) {
         createClass(createClassInput: {
           schoolId: $schoolId
-          name: $name
+          grade: $grade
           section: $section
+          academicSession: $academicSession
           classTeacherId: $classTeacherId
           shift: $shift
           roomNumber: $roomNumber
         }) {
           id
           schoolId
-          name
+          grade
           section
+          academicSession
+          displayLabel
           classTeacherId
           shift
           roomNumber
-          createdAt
         }
       }
     `;
@@ -106,10 +117,11 @@ export const CreateClassModal = ({ isOpen, onClose, onCreated }: CreateClassModa
     try {
       const data = await graphqlRequest<{ createClass: CreateClassResponse }>(createClassMutation, {
         schoolId,
-        name: gradeLevel,
+        grade: gradeLevel,
         section,
+        academicSession: "2025-26",
         classTeacherId,
-        shift,
+        shift: mapShiftToEnum(shift),
         roomNumber: room
       });
 

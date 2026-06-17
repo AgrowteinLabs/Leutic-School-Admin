@@ -21,19 +21,19 @@ interface ClassData {
 interface GraphQLClass {
   id: string;
   schoolId: string;
-  name: string;
-  category?: string;
+  grade: string;
   section?: string;
+  displayLabel?: string;
   classTeacherId?: string;
   roomNumber?: string;
   shift?: string;
   capacity?: number;
+  studentCount?: number;
 }
 
 interface GraphQLUser {
   id: string;
   name: string;
-  classId?: string;
 }
 
 export const ClassesPage = () => {
@@ -59,12 +59,14 @@ export const ClassesPage = () => {
             items {
               id
               schoolId
-              name
+              grade
               section
+              displayLabel
               classTeacherId
               roomNumber
               shift
               capacity
+              studentCount
             }
           }
         }
@@ -81,27 +83,14 @@ export const ClassesPage = () => {
         }
       `;
       
-      const studentsQuery = `
-        query GetStudents($schoolId: String) {
-          users(filter: { role: "STUDENT", schoolId: $schoolId, page: 1, pageSize: 2000 }) {
-            items {
-              id
-              classId
-            }
-          }
-        }
-      `;
-      
       try {
         const results = await Promise.allSettled([
           graphqlRequest<{ classes: { items: GraphQLClass[] } }>(classesQuery, { schoolId: schoolId || undefined }),
-          graphqlRequest<{ users: { items: GraphQLUser[] } }>(teachersQuery, { schoolId: schoolId || undefined }),
-          graphqlRequest<{ users: { items: GraphQLUser[] } }>(studentsQuery, { schoolId: schoolId || undefined })
+          graphqlRequest<{ users: { items: GraphQLUser[] } }>(teachersQuery, { schoolId: schoolId || undefined })
         ]);
         
         let loadedClasses: GraphQLClass[] = [];
         let loadedTeachers: GraphQLUser[] = [];
-        let loadedStudents: GraphQLUser[] = [];
         
         if (results[0].status === "fulfilled") {
           loadedClasses = results[0].value.classes?.items || [];
@@ -115,34 +104,22 @@ export const ClassesPage = () => {
           console.error("Teachers load failed:", results[1].reason);
         }
         
-        if (results[2].status === "fulfilled") {
-          loadedStudents = results[2].value.users?.items || [];
-        } else {
-          console.error("Students load failed:", results[2].reason);
-        }
-        
         const teacherMap = new Map(loadedTeachers.map(t => [t.id, t.name]));
-        const studentCountMap = new Map<string, number>();
-        loadedStudents.forEach(s => {
-          if (s.classId) {
-            studentCountMap.set(s.classId, (studentCountMap.get(s.classId) || 0) + 1);
-          }
-        });
         
         const mappedClasses = loadedClasses.map((c: GraphQLClass) => {
           const room = c.roomNumber || "Room TBD";
           const teacherName = c.classTeacherId ? (teacherMap.get(c.classTeacherId) || "No Teacher Assigned") : "No Teacher Assigned";
-          const studentCount = studentCountMap.get(c.id) || 0;
+          const studentCount = c.studentCount || 0;
           return {
             id: c.id,
-            grade: c.name,
+            grade: c.grade,
             section: c.section || "A",
             room: room,
             status: "Normal",
             statusType: "normal" as const,
             teacher: teacherName,
             students: studentCount,
-            participation: 85 + ((c.name.codePointAt(0) || 0) % 15), // stable mock percentage
+            participation: 85 + ((c.grade.codePointAt(0) || 0) % 15), // stable mock percentage
           };
         });
         

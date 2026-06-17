@@ -11,7 +11,7 @@ import { graphqlRequest } from "../../../lib/graphqlClient";
 
 interface DBClass {
   id: string;
-  name: string;
+  grade: string;
   section?: string;
 }
 
@@ -45,7 +45,7 @@ export const AddNoticePage = () => {
             classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
               items {
                 id
-                name
+                grade
                 section
               }
             }
@@ -61,7 +61,7 @@ export const AddNoticePage = () => {
 
   const recipientOptions = [
     "All School",
-    ...classesList.map(c => `Class: ${c.name} (${c.section || ""})`)
+    ...classesList.map(c => `Class: ${c.grade} (${c.section || ""})`)
   ];
 
   const handlePost = async () => {

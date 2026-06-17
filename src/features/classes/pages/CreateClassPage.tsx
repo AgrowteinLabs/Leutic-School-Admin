@@ -117,6 +117,13 @@ export const CreateClassPage = () => {
         }
     };
 
+    const mapShiftToEnum = (s: string) => {
+        if (s.toLowerCase().includes("morning")) return "MORNING";
+        if (s.toLowerCase().includes("afternoon")) return "AFTERNOON";
+        if (s.toLowerCase().includes("evening")) return "EVENING";
+        return "MORNING";
+    };
+
     const handleFinalize = async () => {
         if (!gradeLevel || !sectionName) {
             setError("Please fill in the required fields: Grade Level and Section Name.");
@@ -133,25 +140,26 @@ export const CreateClassPage = () => {
         const createClassMutation = `
             mutation CreateClass(
                 $schoolId: String!
-                $name: String!
-                $section: String
+                $grade: String!
+                $section: String!
+                $academicSession: String!
                 $classTeacherId: String
                 $capacity: Int
-                $shift: String
+                $shift: ClassShift
                 $roomNumber: String
             ) {
                 createClass(createClassInput: {
                     schoolId: $schoolId
-                    name: $name
+                    grade: $grade
                     section: $section
+                    academicSession: $academicSession
                     classTeacherId: $classTeacherId
                     capacity: $capacity
                     shift: $shift
                     roomNumber: $roomNumber
                 }) {
                     id
-                    name
-                    section
+                    displayLabel
                 }
             }
         `;
@@ -159,11 +167,12 @@ export const CreateClassPage = () => {
         try {
             const data = await graphqlRequest<{ createClass: { id: string } }>(createClassMutation, {
                 schoolId,
-                name: gradeLevel,
+                grade: gradeLevel,
                 section: sectionName,
+                academicSession: session || "2025-26",
                 classTeacherId,
                 capacity: capacity ? Number.parseInt(capacity, 10) : undefined,
-                shift,
+                shift: mapShiftToEnum(shift),
                 roomNumber: room
             });
             

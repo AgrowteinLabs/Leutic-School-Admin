@@ -10,7 +10,7 @@ import { graphqlRequest } from "../../../lib/graphqlClient";
 
 const GET_DRIVERS = `
   query GetDrivers($schoolId: String) {
-    users(filter: { role: "DRIVER", schoolId: $schoolId, isActive: true, page: 1, pageSize: 500 }) {
+    users(filter: { role: "DRIVER", schoolId: $schoolId, page: 1, pageSize: 500 }) {
       items {
         id
         name
@@ -191,7 +191,8 @@ export const DriversPage = ({
     setIsLoading(true);
     try {
       const res = await graphqlRequest<any>(GET_DRIVERS, { schoolId });
-      setRawDrivers(res.users?.items || []);
+      const items = (res.users?.items || []).filter((u: any) => u.isActive);
+      setRawDrivers(items);
     } catch (err) {
       console.error("Failed to load drivers:", err);
     } finally {

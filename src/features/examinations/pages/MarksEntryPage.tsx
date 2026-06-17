@@ -34,7 +34,7 @@ const GET_CLASSES = `
     classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
       items {
         id
-        name
+        grade
         section
       }
     }
@@ -121,7 +121,7 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
         setClasses(classesList);
         if (classesList.length > 0) {
           const firstClass = classesList[0];
-          setSelectedClass(firstClass.section ? `${firstClass.name}-${firstClass.section}` : firstClass.name);
+          setSelectedClass(firstClass.section ? `${firstClass.grade}-${firstClass.section}` : firstClass.grade);
         }
 
         const examsList = examsRes.exams?.items || [];
@@ -139,12 +139,12 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
   }, []);
 
   const classOptions = useMemo(() => {
-    return classes.map(c => c.section ? `${c.name}-${c.section}` : c.name);
+    return classes.map(c => c.section ? `${c.grade}-${c.section}` : c.grade);
   }, [classes]);
 
   const activeClass = useMemo(() => {
     return classes.find(c => {
-      const label = c.section ? `${c.name}-${c.section}` : c.name;
+      const label = c.section ? `${c.grade}-${c.section}` : c.grade;
       return label === selectedClass;
     });
   }, [classes, selectedClass]);

@@ -36,7 +36,7 @@ interface GraphQLUser {
 
 interface ClassItem {
   id: string;
-  name: string;
+  grade: string;
   section: string;
 }
 
@@ -76,7 +76,7 @@ export const StaffProfilePage = () => {
           classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
             items {
               id
-              name
+              grade
               section
             }
           }
@@ -121,7 +121,7 @@ export const StaffProfilePage = () => {
         const assignedClassIds = user.classIds || [];
         const assignedClassNames = classes
           .filter(c => assignedClassIds.includes(c.id))
-          .map(c => `${c.name}-${c.section}`);
+          .map(c => `${c.grade}-${c.section}`);
 
         const formattedDate = new Date(user.createdAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
         const pCode = user.name.codePointAt(0) || 0;

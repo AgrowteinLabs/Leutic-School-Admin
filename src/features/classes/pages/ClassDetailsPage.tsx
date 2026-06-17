@@ -36,11 +36,13 @@ interface ClassDetails {
 const ParentMessageModal = ({
   isOpen,
   onClose,
-  className
+  className,
+  classId
 }: {
   isOpen: boolean;
   onClose: () => void;
   className: string;
+  classId: string;
 }) => {
   const [isSending, setIsSending] = useState(false);
   const [title, setTitle] = useState("");
@@ -54,10 +56,11 @@ const ParentMessageModal = ({
     setIsSending(true);
     const schoolId = localStorage.getItem("school_id") || "";
     
-    const createNotificationMutation = `
-      mutation CreateNotification($schoolId: String!, $title: String!, $content: String!, $targetRoles: [String!]!) {
-        createNotification(createNotificationInput: {
+    const createAnnouncementMutation = `
+      mutation CreateAnnouncement($schoolId: String, $classId: String, $title: String!, $content: String!, $targetRoles: [String!]!) {
+        createAnnouncement(createAnnouncementInput: {
           schoolId: $schoolId
+          classId: $classId
           title: $title
           content: $content
           targetRoles: $targetRoles
@@ -68,17 +71,18 @@ const ParentMessageModal = ({
     `;
 
     try {
-      await graphqlRequest(createNotificationMutation, {
+      await graphqlRequest(createAnnouncementMutation, {
         schoolId,
+        classId,
         title,
-        content: `[Broadcast to ${className}] ${message}`,
+        content: message,
         targetRoles: ["PARENT"]
       });
       setTitle("");
       setMessage("");
       setImage(null);
     } catch (err: unknown) {
-      console.error("Broadcast notification failed:", err);
+      console.error("Broadcast announcement failed:", err);
       const errMsg = err instanceof Error ? err.message : "Failed to broadcast message to parents.";
       alert(errMsg);
     } finally {
@@ -702,7 +706,7 @@ interface ActivityUI {
 interface GraphQLClassDetails {
   id: string;
   schoolId: string;
-  name: string;
+  grade: string;
   section: string;
   classTeacherId: string;
   roomNumber?: string;
@@ -735,7 +739,7 @@ export const ClassDetailsPage = () => {
         class(id: $id) {
           id
           schoolId
-          name
+          grade
           section
           classTeacherId
           roomNumber
@@ -770,16 +774,32 @@ export const ClassDetailsPage = () => {
       }
     `;
 
+    const classStudentsQuery = `
+      query GetClassStudents($classId: ID!) {
+        studentsByClass(classId: $classId, page: 1, pageSize: 200) {
+          items {
+            id
+            name
+            admissionNumber
+            classId
+            email
+          }
+        }
+      }
+    `;
+
     try {
       const results = await Promise.allSettled([
         graphqlRequest<{ class: GraphQLClassDetails }>(classQuery, { id }),
         graphqlRequest<{ users: { items: TeacherOption[] } }>(teachersQuery, { schoolId: schoolId || undefined }),
-        graphqlRequest<{ users: { items: StudentOption[] } }>(studentsQuery, { schoolId: schoolId || undefined })
+        graphqlRequest<{ users: { items: StudentOption[] } }>(studentsQuery, { schoolId: schoolId || undefined }),
+        graphqlRequest<{ studentsByClass: { items: StudentOption[] } }>(classStudentsQuery, { classId: id })
       ]);
 
       let cls: GraphQLClassDetails | null = null;
       let teachers: TeacherOption[] = [];
       let students: StudentOption[] = [];
+      let classStudents: StudentOption[] = [];
 
       if (results[0].status === "fulfilled") {
         cls = results[0].value.class;
@@ -796,6 +816,10 @@ export const ClassDetailsPage = () => {
         students = results[2].value.users?.items || [];
       }
 
+      if (results[3].status === "fulfilled") {
+        classStudents = results[3].value.studentsByClass?.items || [];
+      }
+
       setTeachersList(teachers);
       setStudentsList(students);
 
@@ -804,8 +828,6 @@ export const ClassDetailsPage = () => {
 
       const parsedRoom = cls.roomNumber || "Room TBD";
       const parsedShift = cls.shift || "Morning Shift";
-
-      const classStudents = students.filter(s => s.classId === cls.id);
 
       // Fetch aura points in parallel for roster students
       const auraScores = await Promise.all(
@@ -887,7 +909,7 @@ export const ClassDetailsPage = () => {
       if (timelineActivities.length === 0) {
         setActivities([
           { type: "Curriculum", title: "Assignment Published", msg: "Unit 4: Modern History essays assigned.", time: "1h ago", icon: "inventory", color: "bg-emerald-50 text-emerald-600 border-emerald-100" },
-          { type: "Programs", title: "Science Fair Entries", msg: `Registered students from ${cls.name}-${cls.section || "A"}.`, time: "4h ago", icon: "groups", color: "bg-blue-50 text-blue-600 border-blue-100" },
+          { type: "Programs", title: "Science Fair Entries", msg: `Registered students from ${cls.grade}-${cls.section || "A"}.`, time: "4h ago", icon: "groups", color: "bg-blue-50 text-blue-600 border-blue-100" },
         ]);
       } else {
         setActivities(timelineActivities);
@@ -896,7 +918,7 @@ export const ClassDetailsPage = () => {
       const mappedClassStudents = classStudents.map((s) => {
         const participation = 80 + ((s.name.codePointAt(0) || 0) % 20);
         const auraScore = auraMap.get(s.id) ?? 80;
-        const isRisk = participation < 85 || !s.isActive;
+        const isRisk = participation < 85;
         return {
           uid: s.id,
           name: s.name,
@@ -911,7 +933,7 @@ export const ClassDetailsPage = () => {
 
       setClassDetails({
         id: cls.id,
-        grade: cls.name,
+        grade: cls.grade,
         section: cls.section || "A",
         room: parsedRoom,
         shift: parsedShift,
@@ -964,15 +986,15 @@ export const ClassDetailsPage = () => {
     const classTeacherId = selectedTeacherObj ? selectedTeacherObj.id : null;
 
     const updateMutation = `
-      mutation UpdateClass($id: ID!, $name: String, $section: String, $classTeacherId: String, $roomNumber: String) {
+      mutation UpdateClass($id: ID!, $grade: String, $section: String, $classTeacherId: String, $roomNumber: String) {
         updateClass(id: $id, updateClassInput: {
-          name: $name
+          grade: $grade
           section: $section
           classTeacherId: $classTeacherId
           roomNumber: $roomNumber
         }) {
           id
-          name
+          grade
           section
           classTeacherId
           roomNumber
@@ -985,7 +1007,7 @@ export const ClassDetailsPage = () => {
     try {
       await graphqlRequest(updateMutation, {
         id,
-        name: updatedFields.grade,
+        grade: updatedFields.grade,
         section: updatedFields.section,
         classTeacherId,
         roomNumber: updatedFields.room
@@ -1296,6 +1318,7 @@ export const ClassDetailsPage = () => {
         isOpen={showParentMessageModal}
         onClose={() => setShowParentMessageModal(false)}
         className={`${classDetails.grade}-${classDetails.section}`}
+        classId={classDetails.id}
       />
 
       <ManageClassDrawer

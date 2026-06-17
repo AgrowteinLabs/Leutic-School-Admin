@@ -26,7 +26,7 @@ const GET_CURRICULUM_DATA = `
     classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
       items {
         id
-        name
+        grade
         section
       }
     }
@@ -191,8 +191,8 @@ const SAVE_CLASS_TIMETABLE = `
   }
 `;
 
-const getBackendGradeOptions = (classes: { name: string }[]) =>
-  Array.from(new Set(classes.map((item) => item.name).filter(Boolean)));
+const getBackendGradeOptions = (classes: { grade: string }[]) =>
+  Array.from(new Set(classes.map((item) => item.grade).filter(Boolean)));
 
 // Types
 interface Subject {
@@ -1417,7 +1417,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   // State Data
 
   const [backendClasses, setBackendClasses] = useState<
-    { id: string; name: string; section: string }[]
+    { id: string; grade: string; section: string }[]
   >([]);
   const [initialMappings, setInitialMappings] = useState<Mapping[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -1501,7 +1501,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           }>(GET_GRADE_CONFIGS, { schoolId }),
           graphqlRequest<{
             classes: {
-              items: Array<{ id: string; name: string; section: string }>;
+              items: Array<{ id: string; grade: string; section: string }>;
             };
             users: { items: Array<{ id: string; name: string }> };
             curriculumMappings: {
@@ -1568,10 +1568,10 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         const fetchedClasses = data.classes?.items || [];
         setBackendClasses(fetchedClasses);
         const mappedSections = fetchedClasses.map((c) => {
-          const gradeNum = parseInt(c.name.replace(/\D/g, "")) || 10;
+          const gradeNum = parseInt(c.grade.replace(/\D/g, "")) || 10;
           const groupId = gradeNum <= 8 ? "middle" : "high";
           return {
-            grade: c.name,
+            grade: c.grade,
             id: c.section || "A",
             groupId,
             classId: c.id,
@@ -1580,7 +1580,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         setSections(mappedSections);
 
         if (fetchedClasses.length > 0 && !gradeConfigsResult.status) {
-          setSelectedTimetableGrade((prev) => prev || fetchedClasses[0].name);
+          setSelectedTimetableGrade((prev) => prev || fetchedClasses[0].grade);
         }
 
         const fetchedTeachers = data.users?.items || [];
@@ -1918,7 +1918,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       await Promise.all([
         ...toCreate.map((m) => {
           const classObj = backendClasses.find(
-            (c) => c.name === m.grade && c.section === m.section,
+            (c) => c.grade === m.grade && c.section === m.section,
           );
           if (!classObj) return Promise.resolve();
           return graphqlRequest(CREATE_CURRICULUM_MAPPING, {

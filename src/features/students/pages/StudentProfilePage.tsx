@@ -101,10 +101,10 @@ export const StudentProfilePage = () => {
         const results = await Promise.allSettled([
           // Class detail
           userObj.classId
-            ? graphqlRequest<{ class: { name: string; section: string } }>(`
+            ? graphqlRequest<{ class: { grade: string; section: string } }>(`
                 query GetClass($classId: ID!) {
                   class(id: $classId) {
-                    name
+                    grade
                     section
                   }
                 }
@@ -187,7 +187,7 @@ export const StudentProfilePage = () => {
         setStudent({
           name: userObj.name,
           id: userObj.admissionNumber || userObj.id.slice(0, 8),
-          grade: classDetail?.name || "10th Grade",
+          grade: classDetail?.grade || "10th Grade",
           section: classDetail?.section || "A",
           participation: progressDetail?.overallAverage || 85,
           auraScore: auraDetail?.totalPoints || 0,

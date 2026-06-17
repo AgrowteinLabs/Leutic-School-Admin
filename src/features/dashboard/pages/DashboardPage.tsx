@@ -40,7 +40,7 @@ interface DashboardStudent {
 
 interface DashboardClass {
     id: string;
-    name: string;
+    grade: string;
     section?: string;
 }
 
@@ -68,7 +68,7 @@ export const DashboardPage = () => {
                     classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
                         items {
                             id
-                            name
+                            grade
                             section
                         }
                     }
@@ -154,7 +154,7 @@ export const DashboardPage = () => {
                 setSelectedStudent({
                     name: foundUser.name,
                     id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
-                    grade: matchedClass ? matchedClass.name : "Unassigned",
+                    grade: matchedClass ? matchedClass.grade : "Unassigned",
                     section: matchedClass ? (matchedClass.section || "") : "",
                     participation: 75,
                     auraScore,
@@ -174,7 +174,7 @@ export const DashboardPage = () => {
     };
 
     const handleClassMonitorClick = async (gradeCode: string) => {
-        const matchedClass = classesList.find(c => c.name.toLowerCase().includes(gradeCode.toLowerCase()) || (c.section && `${c.name}-${c.section}`.toLowerCase().includes(gradeCode.toLowerCase())));
+        const matchedClass = classesList.find(c => c.grade.toLowerCase().includes(gradeCode.toLowerCase()) || (c.section && `${c.grade}-${c.section}`.toLowerCase().includes(gradeCode.toLowerCase())));
         if (matchedClass) {
             const query = `
                 query GetClassStudents($classId: String!) {
@@ -230,7 +230,7 @@ export const DashboardPage = () => {
                     setSelectedStudent({
                         name: foundUser.name,
                         id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
-                        grade: matchedClass.name,
+                        grade: matchedClass.grade,
                         section: matchedClass.section || "",
                         participation: 62,
                         auraScore,
