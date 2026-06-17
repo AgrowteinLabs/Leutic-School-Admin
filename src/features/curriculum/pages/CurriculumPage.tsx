@@ -490,6 +490,103 @@ const TimetableGrid = memo(
     } | null>(null);
     const schoolStartMins = timeToMins(scheduleConfig.schoolStart);
 
+    const handleTimetableSlotMouseUp = useCallback((day: string, p: number) => {
+      if (extendingSlot && extensionTarget) {
+        if (
+          extendingSlot.direction === "horizontal" &&
+          day === extensionTarget.day &&
+          p === extensionTarget.period
+        ) {
+          const src = days.indexOf(extendingSlot.day);
+          const tgt = days.indexOf(extensionTarget.day);
+          const newEntries = Array.from(
+            { length: tgt - src },
+            (_, i) => ({
+              ...extendingSlot.entry,
+              day: days[src + 1 + i],
+              period: extendingSlot.period,
+            }),
+          );
+          onEntriesChange((prev) => [
+            ...prev.filter(
+              (e) =>
+                !(
+                  e.section === selectedTimetableSection &&
+                  e.period === extendingSlot.period &&
+                  days.indexOf(e.day) > src &&
+                  days.indexOf(e.day) <= tgt
+                ),
+            ),
+            ...newEntries,
+          ]);
+        } else if (
+          extendingSlot.direction === "vertical" &&
+          extendingSlot.day === day
+        ) {
+          const newSpan = Math.max(
+            1,
+            extensionTarget.period -
+              extendingSlot.period +
+              1,
+          );
+          onEntriesChange((prev) =>
+            prev.map((e) =>
+              e === extendingSlot.entry
+                ? { ...e, spanPeriods: newSpan }
+                : e,
+            ),
+          );
+        }
+      }
+      setExtendingSlot(null);
+      setExtensionTarget(null);
+    }, [extendingSlot, extensionTarget, days, onEntriesChange, selectedTimetableSection]);
+
+    const handleTimetableSlotMouseEnter = useCallback((day: string, p: number, dIdx: number) => {
+      if (
+        extendingSlot?.direction !== "horizontal"
+      )
+        return;
+      const src = days.indexOf(extendingSlot.day);
+      if (p === extendingSlot.period && dIdx > src)
+        setExtensionTarget({ day, period: p });
+      else setExtensionTarget(null);
+    }, [extendingSlot, days]);
+
+    const handleRemoveEntry = useCallback((entryToRemove: TimetableEntry) => {
+      onEntriesChange((prev) => prev.filter((ent) => ent !== entryToRemove));
+    }, [onEntriesChange]);
+
+    const handleDecreaseSpan = useCallback((entryToModify: TimetableEntry) => {
+      onEntriesChange((prev) =>
+        prev.map((ent) =>
+          ent === entryToModify
+            ? {
+                ...ent,
+                spanPeriods: (ent.spanPeriods || 1) - 1,
+              }
+            : ent,
+        ),
+      );
+    }, [onEntriesChange]);
+
+    const handleAssignSlot = useCallback((day: string, period: number, data: any) => {
+      onEntriesChange((prev) => [
+        ...prev,
+        {
+          section: selectedTimetableSection,
+          day,
+          period,
+          subjectId: data.subjectId,
+          subjectName: data.subjectName,
+          teacherId: data.teacherId,
+          teacherName: data.teacherName,
+          curriculumMappingId: data.curriculumMappingId,
+        },
+      ]);
+      setAssigningSlot(null);
+    }, [onEntriesChange, selectedTimetableSection]);
+
     if (!selectedTimetableSection) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center p-20 text-center relative overflow-hidden rounded-b-[23px]">
@@ -518,8 +615,9 @@ const TimetableGrid = memo(
 
     return (
       <div ref={timetableRef} className="flex-1 bg-transparent">
-        <div
+        <section
           className="max-w-[1200px] mx-auto select-none"
+          aria-label="Timetable grid"
           onMouseUp={() => {
             if (extendingSlot) {
               setExtendingSlot(null);
@@ -594,7 +692,7 @@ const TimetableGrid = memo(
                         className="flex flex-col items-center gap-1 mt-1"
                         onBlur={(e) => {
                           if (
-                            !e.currentTarget.contains(e.relatedTarget as Node)
+                            !e.currentTarget.contains(e.relatedTarget)
                           )
                             setEditingPeriod(null);
                         }}
@@ -608,7 +706,7 @@ const TimetableGrid = memo(
                             value={dur}
                             onChange={(e) => {
                               const v =
-                                parseInt(e.target.value) ||
+                                Number.parseInt(e.target.value) ||
                                 scheduleConfig.defaultDuration;
                               onPeriodDurationChange(
                                 p,
@@ -660,11 +758,11 @@ const TimetableGrid = memo(
                     "flex-1 relative",
                     dIdx < days.length - 1 && "border-r border-[#EBE8E0]",
                   )}
+                  role="presentation"
                   onMouseMove={(e) => {
                     if (
-                      !extendingSlot ||
-                      extendingSlot.direction !== "vertical" ||
-                      extendingSlot.day !== day
+                      extendingSlot?.direction !== "vertical" ||
+                      extendingSlot?.day !== day
                     )
                       return;
                     const rect = e.currentTarget.getBoundingClientRect();
@@ -711,6 +809,21 @@ const TimetableGrid = memo(
                     const brkHeight = Math.max(20, brk.duration * SCALE);
                     const bIsLunch = brk.type === "lunch";
                     const bIsOther = brk.type === "other";
+                    let bgClass = "bg-slate-50/70";
+                    let iconColor = "text-slate-400";
+                    let iconName = "free_breakfast";
+                    let textClass = "text-slate-400";
+                    if (bIsLunch) {
+                      bgClass = "bg-amber-50/50";
+                      iconColor = "text-amber-400";
+                      iconName = "restaurant";
+                      textClass = "text-amber-600/70";
+                    } else if (bIsOther) {
+                      bgClass = "bg-violet-50/50";
+                      iconColor = "text-violet-400";
+                      iconName = "timer";
+                      textClass = "text-violet-600/70";
+                    }
                     return (
                       <div
                         key={`brk-${brk.id}`}
@@ -724,38 +837,22 @@ const TimetableGrid = memo(
                         }}
                         className={cn(
                           "flex items-center justify-center gap-1.5 border-b border-[#EBE8E0]",
-                          bIsLunch
-                            ? "bg-amber-50/50"
-                            : bIsOther
-                              ? "bg-violet-50/50"
-                              : "bg-slate-50/70",
+                          bgClass,
                         )}
                       >
                         <span
                           className={cn(
                             "material-symbols-outlined text-[12px]",
-                            bIsLunch
-                              ? "text-amber-400"
-                              : bIsOther
-                                ? "text-violet-400"
-                                : "text-slate-400",
+                            iconColor,
                           )}
                         >
-                          {bIsLunch
-                            ? "restaurant"
-                            : bIsOther
-                              ? "timer"
-                              : "free_breakfast"}
+                          {iconName}
                         </span>
                         <div className="flex flex-col leading-tight">
                           <span
                             className={cn(
                               "text-[10px] font-semibold",
-                              bIsLunch
-                                ? "text-amber-600/70"
-                                : bIsOther
-                                  ? "text-violet-600/70"
-                                  : "text-slate-400",
+                              textClass,
                             )}
                           >
                             {brk.label}
@@ -779,7 +876,7 @@ const TimetableGrid = memo(
                       const se = extendingSlot.entry;
                       const curEndP = Math.min(
                         se.period + (se.spanPeriods || 1) - 1,
-                        periods[periods.length - 1],
+                        periods.at(-1)!,
                       );
                       const curEndCfg = periodConfigByDay[day]?.[curEndP];
                       const tgtCfg =
@@ -845,7 +942,7 @@ const TimetableGrid = memo(
                           zIndex: entry ? 2 : 1,
                         }}
                         className={cn(
-                          "group border-b border-[#EBE8E0] transition-colors duration-200 py-4 px-4 animate-in fade-in duration-300",
+                          "group border-b border-[#EBE8E0] transition-colors duration-200 py-4 px-4 animate-in fade-in",
                           !entry &&
                             !isInHRange &&
                             "cursor-pointer hover:bg-white/90 hover:z-[15]",
@@ -854,73 +951,20 @@ const TimetableGrid = memo(
                             spanP > 1 &&
                             "border-l-[3px] border-l-slate-300",
                         )}
-                        onClick={() =>
-                          !entry &&
-                          !extendingSlot &&
-                          setAssigningSlot({ day, period: p })
-                        }
-                        onMouseEnter={() => {
-                          if (
-                            !extendingSlot ||
-                            extendingSlot.direction !== "horizontal"
-                          )
-                            return;
-                          const src = days.indexOf(extendingSlot.day);
-                          if (p === extendingSlot.period && dIdx > src)
-                            setExtensionTarget({ day, period: p });
-                          else setExtensionTarget(null);
-                        }}
-                        onMouseUp={() => {
-                          if (extendingSlot && extensionTarget) {
-                            if (
-                              extendingSlot.direction === "horizontal" &&
-                              day === extensionTarget.day &&
-                              p === extensionTarget.period
-                            ) {
-                              const src = days.indexOf(extendingSlot.day);
-                              const tgt = days.indexOf(extensionTarget.day);
-                              const newEntries = Array.from(
-                                { length: tgt - src },
-                                (_, i) => ({
-                                  ...extendingSlot.entry,
-                                  day: days[src + 1 + i],
-                                  period: extendingSlot.period,
-                                }),
-                              );
-                              onEntriesChange((prev) => [
-                                ...prev.filter(
-                                  (e) =>
-                                    !(
-                                      e.section === selectedTimetableSection &&
-                                      e.period === extendingSlot.period &&
-                                      days.indexOf(e.day) > src &&
-                                      days.indexOf(e.day) <= tgt
-                                    ),
-                                ),
-                                ...newEntries,
-                              ]);
-                            } else if (
-                              extendingSlot.direction === "vertical" &&
-                              extendingSlot.day === day
-                            ) {
-                              const newSpan = Math.max(
-                                1,
-                                extensionTarget.period -
-                                  extendingSlot.period +
-                                  1,
-                              );
-                              onEntriesChange((prev) =>
-                                prev.map((e) =>
-                                  e === extendingSlot.entry
-                                    ? { ...e, spanPeriods: newSpan }
-                                    : e,
-                                ),
-                              );
-                            }
+                        role={entry ? undefined : "button"}
+                        tabIndex={entry ? undefined : 0}
+                        onClick={() => {
+                          if (!entry && !extendingSlot) {
+                            setAssigningSlot({ day, period: p });
                           }
-                          setExtendingSlot(null);
-                          setExtensionTarget(null);
                         }}
+                        onKeyDown={(e) => {
+                          if (!entry && !extendingSlot && (e.key === "Enter" || e.key === " ")) {
+                            setAssigningSlot({ day, period: p });
+                          }
+                        }}
+                        onMouseEnter={() => handleTimetableSlotMouseEnter(day, p, dIdx)}
+                        onMouseUp={() => handleTimetableSlotMouseUp(day, p)}
                       >
                         {spanP === 1 && (
                           <div
@@ -999,9 +1043,7 @@ const TimetableGrid = memo(
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onEntriesChange((prev) =>
-                                  prev.filter((ent) => ent !== entry),
-                                );
+                                handleRemoveEntry(entry);
                               }}
                               className="absolute top-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center text-slate-300 bg-white z-10"
                             >
@@ -1013,17 +1055,7 @@ const TimetableGrid = memo(
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onEntriesChange((prev) =>
-                                    prev.map((ent) =>
-                                      ent === entry
-                                        ? {
-                                            ...ent,
-                                            spanPeriods:
-                                              (ent.spanPeriods || 1) - 1,
-                                          }
-                                        : ent,
-                                    ),
-                                  );
+                                  handleDecreaseSpan(entry);
                                 }}
                                 className="absolute bottom-3 right-3 size-7 rounded-full opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all flex items-center justify-center text-slate-300 bg-white z-10"
                                 title="Remove one period"
@@ -1033,7 +1065,8 @@ const TimetableGrid = memo(
                                 </span>
                               </button>
                             )}
-                            <div
+                            <button
+                              type="button"
                               onMouseDown={(e) => {
                                 e.stopPropagation();
                                 setExtendingSlot({
@@ -1043,11 +1076,13 @@ const TimetableGrid = memo(
                                   direction: "vertical",
                                 });
                               }}
-                              className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize group/handle flex items-center justify-center z-20"
+                              className="absolute bottom-0 left-0 right-0 h-4 cursor-ns-resize group/handle flex items-center justify-center z-20 bg-transparent border-0 p-0"
+                              aria-label="Resize slot vertically"
                             >
                               <div className="w-8 h-1 rounded-full bg-slate-200 group-hover/handle:bg-primary/40 opacity-0 group-hover:opacity-100 transition-all" />
-                            </div>
-                            <div
+                            </button>
+                            <button
+                              type="button"
                               onMouseDown={(e) => {
                                 e.stopPropagation();
                                 setExtendingSlot({
@@ -1057,10 +1092,11 @@ const TimetableGrid = memo(
                                   direction: "horizontal",
                                 });
                               }}
-                              className="absolute top-0 right-0 bottom-0 w-5 cursor-ew-resize group/rhandle flex items-center justify-center z-20"
+                              className="absolute top-0 right-0 bottom-0 w-5 cursor-ew-resize group/rhandle flex items-center justify-center z-20 bg-transparent border-0 p-0"
+                              aria-label="Resize slot horizontally"
                             >
                               <div className="h-10 w-[3px] rounded-full bg-slate-200 group-hover/rhandle:bg-primary/50 opacity-0 group-hover:opacity-100 transition-all duration-200" />
-                            </div>
+                            </button>
                           </>
                         ) : (
                           <div className="h-full flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 duration-300">
@@ -1133,28 +1169,7 @@ const TimetableGrid = memo(
                                 mappings={mappings}
                                 subjects={subjects}
                                 teachers={teachers}
-                                onAssign={({
-                                  subjectId,
-                                  subjectName,
-                                  teacherId,
-                                  teacherName,
-                                  curriculumMappingId,
-                                }) => {
-                                  onEntriesChange((prev) => [
-                                    ...prev,
-                                    {
-                                      section: selectedTimetableSection,
-                                      day,
-                                      period: ap,
-                                      subjectId,
-                                      subjectName,
-                                      teacherId,
-                                      teacherName,
-                                      curriculumMappingId,
-                                    },
-                                  ]);
-                                  setAssigningSlot(null);
-                                }}
+                                onAssign={(data) => handleAssignSlot(day, ap, data)}
                               />
                             </div>
                           </div>
@@ -1165,7 +1180,7 @@ const TimetableGrid = memo(
               );
             })}
           </div>
-        </div>
+        </section>
       </div>
     );
   },
@@ -1227,7 +1242,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         e.preventDefault();
-        e.returnValue = "";
+        e["returnValue"] = "";
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -1662,7 +1677,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   // Derived subject areas (replaces hardcoded departments)
   // Derived subject areas for filtering (All distinct areas currently in use)
   const activeSubjectAreas = useMemo(
-    () => [...new Set(subjects.map((s) => s.department))].sort(),
+    () => [...new Set(subjects.map((s) => s.department))].sort((a, b) => a.localeCompare(b)),
     [subjects],
   );
 
@@ -1874,7 +1889,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   };
 
   const onAddMapping = (newMapping: Omit<Mapping, "id">) => {
-    if (editingMapping && editingMapping.id) {
+    if (editingMapping?.id) {
       setMappings((prev) =>
         prev.map((m) =>
           m.id === editingMapping.id ? { ...m, ...newMapping } : m,
@@ -1957,6 +1972,13 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     }
   };
 
+  const handleLoadTimetableEntries = useCallback((section: string, entries: TimetableEntry[]) => {
+    setTimetableEntries((prev) => [
+      ...prev.filter((e) => e.section !== section),
+      ...entries,
+    ]);
+  }, []);
+
   // Load timetable from backend when a section is selected
   const [isTimetableLoading, setIsTimetableLoading] = useState(false);
   useEffect(() => {
@@ -1998,14 +2020,11 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             spanPeriods: slot.spanPeriods || 1,
           };
         });
-        setTimetableEntries((prev) => [
-          ...prev.filter((e) => e.section !== selectedTimetableSection),
-          ...entries,
-        ]);
+        handleLoadTimetableEntries(selectedTimetableSection, entries);
       })
       .catch((err) => console.error("Failed to load timetable:", err))
       .finally(() => setIsTimetableLoading(false));
-  }, [selectedTimetableSection, sections]);
+  }, [selectedTimetableSection, sections, handleLoadTimetableEntries]);
 
   const handleSaveSchedule = async () => {
     const schoolId = localStorage.getItem("school_id") || "";
@@ -3948,8 +3967,6 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           <TierManagementForm
             groups={gradeGroups}
             setGroups={setGradeGroups}
-            gradeConfigs={gradeConfigs}
-            onClose={() => setShowTierDrawer(false)}
           />
         </SideDrawer>
 
@@ -4015,9 +4032,9 @@ const SubjectForm = ({
             onChange={setCode}
           />
           <div className="space-y-2.5 group">
-            <label className="text-[length:var(--font-size-label)] font-[var(--font-weight-label)] text-[var(--text-color-label)] px-1 group-focus-within:text-foreground transition-colors">
+            <span className="text-[length:var(--font-size-label)] font-[var(--font-weight-label)] text-[var(--text-color-label)] px-1 group-focus-within:text-foreground transition-colors block">
               Subject Area
-            </label>
+            </span>
             <AppDropdown
               options={ACADEMIC_AREAS}
               value={department}
@@ -4058,9 +4075,9 @@ const SubjectForm = ({
         </div>
 
         <div className="space-y-3 group">
-          <label className="text-[length:var(--font-size-label)] font-[var(--font-weight-label)] text-[var(--text-color-label)] px-1 group-focus-within:text-foreground transition-colors">
+          <span className="text-[length:var(--font-size-label)] font-[var(--font-weight-label)] text-[var(--text-color-label)] px-1 group-focus-within:text-foreground transition-colors block">
             Category Type
-          </label>
+          </span>
           <AppDropdown
             options={[
               "Core (Mandatory)",
@@ -4270,6 +4287,7 @@ const GradeConfigForm = ({
                   {catSubjects.map((s) => (
                     <label
                       key={s.id}
+                      aria-label={s.name}
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all duration-200 group/item relative overflow-hidden",
                         selectedSubjects.includes(s.id)
@@ -4588,8 +4606,6 @@ const TierManagementForm = ({
 }: {
   groups: GradeGroup[];
   setGroups: React.Dispatch<React.SetStateAction<GradeGroup[]>>;
-  gradeConfigs: GradeConfig[];
-  onClose: () => void;
 }) => {
   // Derive all possible grades from configs
 
@@ -4785,69 +4801,81 @@ const FormGroup = ({
   value?: string;
   onChange?: (val: string) => void;
   icon?: string;
-}) => (
-  <div className="space-y-2.5 group">
-    <label className="text-[length:var(--font-size-label)] font-[var(--font-weight-label)] text-[var(--text-color-label)] px-1 group-focus-within:text-foreground transition-colors">
-      {label}
-    </label>
-    <div className="relative">
-      {type === "select" ? (
-        <AppDropdown
-          options={(options ?? []).map((o) =>
-            typeof o === "string" ? o : o.label,
-          )}
-          value={
-            typeof value === "string"
-              ? value
-              : (options ?? []).find(
-                  (
-                    o,
-                  ): o is { val: string; label: string; disabled?: boolean } =>
-                    typeof o !== "string" && o.val === value,
-                )?.label || ""
-          }
-          onChange={(val: string) => {
-            const opts = options ?? [];
-            const selected = opts.find(
-              (o) => (typeof o === "string" ? o : o.label) === val,
+}) => {
+  let inputElement = null;
+
+  if (type === "select") {
+    inputElement = (
+      <AppDropdown
+        options={(options ?? []).map((o) =>
+          typeof o === "string" ? o : o.label,
+        )}
+        value={
+          typeof value === "string"
+            ? value
+            : (options ?? []).find(
+                (
+                  o,
+                ): o is { val: string; label: string; disabled?: boolean } =>
+                  typeof o !== "string" && o.val === value,
+              )?.label || ""
+        }
+        onChange={(val: string) => {
+          const opts = options ?? [];
+          const selected = opts.find(
+            (o) => (typeof o === "string" ? o : o.label) === val,
+          );
+          if (onChange) {
+            onChange(
+              typeof selected === "string"
+                ? selected
+                : ((selected as { val: string } | undefined)?.val ?? ""),
             );
-            if (onChange) {
-              onChange(
-                typeof selected === "string"
-                  ? selected
-                  : ((selected as { val: string } | undefined)?.val ?? ""),
-              );
-            }
-          }}
+          }
+        }}
+        placeholder={placeholder}
+        icon={icon}
+      />
+    );
+  } else if (type === "date") {
+    inputElement = (
+      <AppDatePicker
+        value={value ? new Date(value) : null}
+        onChange={(d) => onChange?.(d.toISOString())}
+        placeholder={placeholder}
+        icon={icon}
+      />
+    );
+  } else {
+    inputElement = (
+      <div className="relative">
+        {icon && (
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px] group-focus-within:text-primary transition-colors z-10">
+            {icon}
+          </span>
+        )}
+        <input
+          type={type}
           placeholder={placeholder}
-          icon={icon}
-        />
-      ) : type === "date" ? (
-        <AppDatePicker
-          value={value ? new Date(value) : null}
-          onChange={(d) => onChange && onChange(d.toISOString())}
-          placeholder={placeholder}
-          icon={icon}
-        />
-      ) : (
-        <div className="relative">
-          {icon && (
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px] group-focus-within:text-primary transition-colors z-10">
-              {icon}
-            </span>
+          value={value}
+          onChange={(e) => onChange?.(e.target.value)}
+          className={cn(
+            "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[length:var(--font-size-body)] font-[var(--font-weight-input)] text-foreground placeholder-[var(--text-color-label)] transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white",
+            icon ? "pl-12 pr-6" : "px-6",
           )}
-          <input
-            type={type}
-            placeholder={placeholder}
-            value={value}
-            onChange={(e) => onChange && onChange(e.target.value)}
-            className={cn(
-              "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[length:var(--font-size-body)] font-[var(--font-weight-input)] text-foreground placeholder-[var(--text-color-label)] transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white",
-              icon ? "pl-12 pr-6" : "px-6",
-            )}
-          />
-        </div>
-      )}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2.5 group">
+      <label className="text-[length:var(--font-size-label)] font-[var(--font-weight-label)] text-[var(--text-color-label)] px-1 group-focus-within:text-foreground transition-colors">
+        {label}
+      </label>
+      <div className="relative">
+        {inputElement}
+      </div>
     </div>
-  </div>
-);
+  );
+};

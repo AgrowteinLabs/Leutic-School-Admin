@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { graphqlRequest } from "../../../lib/graphqlClient";
@@ -74,7 +74,7 @@ export const CalendarPage = () => {
   const firstDayIndexOffset = (rawFirstDayOfWeek + 6) % 7; // Mon=0 ... Sun=6
 
   // Fetch classes, teachers, and events
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!schoolId) return;
     setIsLoading(true);
     try {
@@ -139,11 +139,11 @@ export const CalendarPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [schoolId, selectedClass, selectedTeacher]);
 
   useEffect(() => {
     fetchData();
-  }, [schoolId]);
+  }, [fetchData]);
 
   // Navigate Months
   const handlePrevMonth = () => {
@@ -235,11 +235,11 @@ export const CalendarPage = () => {
 
     let h = Math.floor(totalMinutesStart / 60);
     const m = totalMinutesStart % 60;
-    const ampm = h >= 12 ? "PM" : "AM";
+    const amPm = h >= 12 ? "PM" : "AM";
     h = h % 12;
     if (h === 0) h = 12;
 
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")} ${ampm}`;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")} ${amPm}`;
   };
 
   // Handle Event Creation
@@ -248,7 +248,7 @@ export const CalendarPage = () => {
     setIsSaving(true);
     try {
       // Find institutional calendar (classId = null)
-      let defaultCal = calendars.find(c => !c.classId);
+      const defaultCal = calendars.find(c => !c.classId);
       let calendarId = defaultCal?.id;
 
       if (!calendarId) {
@@ -316,7 +316,7 @@ export const CalendarPage = () => {
     if (!title) return;
     setIsSaving(true);
     try {
-      let defaultCal = calendars.find(c => !c.classId);
+      const defaultCal = calendars.find(c => !c.classId);
       let calendarId = defaultCal?.id;
       if (!calendarId) {
         const createCalRes = await graphqlRequest<any>(`
@@ -380,10 +380,7 @@ export const CalendarPage = () => {
               onClick={handleOpenAddModal}
               className="btn-primary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30"
             >
-              <span className="material-symbols-outlined text-sm">
-                add_circle
-              </span>
-              New Event
+              <span className="material-symbols-outlined text-sm">add_circle</span>{" "}New Event
             </button>
           </div>
         }
@@ -512,9 +509,9 @@ export const CalendarPage = () => {
               </div>
 
               <div className="grid grid-cols-7">
-                {Array.from({ length: firstDayIndexOffset }).map((_, i) => (
+                {Array.from({ length: firstDayIndexOffset }, (_, i) => `empty-${currentYear}-${currentMonth}-${i}`).map((keyStr) => (
                   <div
-                    key={`empty-${i}`}
+                    key={keyStr}
                     className="h-24 border-r border-b border-slate-50 bg-[#F7F8F4]/30"
                   />
                 ))}
@@ -522,56 +519,77 @@ export const CalendarPage = () => {
                   const dayEvents = getEventsForDay(day);
                   const isSelected = selectedDayNum === day;
                   const isToday = new Date().getDate() === day && new Date().getMonth() === currentMonth && new Date().getFullYear() === currentYear;
+                  let dayClass = "text-[#444441]";
+                  if (isToday) {
+                    dayClass = "bg-[#0F2328] text-white";
+                  } else if (isSelected) {
+                    dayClass = "bg-primary text-foreground font-black";
+                  }
 
                   return (
-                    <div
+                    <button
                       key={day}
+                      type="button"
                       onClick={() => setSelectedDayNum(day)}
                       className={cn(
-                        "h-24 border-r border-b border-slate-50 p-2 transition-all hover:bg-[#F7F8F4]/40 cursor-pointer overflow-hidden flex flex-col justify-between select-none relative",
+                        "h-24 border-r border-b border-slate-50 p-2 transition-all hover:bg-[#F7F8F4]/40 cursor-pointer overflow-hidden flex flex-col justify-between select-none relative focus:outline-none focus:ring-2 focus:ring-primary/20 w-full text-left bg-transparent border-0",
                         isSelected && "bg-primary/5 border-primary/20",
                       )}
                     >
-                      <div className="flex justify-between items-center mb-1">
+                      <div className="flex justify-between items-center mb-1 w-full">
                         <span
                           className={cn(
                             "size-6 flex items-center justify-center text-xs font-bold rounded-full transition-all",
-                            isToday ? "bg-[#0F2328] text-white" : isSelected ? "bg-primary text-foreground font-black" : "text-[#444441]",
+                            dayClass,
                           )}
                         >
                           {day}
                         </span>
                         {dayEvents.length > 0 && (
                           <div className="flex gap-0.5">
-                            {Array.from(new Set(dayEvents.map(e => e.type))).slice(0, 3).map((t, idx) => (
-                              <div key={idx} className={cn("size-1.5 rounded-full", t === "HOLIDAY" ? "bg-rose-500" : t === "EXAM" ? "bg-amber-500" : "bg-primary")} />
-                            ))}
+                            {Array.from(new Set(dayEvents.map(e => e.type))).slice(0, 3).map((t) => {
+                              let dotColor = "bg-primary";
+                              if (t === "HOLIDAY") {
+                                dotColor = "bg-rose-500";
+                              } else if (t === "EXAM") {
+                                dotColor = "bg-amber-500";
+                              }
+                              return (
+                                <div key={t} className={cn("size-1.5 rounded-full", dotColor)} />
+                              );
+                            })}
                           </div>
                         )}
                       </div>
                       
-                      <div className="flex-1 flex flex-col justify-end overflow-hidden mt-1 gap-1">
-                        {dayEvents.slice(0, 2).map((ev, idx) => (
-                          <div
-                            key={idx}
-                            className={cn(
-                              "text-[8px] font-black px-1.5 py-0.5 rounded truncate leading-none tracking-tight border",
-                              ev.type === "HOLIDAY" ? "bg-rose-50 text-rose-700 border-rose-100" : 
-                              ev.type === "EXAM" ? "bg-amber-50 text-amber-700 border-amber-100" : 
-                              "bg-[#0F2328]/5 text-[#0F2328] border-[#0F2328]/10"
-                            )}
-                            title={ev.title}
-                          >
-                            {ev.title}
-                          </div>
-                        ))}
+                      <div className="flex-1 flex flex-col justify-end overflow-hidden mt-1 gap-1 w-full">
+                        {dayEvents.slice(0, 2).map((ev) => {
+                          let evClass = "bg-[#0F2328]/5 text-[#0F2328] border-[#0F2328]/10";
+                          if (ev.type === "HOLIDAY") {
+                            evClass = "bg-rose-50 text-rose-700 border-rose-100";
+                          } else if (ev.type === "EXAM") {
+                            evClass = "bg-amber-50 text-amber-700 border-amber-100";
+                          }
+                          return (
+                            <div
+                              key={ev.id}
+                              className={cn(
+                                "text-[8px] font-black px-1.5 py-0.5 rounded truncate leading-none tracking-tight border",
+                                evClass
+                              )}
+                              title={ev.title}
+                            >
+                              {ev.title}
+                            </div>
+                          );
+                        })}
                         {dayEvents.length > 2 && (
                           <span className="text-[8px] font-bold text-slate-400 text-right pr-0.5 leading-none">
                             +{dayEvents.length - 2} more
                           </span>
                         )}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -594,7 +612,7 @@ export const CalendarPage = () => {
                 <div className="space-y-5 relative z-10">
                   {timetableSlotsForDay.length > 0 ? (
                     timetableSlotsForDay.map((item, i) => (
-                      <div key={i} className="flex gap-4 group">
+                      <div key={`${item.day}-${item.period}-${item.section}`} className="flex gap-4 group">
                         <div className="flex flex-col items-center shrink-0">
                           <div className="size-2 bg-[#D9EA85] rounded-full ring-4 ring-[#D9EA85]/20" />
                           {i !== timetableSlotsForDay.length - 1 && (
@@ -627,10 +645,7 @@ export const CalendarPage = () => {
             {activeView === "parent" && (
               <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm shadow-slate-100/30">
                 <h3 className="text-foreground text-base font-black capitalize mb-6 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#B91C1C]">
-                    campaign
-                  </span>
-                  Events on Selected Date
+                  <span className="material-symbols-outlined text-[#B91C1C]">campaign</span>{" "}Events on Selected Date
                 </h3>
                 <div className="space-y-4">
                   {selectedDayEvents.length > 0 ? (
@@ -684,10 +699,7 @@ export const CalendarPage = () => {
                   onClick={handleMarkHoliday}
                   className="w-full bg-[#0F2328] text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#0F2328]/10 hover:bg-[#0F2328]/95 transition-all"
                 >
-                  <span className="material-symbols-outlined text-sm">
-                    event_busy
-                  </span>
-                  Declare Holiday
+                  <span className="material-symbols-outlined text-sm">event_busy</span>{" "}Declare Holiday
                 </button>
               </div>
             </div>
@@ -699,7 +711,12 @@ export const CalendarPage = () => {
       <AnimatePresence>
         {showNewEventModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowNewEventModal(false)} />
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm w-full h-full border-0 p-0 block cursor-default"
+              onClick={() => setShowNewEventModal(false)}
+              aria-label="Close modal backdrop"
+            />
             <div className="relative bg-white p-8 rounded-[32px] max-w-md w-full border border-slate-100 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-brand-navy tracking-tight">Create Institutional Event</h3>
@@ -710,7 +727,7 @@ export const CalendarPage = () => {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Event Title</label>
+                  <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Event Title</span>
                   <input
                     type="text"
                     value={eventTitle}
@@ -721,7 +738,7 @@ export const CalendarPage = () => {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Description</label>
+                  <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Description</span>
                   <textarea
                     value={eventDesc}
                     onChange={(e) => setEventDesc(e.target.value)}
@@ -733,7 +750,7 @@ export const CalendarPage = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Date</label>
+                    <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Date</span>
                     <input
                       type="date"
                       value={eventDate}
@@ -742,7 +759,7 @@ export const CalendarPage = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Event Type</label>
+                    <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Event Type</span>
                     <select
                       value={eventType}
                       onChange={(e) => setEventType(e.target.value)}

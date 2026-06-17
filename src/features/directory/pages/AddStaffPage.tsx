@@ -465,9 +465,9 @@ export const AddStaffPage = () => {
                                 <div className="grid grid-cols-1 gap-10">
                                   <div className="space-y-4">
                                     <div className="flex items-center justify-between px-1">
-                                      <label className="text-[12px] font-bold text-[#B0AFA8] tracking-tight">
+                                      <span className="text-[12px] font-bold text-[#B0AFA8] tracking-tight">
                                         Qualified Grades
-                                      </label>
+                                      </span>
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -522,9 +522,9 @@ export const AddStaffPage = () => {
                                   </div>
                                   <div className="space-y-4">
                                     <div className="flex items-center justify-between px-1">
-                                      <label className="text-[12px] font-bold text-[#B0AFA8] tracking-tight">
+                                      <span className="text-[12px] font-bold text-[#B0AFA8] tracking-tight">
                                         Subject Specializations
-                                      </label>
+                                      </span>
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -620,9 +620,9 @@ export const AddStaffPage = () => {
                               </div>
 
                               <div className="space-y-4">
-                                <label className="text-[12px] font-bold text-[#B0AFA8] tracking-tight">
-                                  Class Assignments
-                                </label>
+                                 <span className="text-[12px] font-bold text-[#B0AFA8] tracking-tight">
+                                   Class Assignments
+                                 </span>
                                 {classesList.length === 0 ? (
                                   <p className="text-[13px] text-slate-400 italic font-medium">
                                     No classes created yet. Please create

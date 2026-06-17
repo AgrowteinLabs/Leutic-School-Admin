@@ -124,6 +124,13 @@ export const AddNoticePage = () => {
     handleFiles(e.target.files);
   };
 
+  const handleRemoveAttachment = (indexToRemove: number) => {
+    setNoticeData(prev => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, idx) => idx !== indexToRemove)
+    }));
+  };
+
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -166,8 +173,7 @@ export const AddNoticePage = () => {
                 <div className="flex items-center gap-3">
                   <h4 className="font-bold text-[18px] tracking-tight text-foreground">Write a new notice</h4>
                   <span className="px-2 py-0.5 rounded-md bg-amber-50 text-[10px] font-bold text-amber-600 border border-amber-100 flex items-center gap-1">
-                    <span className="size-1 rounded-full bg-amber-400 animate-pulse" />
-                    Draft
+                    <span className="size-1 rounded-full bg-amber-400 animate-pulse" />{" "}Draft
                   </span>
                 </div>
                 <p className="text-[13px] font-medium text-[#B0AFA8]">Fill in the details below to send a message to the school community</p>
@@ -217,8 +223,9 @@ export const AddNoticePage = () => {
               </div>
 
               {/* Attachments Section - Single Cohesive Drop Zone */}
-              <div 
+              <section 
                 className="pt-6"
+                aria-label="File drop zone"
                 onDragOver={onDragOver}
                 onDragLeave={onDragLeave}
                 onDrop={onDrop}
@@ -226,7 +233,7 @@ export const AddNoticePage = () => {
                 <div className="flex items-center justify-between mb-4 px-1">
                   <div className="flex items-center gap-3">
                     <span className="material-symbols-outlined text-primary text-[20px]">attach_file</span>
-                    <label className="text-[13px] font-bold text-foreground">Attachments</label>
+                    <span className="text-[13px] font-bold text-foreground">Attachments</span>
                     {noticeData.attachments.length > 0 && (
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-[10px] font-bold text-primary">
                         {noticeData.attachments.length} files
@@ -237,8 +244,7 @@ export const AddNoticePage = () => {
                     onClick={() => document.getElementById("file-upload")?.click()}
                     className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[12px] font-bold text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-2"
                   >
-                    <span className="material-symbols-outlined text-[18px]">add_circle</span>
-                    Add files
+                    <span className="material-symbols-outlined text-[18px]">add_circle</span>{" "}Add files
                   </button>
                 </div>
                 
@@ -280,7 +286,7 @@ export const AddNoticePage = () => {
                         <motion.div 
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          key={i} 
+                          key={`${file.name}-${file.size}-${file.lastModified}`} 
                           className="flex items-center justify-between px-4 py-3 bg-white border border-slate-100 rounded-[20px] hover:border-primary/20 transition-all group"
                         >
                           <div className="flex items-center gap-3 overflow-hidden">
@@ -295,7 +301,7 @@ export const AddNoticePage = () => {
                             </div>
                           </div>
                           <button 
-                            onClick={() => setNoticeData(prev => ({ ...prev, attachments: prev.attachments.filter((_, idx) => idx !== i) }))}
+                            onClick={() => handleRemoveAttachment(i)}
                             className="size-7 flex items-center justify-center rounded-lg hover:bg-red-50 hover:text-red-500 text-slate-200 transition-all ml-2"
                           >
                             <span className="material-symbols-outlined text-[16px]">close</span>
@@ -305,7 +311,7 @@ export const AddNoticePage = () => {
                     </div>
                   )}
                 </div>
-              </div>
+              </section>
             </div>
 
             <div className="px-10 py-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
