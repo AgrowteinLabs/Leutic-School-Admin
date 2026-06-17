@@ -400,7 +400,7 @@ export const StudentsPage = ({
   return (
     <div
       className={cn(
-        "flex-1 flex flex-col overflow-hidden bg-white relative font-sans",
+        "flex-1 flex flex-col overflow-hidden bg-transparent relative font-sans",
         !isHubChild && "h-screen",
       )}
     >

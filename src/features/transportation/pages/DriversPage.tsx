@@ -293,7 +293,7 @@ export const DriversPage = ({
   return (
     <div
       className={cn(
-        "flex-1 flex flex-col overflow-hidden bg-white",
+        "flex-1 flex flex-col overflow-hidden bg-transparent",
         !isHubChild && "h-screen",
       )}
     >
