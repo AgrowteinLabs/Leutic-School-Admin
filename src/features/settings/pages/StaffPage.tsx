@@ -240,7 +240,7 @@ export const StaffPage = ({
     `;
 
     const statsQuery = `
-      query GetDirectoryStats($schoolId: String!) {
+      query GetDirectoryStats($schoolId: ID!) {
         directoryStats(schoolId: $schoolId, tab: "STAFF") {
           totalCount
           departmentCount

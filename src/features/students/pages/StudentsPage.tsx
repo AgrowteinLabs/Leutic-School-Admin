@@ -242,7 +242,7 @@ export const StudentsPage = ({
     `;
 
     const statsQuery = `
-      query GetDirectoryStats($schoolId: String!, $tab: String!) {
+      query GetDirectoryStats($schoolId: ID!, $tab: String!) {
         directoryStats(schoolId: $schoolId, tab: $tab) {
           totalCount
           activeProgramsCount

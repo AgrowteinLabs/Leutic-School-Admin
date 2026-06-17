@@ -33,7 +33,7 @@ const GET_DRIVERS = `
 `;
 
 const GET_DRIVER_STATS = `
-  query GetDriverStats($schoolId: String!) {
+  query GetDriverStats($schoolId: ID!) {
     directoryStats(schoolId: $schoolId, tab: "DRIVERS") {
       totalCount
       onLeaveCount
