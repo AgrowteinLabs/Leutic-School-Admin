@@ -115,6 +115,8 @@ export const AddStaffPage = () => {
                 mobileNo
                 schoolId
                 classIds
+                qualifiedGrades
+                subjectSpecializations
                 isActive
                 createdAt
                 updatedAt
@@ -141,6 +143,8 @@ export const AddStaffPage = () => {
             schoolId,
             classIds: mappedClassIds,
             address: serializedAddress,
+            qualifiedGrades,
+            subjectSpecializations: specializations,
           },
         },
       );

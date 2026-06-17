@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 
 export const AddDriverPage = () => {
     const navigate = useNavigate();
@@ -33,8 +34,40 @@ export const AddDriverPage = () => {
     const [shift, setShift] = useState("");
     const [assignedRoute, setAssignedRoute] = useState("");
 
-    const handleFinalize = () => {
-        setShowSuccess(true);
+    const handleFinalize = async () => {
+        const schoolId = localStorage.getItem("school_id") || "";
+        const driverPassword = "Driver" + Math.random().toString(36).substring(2, 10) + "!";
+
+        const createMutation = `
+            mutation CreateDriver($input: CreateUserDto!) {
+                createUser(createUserInput: $input) {
+                    id
+                    driverLicenseNo
+                    driverStatus
+                }
+            }
+        `;
+
+        try {
+            await graphqlRequest(createMutation, {
+                input: {
+                    role: "DRIVER",
+                    name: fullName,
+                    mobileNo: mobile,
+                    password: driverPassword,
+                    schoolId,
+                    driverLicenseNo: licenseNo,
+                    licenseExpiry: licenseExpiry ? licenseExpiry.toISOString().split("T")[0] : null,
+                    licenseClass: licenseClass || undefined,
+                    driverStatus: "ACTIVE",
+                    yearsExperience: exp || undefined,
+                }
+            });
+            setShowSuccess(true);
+        } catch (err) {
+            console.error("Failed to onboard driver:", err);
+            alert("Failed to onboard driver. Please try again.");
+        }
     };
 
     const steps = [

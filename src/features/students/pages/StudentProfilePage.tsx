@@ -73,54 +73,32 @@ export const StudentProfilePage = () => {
         setLoading(true);
         setError(null);
 
-        // 1. Fetch main user details
-        const userQuery = `
-          query GetStudentUser($id: ID!) {
-            user(id: $id) {
+        const profileQuery = `
+          query GetStudentProfile($id: String!) {
+            studentProfile(studentId: $id) {
               id
-              role
               name
-              email
-              mobileNo
-              schoolId
-              isActive
               admissionNumber
-              address
               classId
+              bloodGroup
+              studentStatus
               createdAt
+              guardians {
+                relationship
+                fullName
+                mobileNo
+                email
+                occupation
+              }
+              overview {
+                auraPoints
+              }
             }
           }
         `;
-        const userData = await graphqlRequest<{ user: ManagedUser }>(userQuery, { id });
-        const userObj = userData.user;
-        if (!userObj) {
-          throw new Error("Student record not found in system.");
-        }
 
-        // 2. Fetch parallel metadata
-        const results = await Promise.allSettled([
-          // Class detail
-          userObj.classId
-            ? graphqlRequest<{ class: { grade: string; section: string } }>(`
-                query GetClass($classId: ID!) {
-                  class(id: $classId) {
-                    grade
-                    section
-                  }
-                }
-              `, { classId: userObj.classId })
-            : Promise.resolve(null),
-
-          // Aura points
-          graphqlRequest<{ studentAuraPoints: { totalPoints: number } }>(`
-            query GetAuraPoints($studentId: String!) {
-              studentAuraPoints(studentId: $studentId) {
-                totalPoints
-              }
-            }
-          `, { studentId: id }),
-
-          // Attendance summary
+        const [profileRes, attendanceRes, progressRes] = await Promise.all([
+          graphqlRequest<{ studentProfile: any }>(profileQuery, { id }),
           graphqlRequest<{ studentAttendanceSummary: { percentage: number; presentCount: number; absentCount: number; totalDays: number } }>(`
             query GetAttendance($studentId: String!) {
               studentAttendanceSummary(studentId: $studentId) {
@@ -130,77 +108,59 @@ export const StudentProfilePage = () => {
                 totalDays
               }
             }
-          `, { studentId: id }),
-
-          // Progress
+          `, { studentId: id }).catch(() => null),
           graphqlRequest<{ studentProgress: { overallAverage: number } }>(`
             query GetProgress($studentId: String!) {
               studentProgress(studentId: $studentId) {
                 overallAverage
               }
             }
-          `, { studentId: id }),
-
-          // Parents info
-          graphqlRequest<{ parentsByStudentId: ParentContact[] }>(`
-            query GetParents($studentId: ID!) {
-              parentsByStudentId(studentId: $studentId) {
-                id
-                mobileNo
-              }
-            }
-          `, { studentId: id }),
+          `, { studentId: id }).catch(() => null),
         ]);
 
-        const classDetail = results[0].status === "fulfilled" && results[0].value ? results[0].value.class : null;
-        const auraDetail = results[1].status === "fulfilled" && results[1].value ? results[1].value.studentAuraPoints : null;
-        const attendanceDetail = results[2].status === "fulfilled" && results[2].value ? results[2].value.studentAttendanceSummary : null;
-        const progressDetail = results[3].status === "fulfilled" && results[3].value ? results[3].value.studentProgress : null;
-        const parentsDetail = results[4].status === "fulfilled" && results[4].value ? results[4].value.parentsByStudentId : [];
-
-        // Fetch parent names if parent records exist
-        let parentsWithNames: Array<{ role: string; name: string; ph: string }> = [];
-        if (parentsDetail && parentsDetail.length > 0) {
-          const parentNamesResults = await Promise.allSettled(
-            parentsDetail.map((p) =>
-              graphqlRequest<{ user: ManagedUser }>(`
-                query GetParentUser($id: ID!) {
-                  user(id: $id) {
-                    name
-                  }
-                }
-              `, { id: p.id })
-            )
-          );
-          parentsWithNames = parentsDetail.map((p, idx) => {
-            const res = parentNamesResults[idx];
-            const name = res.status === "fulfilled" && res.value?.user ? res.value.user.name : "Parent";
-            return {
-              role: idx === 0 ? "Father" : idx === 1 ? "Mother" : "Guardian",
-              name,
-              ph: p.mobileNo || "N/A",
-            };
-          });
+        const profileObj = profileRes?.studentProfile;
+        if (!profileObj) {
+          throw new Error("Student profile record not found.");
         }
 
-        // 3. Construct state object
+        const classRes = profileObj.classId
+          ? await graphqlRequest<{ class: { grade: string; section: string } }>(`
+              query GetClass($classId: ID!) {
+                class(id: $classId) {
+                  grade
+                  section
+                }
+              }
+            `, { classId: profileObj.classId }).catch(() => null)
+          : null;
+
+        const classDetail = classRes?.class;
+        const attendanceDetail = attendanceRes?.studentAttendanceSummary;
+        const progressDetail = progressRes?.studentProgress;
+
+        const parentsWithNames = (profileObj.guardians || []).map((g: any, idx: number) => ({
+          role: g.relationship || (idx === 0 ? "Father" : idx === 1 ? "Mother" : "Guardian"),
+          name: g.fullName,
+          ph: g.mobileNo || "N/A",
+        }));
+
         setStudent({
-          name: userObj.name,
-          id: userObj.admissionNumber || userObj.id.slice(0, 8),
+          name: profileObj.name,
+          id: profileObj.admissionNumber || profileObj.id.slice(0, 8),
           grade: classDetail?.grade || "10th Grade",
           section: classDetail?.section || "A",
           participation: progressDetail?.overallAverage || 85,
-          auraScore: auraDetail?.totalPoints || 0,
+          auraScore: profileObj.overview?.auraPoints || 0,
           attendanceRate: attendanceDetail?.percentage || 95,
           gpa: progressDetail?.overallAverage ? (progressDetail.overallAverage / 25).toFixed(1) : "3.5",
-          enrollmentDate: new Date(userObj.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }),
-          bloodGroup: "O+",
-          guardianName: parentsWithNames[0]?.name || "Guardian of " + userObj.name,
-          phone: parentsWithNames[0]?.ph || userObj.mobileNo || "+91 99999-99999",
-          status: userObj.isActive ? "Active" : "Inactive",
+          enrollmentDate: new Date(profileObj.createdAt || Date.now()).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }),
+          bloodGroup: profileObj.bloodGroup || "O+",
+          guardianName: parentsWithNames[0]?.name || "Guardian of " + profileObj.name,
+          phone: parentsWithNames[0]?.ph || "+91 99999-99999",
+          status: profileObj.studentStatus || "Active",
           img: "/Avatar/Male Avatar Age16.png",
           parents: parentsWithNames.length > 0 ? parentsWithNames : [
-            { role: "Guardian", name: "Guardian of " + userObj.name, ph: userObj.mobileNo || "+91 99999-99999" }
+            { role: "Guardian", name: "Guardian of " + profileObj.name, ph: "+91 99999-99999" }
           ]
         });
 
@@ -347,10 +307,7 @@ export const StudentProfilePage = () => {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {[
-                        { role: "Father", name: "Mr. Ramesh K.", ph: "+91 98472-XXXXX" },
-                        { role: "Mother", name: "Ms. Sunitha R.", ph: "+91 94460-XXXXX" },
-                    ].map((g, i) => (
+                    {student.parents.map((g, i) => (
                         <div key={i} className="p-6 bg-[#F7F8F4] rounded-2xl border border-slate-100 transition-all hover:border-primary/20">
                             <p className="text-[10px] font-bold text-[#B0AFA8] mb-2 uppercase tracking-widest leading-none">{g.role} Information</p>
                             <p className="text-[15px] font-semibold text-foreground mb-3 mt-2">{g.name}</p>

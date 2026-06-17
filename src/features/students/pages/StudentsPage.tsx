@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
@@ -189,132 +189,160 @@ export const StudentsPage = ({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statsData, setStatsData] = useState<any>(null);
 
-  useEffect(() => {
-    if (externalStudents) return;
+  const fetchStudents = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
-    const fetchStudents = async () => {
-      setIsLoading(true);
-      setError(null);
+    const schoolId = localStorage.getItem("school_id") || "";
 
-      const query = `
-        query GetStudentsAndClasses($filter: UsersFilterDto!, $schoolId: String) {
-          users(filter: $filter) {
-            total
-            items {
-              id
-              role
-              name
-              email
+    const query = `
+      query GetStudentsAndClasses($filter: UsersFilterDto!, $schoolId: String) {
+        users(filter: $filter) {
+          total
+          items {
+            id
+            role
+            name
+            firstName
+            lastName
+            email
+            mobileNo
+            schoolId
+            admissionNumber
+            rollNumber
+            address
+            classId
+            enrollmentGrade
+            academicSession
+            studentStatus
+            bloodGroup
+            auraPoints
+            guardians {
+              relationship
+              fullName
               mobileNo
-              schoolId
-              admissionNumber
-              address
-              classId
-              isActive
-              createdAt
+              email
+              occupation
             }
-          }
-          classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
-            total
-            items {
-              id
-              grade
-              section
-            }
+            isActive
+            createdAt
           }
         }
-      `;
+        classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+          total
+          items {
+            id
+            grade
+            section
+          }
+        }
+      }
+    `;
 
-      try {
-        const data = await graphqlRequest<{
+    const statsQuery = `
+      query GetDirectoryStats($schoolId: String!, $tab: String!) {
+        directoryStats(schoolId: $schoolId, tab: $tab) {
+          totalCount
+          activeProgramsCount
+          avgAuraPoints
+          atRiskCount
+        }
+      }
+    `;
+
+    let mappedStatus: string | undefined = undefined;
+    if (statusFilter === "Active") mappedStatus = "ACTIVE";
+    else if (statusFilter === "At Risk") mappedStatus = "AT_RISK";
+    else if (statusFilter === "Graduated") mappedStatus = "GRADUATED";
+    else if (statusFilter === "Inactive") mappedStatus = "INACTIVE";
+
+    let mappedGrade: string | undefined = undefined;
+    if (gradeFilter !== "Grade (All)") {
+      mappedGrade = gradeFilter;
+    }
+
+    try {
+      const [data, statsRes] = await Promise.all([
+        graphqlRequest<{
           users: {
             total: number;
-            items: Array<{
-              id: string;
-              role: string;
-              name: string;
-              email?: string;
-              mobileNo?: string;
-              schoolId?: string;
-              admissionNumber?: string;
-              address?: string;
-              classId?: string;
-              isActive: boolean;
-              createdAt: string;
-            }>;
+            items: any[];
           };
           classes?: {
             total?: number;
-            items: Array<{
-              id: string;
-              grade: string;
-              section?: string;
-            }>;
+            items: any[];
           };
         }>(query, {
           filter: {
-            role: "STUDENT",
-            schoolId: localStorage.getItem("school_id") || undefined,
+            directoryTab: "STUDENTS",
+            schoolId: schoolId || undefined,
+            search: searchTerm || undefined,
+            grade: mappedGrade,
+            studentStatus: mappedStatus,
             page: 1,
             pageSize: 100,
           },
-          schoolId: localStorage.getItem("school_id") || undefined,
-        });
+          schoolId: schoolId || undefined,
+        }),
+        graphqlRequest<any>(statsQuery, { schoolId, tab: "STUDENTS" }).catch(() => null)
+      ]);
 
-        const classesList = data.classes?.items || [];
-        const classMap = new Map(classesList.map((c) => [c.id, c]));
-        setOverviewTotals({
-          totalStudents:
-            data.users?.total !== undefined && data.users?.total !== null
-              ? String(data.users.total)
-              : "",
-          activePrograms:
-            data.classes?.total !== undefined && data.classes?.total !== null
-              ? String(data.classes.total)
-              : "",
-        });
-
-        // Client-side safety: exclude soft-deleted (isActive: false) users
-        const mappedStudents: StudentRecord[] = data.users.items
-          .filter((user) => user.isActive)
-          .map((user) => {
-            const matchedClass = user.classId
-              ? classMap.get(user.classId)
-              : null;
-            return {
-              name: user.name,
-              id: user.admissionNumber || user.id.slice(0, 8),
-              grade: matchedClass ? matchedClass.grade : "Unassigned",
-              section: matchedClass ? matchedClass.section || "" : "",
-              participation: 75,
-              auraScore: 80,
-              status: user.isActive ? "Active" : "Inactive",
-              img: "/Avatar/Male Avatar Age16.png",
-              enrollmentDate: new Date(user.createdAt).toLocaleDateString(
-                "en-IN",
-                { month: "short", day: "2-digit", year: "numeric" },
-              ),
-              bloodGroup: "O+",
-              guardianName: "Guardian of " + user.name,
-              phone: user.mobileNo || "+91 99999-99999",
-              uid: user.id,
-            };
-          });
-
-        setStudents(mappedStudents);
-      } catch (err: unknown) {
-        console.error("Failed to fetch students:", err);
-        const errMsg =
-          err instanceof Error ? err.message : "Failed to load students.";
-        setError(errMsg);
-      } finally {
-        setIsLoading(false);
+      const classesList = data.classes?.items || [];
+      const classMap = new Map(classesList.map((c) => [c.id, c]));
+      if (statsRes?.directoryStats) {
+        setStatsData(statsRes.directoryStats);
       }
-    };
 
+      setOverviewTotals({
+        totalStudents: statsRes?.directoryStats?.totalCount !== undefined
+          ? String(statsRes.directoryStats.totalCount)
+          : (data.users?.total !== undefined && data.users?.total !== null ? String(data.users.total) : ""),
+        activePrograms: statsRes?.directoryStats?.activeProgramsCount !== undefined
+          ? String(statsRes.directoryStats.activeProgramsCount)
+          : (data.classes?.total !== undefined && data.classes?.total !== null ? String(data.classes.total) : ""),
+      });
+
+      // Client-side safety: exclude soft-deleted (isActive: false) users
+      const mappedStudents: StudentRecord[] = data.users.items
+        .filter((user) => user.isActive)
+        .map((user) => {
+          const matchedClass = user.classId ? classMap.get(user.classId) : null;
+          return {
+            name: user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Student",
+            id: user.admissionNumber || user.id.slice(0, 8),
+            grade: user.enrollmentGrade || (matchedClass ? matchedClass.grade : "Unassigned"),
+            section: matchedClass ? matchedClass.section || "" : "",
+            participation: 75,
+            auraScore: user.auraPoints || 0,
+            status: user.studentStatus || (user.isActive ? "Active" : "Inactive"),
+            img: "/Avatar/Male Avatar Age16.png",
+            enrollmentDate: new Date(user.createdAt).toLocaleDateString(
+              "en-IN",
+              { month: "short", day: "2-digit", year: "numeric" },
+            ),
+            bloodGroup: user.bloodGroup || "O+",
+            guardianName: user.guardians?.[0]?.fullName || "Guardian of " + user.name,
+            phone: user.guardians?.[0]?.mobileNo || user.mobileNo || "+91 99999-99999",
+            uid: user.id,
+          };
+        });
+
+      setStudents(mappedStudents);
+    } catch (err: unknown) {
+      console.error("Failed to fetch students:", err);
+      const errMsg = err instanceof Error ? err.message : "Failed to load students.";
+      setError(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [externalStudents, searchTerm, gradeFilter, statusFilter]);
+
+  useEffect(() => {
+    if (externalStudents) return;
     fetchStudents();
-  }, [externalStudents]);
+  }, [fetchStudents, externalStudents]);
 
   const [studentToDelete, setStudentToDelete] = useState<StudentRecord | null>(
     null,
@@ -409,7 +437,6 @@ export const StudentsPage = ({
       <div className="flex-1 overflow-y-auto px-6 lg:px-10 py-8 no-scrollbar">
         <div className="max-w-[1400px] mx-auto space-y-8">
           {/* Quick Stats */}
-          {/* Backend note: the current API returns counts only; aura and at-risk summaries are not exposed yet, so those cards remain blank. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               {
@@ -422,10 +449,14 @@ export const StudentsPage = ({
                 value: overviewTotals.activePrograms,
                 icon: "local_activity",
               },
-              { label: "Avg Aura Points", value: "", icon: "auto_awesome" },
+              {
+                label: "Avg Aura Points",
+                value: statsData?.avgAuraPoints !== undefined ? statsData.avgAuraPoints.toFixed(1) : "",
+                icon: "auto_awesome",
+              },
               {
                 label: "Students At Risk",
-                value: "",
+                value: statsData?.atRiskCount !== undefined ? String(statsData.atRiskCount) : "",
                 icon: "warning",
                 iconBg: "bg-[#FEE2E2]",
               },

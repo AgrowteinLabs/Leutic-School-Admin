@@ -196,6 +196,7 @@ export const StaffPage = ({
   const [teachers, setTeachers] = useState<TeacherRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statsData, setStatsData] = useState<any>(null);
 
   const fetchTeachers = useCallback(async () => {
     if (externalStaff) return;
@@ -204,8 +205,16 @@ export const StaffPage = ({
     const schoolId = localStorage.getItem("school_id") || "";
 
     const query = `
-      query GetTeachers($schoolId: String) {
-        users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 200 }) {
+      query GetTeachers($schoolId: String, $search: String, $department: String, $staffStatus: String) {
+        users(filter: {
+          schoolId: $schoolId
+          directoryTab: "STAFF"
+          search: $search
+          department: $department
+          staffStatus: $staffStatus
+          page: 1
+          pageSize: 200
+        }) {
           items {
             id
             role
@@ -216,25 +225,66 @@ export const StaffPage = ({
             address
             isActive
             createdAt
+            profilePhotoUrl
+            employeeId
+            designation
+            department
+            joiningDate
+            feedbackScore
+            staffStatus
+            qualifiedGrades
+            subjectSpecializations
           }
         }
       }
     `;
 
+    const statsQuery = `
+      query GetDirectoryStats($schoolId: String!) {
+        directoryStats(schoolId: $schoolId, tab: "STAFF") {
+          totalCount
+          departmentCount
+          avgFeedbackScore
+          onLeaveCount
+        }
+      }
+    `;
+
+    let mappedStatus: string | undefined = undefined;
+    if (statusFilter === "Active") mappedStatus = "ACTIVE";
+    else if (statusFilter === "On Leave") mappedStatus = "ON_LEAVE";
+    else if (statusFilter === "Remote") mappedStatus = "REMOTE";
+    else if (statusFilter === "Inactive") mappedStatus = "INACTIVE";
+
+    let mappedDept: string | undefined = undefined;
+    if (deptFilter !== "Department (All)") {
+      mappedDept = deptFilter;
+    }
+
     try {
-      const data = await graphqlRequest<{ users: { items: any[] } }>(query, {
-        schoolId: schoolId || undefined,
-      });
-      const loaded = (data.users?.items || []).filter(
+      const [teachersRes, statsRes] = await Promise.all([
+        graphqlRequest<{ users: { items: any[] } }>(query, {
+          schoolId: schoolId || undefined,
+          search: searchTerm || undefined,
+          department: mappedDept,
+          staffStatus: mappedStatus,
+        }),
+        graphqlRequest<any>(statsQuery, { schoolId }).catch(() => null)
+      ]);
+
+      const loaded = (teachersRes.users?.items || []).filter(
         (u: { isActive: boolean }) => u.isActive,
       );
+      if (statsRes?.directoryStats) {
+        setStatsData(statsRes.directoryStats);
+      }
 
       const mapped = loaded.map((u, idx) => {
         const formattedDate = new Date(u.createdAt).toLocaleDateString(
           "en-IN",
           { month: "short", day: "2-digit", year: "numeric" },
         );
-        const department = getDepartment(u.address, u.name);
+        const department = u.department || getDepartment(u.address, u.name);
         // Strip dept metadata from address for display
         let cleanAddress = u.address || "";
         if (cleanAddress.includes("Dept:")) {
@@ -247,13 +297,13 @@ export const StaffPage = ({
         return {
           uid: u.id,
           name: u.name,
-          id: "#ST-1024-0" + (idx + 1).toString().padStart(2, "00"),
-          role: "Faculty",
+          id: u.employeeId || "#ST-1024-0" + (idx + 1).toString().padStart(2, "00"),
+          role: u.role === "ADMIN" ? "Admin" : "Faculty",
           department,
-          performance: 80 + ((u.name.codePointAt(0) || 0) % 20),
-          status: u.isActive ? "Active" : "On Leave",
-          img: `/Avatar/${idx % 2 === 0 ? "Female" : "Male"} Avatar Age3${5 + (idx % 4)}.png`,
-          joiningDate: formattedDate,
+          performance: u.feedbackScore || (80 + ((u.name.codePointAt(0) || 0) % 20)),
+          status: u.staffStatus || (u.isActive ? "Active" : "On Leave"),
+          img: u.profilePhotoUrl || `/Avatar/${idx % 2 === 0 ? "Female" : "Male"} Avatar Age3${5 + (idx % 4)}.png`,
+          joiningDate: u.joiningDate ? new Date(u.joiningDate).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }) : formattedDate,
           email: u.email || "",
           mobile: u.mobileNo || "",
           address: cleanAddress,
@@ -269,7 +319,7 @@ export const StaffPage = ({
     } finally {
       setIsLoading(false);
     }
-  }, [externalStaff]);
+  }, [externalStaff, searchTerm, deptFilter, statusFilter]);
 
   useEffect(() => {
     fetchTeachers();
@@ -451,24 +501,23 @@ export const StaffPage = ({
             {[
               {
                 label: "Total Staff",
-                value: formatBlankStat(staffMembers.length),
+                value: formatBlankStat(statsData ? statsData.totalCount : staffMembers.length),
                 icon: "group",
               },
               {
                 label: "Departments",
-                value: uniqueDepartments > 0 ? String(uniqueDepartments) : "",
+                value: statsData ? String(statsData.departmentCount) : (uniqueDepartments > 0 ? String(uniqueDepartments) : ""),
                 icon: "account_tree",
               },
               {
                 label: "Avg Feedback Score",
-                // The current staff query does not return feedback metrics yet.
-                value: "",
+                value: statsData?.avgFeedbackScore ? statsData.avgFeedbackScore.toFixed(1) : "",
                 icon: "star",
               },
               {
                 label: "On Leave",
                 value: String(
-                  staffMembers.filter((s) => s.status === "On Leave").length,
+                  statsData ? statsData.onLeaveCount : staffMembers.filter((s) => s.status === "On Leave" || s.status === "On leave").length
                 ).padStart(2, "0"),
                 icon: "event_busy",
                 iconBg: "bg-[#FEE2E2] text-[#B91C1C] border border-[#FECACA]",

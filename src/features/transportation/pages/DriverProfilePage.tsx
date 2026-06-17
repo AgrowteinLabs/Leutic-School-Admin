@@ -12,7 +12,7 @@ const GET_DRIVER = `
       email
       mobileNo
       admissionNumber
-      busLicenceNo
+      driverLicenseNo
       address
     }
   }
@@ -68,7 +68,7 @@ export const DriverProfilePage = () => {
             id: u.admissionNumber || `DRV-${u.id.slice(0, 4).toUpperCase()}`,
             name: u.name,
             phone: u.mobileNo || "N/A",
-            license: u.busLicenceNo || "N/A",
+            license: u.driverLicenseNo || "N/A",
             licenseExpiry: meta.licExp,
             experience: meta.experience,
             bus: meta.bus,

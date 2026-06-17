@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
@@ -9,19 +9,36 @@ import { TablePagination } from "../../../components/TablePagination";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
 const GET_DRIVERS = `
-  query GetDrivers($schoolId: String) {
-    users(filter: { role: "DRIVER", schoolId: $schoolId, page: 1, pageSize: 500 }) {
+  query GetDrivers($schoolId: String, $search: String, $driverStatus: String) {
+    users(filter: {
+      schoolId: $schoolId
+      directoryTab: "DRIVERS"
+      search: $search
+      driverStatus: $driverStatus
+      page: 1
+      pageSize: 500
+    }) {
       items {
         id
         name
         role
         mobileNo
-        admissionNumber
-        busLicenceNo
+        driverLicenseNo
         address
         isActive
         createdAt
       }
+    }
+  }
+`;
+
+const GET_DRIVER_STATS = `
+  query GetDriverStats($schoolId: String!) {
+    directoryStats(schoolId: $schoolId, tab: "DRIVERS") {
+      totalCount
+      onLeaveCount
+      activeVehiclesCount
+      routeCoveragePercent
     }
   }
 `;
@@ -183,26 +200,41 @@ export const DriversPage = ({
 
   const [rawDrivers, setRawDrivers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [statsData, setStatsData] = useState<any>(null);
 
   const schoolId = localStorage.getItem("school_id") || "";
 
-  const fetchDrivers = async () => {
+  const fetchDrivers = useCallback(async () => {
     if (!schoolId) return;
     setIsLoading(true);
     try {
-      const res = await graphqlRequest<any>(GET_DRIVERS, { schoolId });
-      const items = (res.users?.items || []).filter((u: any) => u.isActive);
+      let mappedStatus: string | undefined = undefined;
+      if (statusFilter === "Active") mappedStatus = "ACTIVE";
+
+      const [driversRes, statsRes] = await Promise.all([
+        graphqlRequest<any>(GET_DRIVERS, {
+          schoolId,
+          search: searchTerm || undefined,
+          driverStatus: mappedStatus,
+        }),
+        graphqlRequest<any>(GET_DRIVER_STATS, { schoolId }).catch(() => null)
+      ]);
+
+      const items = (driversRes.users?.items || []).filter((u: any) => u.isActive);
       setRawDrivers(items);
+      if (statsRes?.directoryStats) {
+        setStatsData(statsRes.directoryStats);
+      }
     } catch (err) {
       console.error("Failed to load drivers:", err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [schoolId, searchTerm, statusFilter]);
 
   useEffect(() => {
     fetchDrivers();
-  }, [schoolId]);
+  }, [fetchDrivers]);
 
   const drivers = useMemo(() => {
     return rawDrivers.map((u: any) => {
@@ -212,7 +244,7 @@ export const DriversPage = ({
         id: u.admissionNumber || `DRV-${u.id.slice(0, 4).toUpperCase()}`,
         name: u.name,
         phone: u.mobileNo || "N/A",
-        licenseNo: u.busLicenceNo || "N/A",
+        licenseNo: u.driverLicenseNo || "N/A",
         licenseExpiry: meta.licExp,
         experience: meta.experience,
         bus: meta.bus,
@@ -285,21 +317,21 @@ export const DriversPage = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatCard
               label="Total Drivers"
-              value={drivers.length}
+              value={statsData ? statsData.totalCount : drivers.length}
               trend="Registered transport captains"
               icon="badge"
               color="primary"
             />
             <StatCard
               label="Active Vehicles"
-              value="24"
+              value={statsData ? String(statsData.activeVehiclesCount) : "24"}
               trend="Institutional fleet"
               icon="directions_bus"
               color="secondary"
             />
             <StatCard
               label="Route Coverage"
-              value="98%"
+              value={statsData ? `${statsData.routeCoveragePercent}%` : "98%"}
               trend="On-time metrics"
               icon="map"
               color="secondary"

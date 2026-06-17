@@ -34,6 +34,8 @@ const GET_CURRICULUM_DATA = `
       items {
         id
         name
+        qualifiedGrades
+        subjectSpecializations
       }
     }
     curriculumMappings(page: 1, pageSize: 1000) {
@@ -1608,21 +1610,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           name: t.name,
           dept: "General",
           qualification: "Educator",
-          teachingScope: [
-            "Grade 1",
-            "Grade 2",
-            "Grade 3",
-            "Grade 4",
-            "Grade 5",
-            "Grade 6",
-            "Grade 7",
-            "Grade 8",
-            "Grade 9",
-            "Grade 10",
-            "Grade 11",
-            "Grade 12",
-          ],
-          specializations: currentSubjects.map((s) => s.id),
+          teachingScope: t.qualifiedGrades || [],
+          specializations: t.subjectSpecializations || [],
         }));
         setTeachers(formattedTeachers);
 

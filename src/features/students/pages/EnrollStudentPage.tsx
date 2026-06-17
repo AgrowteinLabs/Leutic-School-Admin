@@ -126,84 +126,68 @@ export const EnrollStudentPage = () => {
 
       const studentPassword = `Student${Math.random().toString(36).substring(2, 10)}!`;
 
-      const studentMutation = `
-                mutation CreateStudent(
-                    $name: String!, 
-                    $username: String!,
-                    $admissionNumber: String, 
-                    $classId: String, 
-                    $schoolId: String, 
-                    $address: String,
-                    $email: String,
-                    $password: String!
-                ) {
-                    createUser(createUserInput: {
-                        role: "STUDENT",
-                        name: $name,
-                        username: $username,
-                        admissionNumber: $admissionNumber,
-                        classId: $classId,
-                        schoolId: $schoolId,
-                        address: $address,
-                        email: $email,
-                        password: $password
-                    }) {
-                        id
-                        name
-                    }
-                }
-            `;
-
-      const studentResult = await graphqlRequest<{
-        createUser: { id: string };
-      }>(studentMutation, {
-        name: studentName,
-        username: studentUsername,
-        admissionNumber: finalAdmissionNo,
-        classId: resolvedClassId,
-        schoolId: localStorage.getItem("school_id") || undefined,
-        address: address || undefined,
-        email: undefined,
-        password: studentPassword,
-      });
-
-      const studentId = studentResult.createUser?.id;
-
-      // 2. Parent onboarding if details are provided, linked to student via childrenIds
-      const parentName = guardianName || fatherName || motherName;
-      const parentMobile = guardianContact || fatherMobile || motherMobile;
-      const parentEmail = fatherEmail || motherEmail || "";
-
-      if (parentMobile && parentName && studentId) {
-        try {
-          const parentMutation = `
-                        mutation CreateParent($name: String!, $mobileNo: String, $email: String, $schoolId: String, $childrenIds: [String!]) {
-                            createUser(createUserInput: {
-                                role: "PARENT",
-                                name: $name,
-                                mobileNo: $mobileNo,
-                                email: $email,
-                                schoolId: $schoolId,
-                                childrenIds: $childrenIds
-                            }) {
-                                id
-                            }
-                        }
-                    `;
-          await graphqlRequest(parentMutation, {
-            name: parentName,
-            mobileNo: parentMobile,
-            email: parentEmail || undefined,
-            schoolId: localStorage.getItem("school_id") || undefined,
-            childrenIds: [studentId],
-          });
-        } catch (parentErr) {
-          console.warn(
-            "Parent creation warning (already exists or failed):",
-            parentErr,
-          );
-        }
+      // Construct guardians array
+      const guardiansList = [];
+      if (fatherName) {
+        guardiansList.push({
+          relationship: "Father",
+          fullName: fatherName,
+          mobileNo: fatherMobile,
+          email: fatherEmail || undefined,
+          occupation: fatherOccupation || undefined,
+        });
       }
+      if (motherName) {
+        guardiansList.push({
+          relationship: "Mother",
+          fullName: motherName,
+          mobileNo: motherMobile,
+          email: motherEmail || undefined,
+          occupation: motherOccupation || undefined,
+        });
+      }
+      if (guardianName) {
+        guardiansList.push({
+          relationship: guardianRelation || specifyRelation || "Guardian",
+          fullName: guardianName,
+          mobileNo: guardianContact,
+          specifyRelationship: specifyRelation || undefined,
+        });
+      }
+
+      const studentMutation = `
+        mutation CreateStudent($input: CreateUserDto!) {
+          createUser(createUserInput: $input) {
+            id
+            name
+          }
+        }
+      `;
+
+      await graphqlRequest(studentMutation, {
+        input: {
+          role: "STUDENT",
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          name: studentName,
+          username: studentUsername,
+          admissionNumber: finalAdmissionNo,
+          rollNumber: rollNo || undefined,
+          dateOfBirth: dob ? dob.toISOString().split("T")[0] : undefined,
+          gender,
+          bloodGroup: bloodGroup || undefined,
+          nationalId: adhaar || undefined,
+          classId: resolvedClassId,
+          guardians: guardiansList,
+          enrollmentGrade: selectedClass ? selectedClass.grade : undefined,
+          academicSession,
+          busRouteLabel: busRoute,
+          address: address || undefined,
+          studentStatus: "ACTIVE",
+          password: studentPassword,
+          schoolId: localStorage.getItem("school_id") || undefined,
+        }
+      });
 
       setShowSuccess(true);
     } catch (err: unknown) {
