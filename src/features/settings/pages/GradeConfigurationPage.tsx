@@ -6,6 +6,17 @@ import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { cn } from "../../../lib/utils";
 import { motion } from "framer-motion";
+import { useApp } from "../../../lib/AppContext";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
+const UPDATE_SCHOOL_GRADES = `
+  mutation UpdateSchoolGrades($id: ID!, $input: UpdateSchoolDto!) {
+    updateSchool(id: $id, updateSchoolInput: $input) {
+      id
+      activeGrades
+    }
+  }
+`;
 
 const ALL_POSSIBLE_GRADES = [
     "LKG",
@@ -115,9 +126,11 @@ const KERALA_SSLC_PRESET: GradingBoundary[] = [
 
 export const GradeConfigurationPage = () => {
     const navigate = useNavigate();
+    const { schoolProfile, refetchSchoolProfile } = useApp();
     const [activeTab, setActiveTab] = useState<"grades" | "scales">("grades");
     const [showSuccess, setShowSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
+    const [error, setError] = useState<string | null>(null);
 
     // --- Tab 1: Grade Level States ---
     const [selectedPreset, setSelectedPreset] = useState("K-12 School (LKG - 12)");
@@ -126,6 +139,20 @@ export const GradeConfigurationPage = () => {
     const [enabledGrades, setEnabledGrades] = useState<string[]>([]);
 
     useEffect(() => {
+        if (schoolProfile && schoolProfile.activeGrades && schoolProfile.activeGrades.length > 0) {
+            setEnabledGrades(schoolProfile.activeGrades);
+            // Set lowest and highest based on what's active
+            const active = [...schoolProfile.activeGrades].sort(
+                (a, b) => ALL_POSSIBLE_GRADES.indexOf(a) - ALL_POSSIBLE_GRADES.indexOf(b)
+            );
+            if (active.length > 0) {
+                setStartGrade(active[0]);
+                setEndGrade(active[active.length - 1]);
+                setSelectedPreset("Custom Range");
+            }
+            return;
+        }
+
         const savedGrades = localStorage.getItem("leutic-enabled-grades");
         const savedStart = localStorage.getItem("leutic-start-grade");
         const savedEnd = localStorage.getItem("leutic-end-grade");
@@ -240,19 +267,35 @@ export const GradeConfigurationPage = () => {
     };
 
     // --- Save Actions ---
-    const handleSave = () => {
+    const handleSave = async () => {
+        setError(null);
         if (activeTab === "grades") {
-            localStorage.setItem("leutic-start-grade", startGrade);
-            localStorage.setItem("leutic-end-grade", endGrade);
-            localStorage.setItem("leutic-enabled-grades", JSON.stringify(enabledGrades));
-            localStorage.setItem("leutic-grade-preset", selectedPreset);
-            setSuccessMessage(`Academic grade structure updated.\nActive levels: ${getGroupedGradesString(enabledGrades)}.`);
+            const schoolId = localStorage.getItem("school_id") || "";
+            try {
+                await graphqlRequest(UPDATE_SCHOOL_GRADES, {
+                    id: schoolId,
+                    input: {
+                        activeGrades: enabledGrades
+                    }
+                });
+                await refetchSchoolProfile();
+
+                localStorage.setItem("leutic-start-grade", startGrade);
+                localStorage.setItem("leutic-end-grade", endGrade);
+                localStorage.setItem("leutic-enabled-grades", JSON.stringify(enabledGrades));
+                localStorage.setItem("leutic-grade-preset", selectedPreset);
+                setSuccessMessage(`Academic grade structure updated.\nActive levels: ${getGroupedGradesString(enabledGrades)}.`);
+                setShowSuccess(true);
+            } catch (err) {
+                console.error("Failed to update active grades:", err);
+                setError(err instanceof Error ? err.message : "Failed to save active grades");
+            }
         } else {
             localStorage.setItem("leutic-scale-type", gradingScaleType);
             localStorage.setItem("leutic-scale-rules", JSON.stringify(gradingRules));
             setSuccessMessage(`Grading scale scheme boundaries saved successfully.`);
+            setShowSuccess(true);
         }
-        setShowSuccess(true);
     };
 
     return (
@@ -329,6 +372,12 @@ export const GradeConfigurationPage = () => {
             {/* Content Body */}
             <div className="flex-1 overflow-y-auto no-scrollbar">
                 <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-10">
+                    {error && (
+                        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 text-[13px] font-semibold flex items-center gap-3">
+                            <span className="material-symbols-outlined text-lg">error</span>
+                            {error}
+                        </div>
+                    )}
                     {activeTab === "grades" ? (
                         <div className="space-y-8">
                             {/* Card 1: Range Definition */}

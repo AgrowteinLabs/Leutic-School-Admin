@@ -7,6 +7,7 @@ import { StatCard } from "../../../components/StatCard";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useApp } from "../../../lib/AppContext";
 
 interface StudentRecord {
   name: string;
@@ -174,6 +175,9 @@ export const StudentsPage = ({
   onAddStudent?: () => void;
 }) => {
   const navigate = useNavigate();
+  const { schoolProfile } = useApp();
+  const activeGrades = schoolProfile?.activeGrades || ["Grade 9", "Grade 10", "Grade 11", "Grade 12"];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [gradeFilter, setGradeFilter] = useState("Grade Level (All)");
   const [statusFilter, setStatusFilter] = useState("Status (All)");
@@ -215,7 +219,7 @@ export const StudentsPage = ({
             address
             classId
             enrollmentGrade
-            academicSession
+            academicYearId
             studentStatus
             bloodGroup
             auraPoints
@@ -498,10 +502,7 @@ export const StudentsPage = ({
                   }
                   items={[
                     "Grade (All)",
-                    "12th Grade",
-                    "11th Grade",
-                    "10th Grade",
-                    "9th Grade",
+                    ...activeGrades,
                   ].map((opt) => ({
                     label: opt,
                     onClick: () =>

@@ -7,6 +7,7 @@ import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useApp } from "../../../lib/AppContext";
 
 interface TeacherUser {
   id: string;
@@ -28,17 +29,32 @@ interface StudentUI {
 
 export const CreateClassPage = () => {
     const navigate = useNavigate();
+    const { schoolProfile, activeAcademicYear, academicYears } = useApp();
+    const activeGrades = schoolProfile?.activeGrades || ["Grade 9", "Grade 10", "Grade 11", "Grade 12"];
+
     const [activeStep, setActiveStep] = useState(1);
     const [showSuccess, setShowSuccess] = useState(false);
 
     // Step 1: Configuration & Faculty
-    const [gradeLevel, setGradeLevel] = useState("");
+    const [gradeLevel, setGradeLevel] = useState(activeGrades[0] || "");
     const [sectionName, setSectionName] = useState("");
     const [room, setRoom] = useState("");
     const [shift, setShift] = useState("");
-    const [session, setSession] = useState("2025-26");
+    const [academicYearId, setAcademicYearId] = useState("");
     const [classTeacher, setClassTeacher] = useState("");
     const [capacity, setCapacity] = useState("40");
+
+    useEffect(() => {
+        if (activeGrades.length > 0 && !gradeLevel) {
+            setGradeLevel(activeGrades[0]);
+        }
+    }, [activeGrades, gradeLevel]);
+
+    useEffect(() => {
+        if (activeAcademicYear) {
+            setAcademicYearId(activeAcademicYear.id);
+        }
+    }, [activeAcademicYear]);
 
     // Step 2: Students
     const [selectedStudents, setSelectedStudents] = useState<StudentUI[]>([]);
@@ -142,7 +158,7 @@ export const CreateClassPage = () => {
                 $schoolId: String!
                 $grade: String!
                 $section: String!
-                $academicSession: String!
+                $academicYearId: String!
                 $classTeacherId: String
                 $capacity: Int
                 $shift: ClassShift
@@ -152,7 +168,7 @@ export const CreateClassPage = () => {
                     schoolId: $schoolId
                     grade: $grade
                     section: $section
-                    academicSession: $academicSession
+                    academicYearId: $academicYearId
                     classTeacherId: $classTeacherId
                     capacity: $capacity
                     shift: $shift
@@ -169,7 +185,7 @@ export const CreateClassPage = () => {
                 schoolId,
                 grade: gradeLevel,
                 section: sectionName,
-                academicSession: session || "2025-26",
+                academicYearId: academicYearId || activeAcademicYear?.id || "",
                 classTeacherId,
                 capacity: capacity ? Number.parseInt(capacity, 10) : undefined,
                 shift: mapShiftToEnum(shift),
@@ -296,9 +312,18 @@ export const CreateClassPage = () => {
                                                     {/* Step 1: Configuration & Faculty */}
                                                     {step.id === 1 && (
                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-10">
-                                                            <PDSFormGroup label="Grade Level" type="select" options={["Grade 9", "Grade 10", "Grade 11", "Grade 12"]} value={gradeLevel} onChange={setGradeLevel} />
+                                                            <PDSFormGroup label="Grade Level" type="select" options={activeGrades} value={gradeLevel} onChange={setGradeLevel} />
                                                             <PDSFormGroup label="Section Name" placeholder="e.g. A, B, C" value={sectionName} onChange={setSectionName} />
-                                                            <PDSFormGroup label="Academic Session" type="select" options={["2025-26", "2024-25"]} value={session} onChange={setSession} />
+                                                            <PDSFormGroup 
+                                                                label="Academic Year" 
+                                                                type="select" 
+                                                                options={academicYears.map(y => y.name || "")} 
+                                                                value={academicYears.find(y => y.id === academicYearId)?.name || ""} 
+                                                                onChange={(name) => {
+                                                                    const year = academicYears.find(y => y.name === name);
+                                                                    if (year) setAcademicYearId(year.id);
+                                                                }} 
+                                                            />
                                                             
                                                             <PDSFormGroup
                                                                 label="Class Teacher"

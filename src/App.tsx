@@ -36,6 +36,8 @@ import { QuizViewPage } from "./features/quizzes/pages/QuizViewPage";
 import { AddProgramPage } from "./features/programs/pages/AddProgramPage";
 import { SettingsPage } from "./features/settings/pages/SettingsPage";
 import { GradeConfigurationPage } from "./features/settings/pages/GradeConfigurationPage";
+import { AcademicYearsPage } from "./features/settings/pages/AcademicYearsPage";
+import { AppProvider } from "./lib/AppContext";
 
 const DashboardLayout = () => {
   return (
@@ -59,48 +61,51 @@ function App() {
   }, []);
 
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      
-      <Route element={<DashboardLayout />}>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/classes" element={<ClassesPage />} />
-        <Route path="/classes/create" element={<CreateClassPage />} />
-        <Route path="/classes/:id" element={<ClassDetailsPage />} />
-        <Route path="/attendance/:tab?" element={<AttendancePage />} />
-        <Route path="/students/:id" element={<StudentProfilePage />} />
+    <AppProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
         
-        {/* Specific Academic Routes (Higher Priority) */}
-        <Route path="/academics/exams/add" element={<AddExaminationPage />} />
-        <Route path="/academics/quizzes/add" element={<CreateQuizPage />} />
-        <Route path="/academics/quizzes/:id/:tab?" element={<QuizViewPage />} />
-        <Route path="/academics/programs/add" element={<AddProgramPage />} />
-        <Route path="/academics/exams/:id" element={<ExamDetailsPage />} />
-        
-        {/* Hub and General Routes */}
-        <Route path="/academics/:tab?/:sub?" element={<AcademicHubPage />} />
-        <Route path="/directory/:tab?" element={<DirectoryPage />} />
-        <Route path="/curriculum/:tab?" element={<CurriculumPage />} />
-        <Route path="/directory/students/add" element={<EnrollStudentPage />} />
-        <Route path="/directory/staff/add" element={<AddStaffPage />} />
-        <Route path="/directory/drivers/add" element={<AddDriverPage />} />
-        <Route path="/transportation/add-vehicle" element={<AddVehiclePage />} />
-        <Route path="/communications/announcements/add" element={<AddNoticePage />} />
-        <Route path="/communications/:tab?" element={<CommunicationsHubPage />} />
-        <Route path="/transportation" element={<TransportationHubPage />} />
-        <Route path="/finance" element={<FeesPage />} />
-        <Route path="/staff/:id" element={<StaffProfilePage />} />
-        <Route path="/drivers/:id" element={<DriverProfilePage />} />
-        <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/community/:tab?" element={<CommunityPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/settings/grades" element={<GradeConfigurationPage />} />
-        <Route path="/know-your-student" element={<KnowYourStudentPage />} />
-        
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+        <Route element={<DashboardLayout />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/classes" element={<ClassesPage />} />
+          <Route path="/classes/create" element={<CreateClassPage />} />
+          <Route path="/classes/:id" element={<ClassDetailsPage />} />
+          <Route path="/attendance/:tab?" element={<AttendancePage />} />
+          <Route path="/students/:id" element={<StudentProfilePage />} />
+          
+          {/* Specific Academic Routes (Higher Priority) */}
+          <Route path="/academics/exams/add" element={<AddExaminationPage />} />
+          <Route path="/academics/quizzes/add" element={<CreateQuizPage />} />
+          <Route path="/academics/quizzes/:id/:tab?" element={<QuizViewPage />} />
+          <Route path="/academics/programs/add" element={<AddProgramPage />} />
+          <Route path="/academics/exams/:id" element={<ExamDetailsPage />} />
+          
+          {/* Hub and General Routes */}
+          <Route path="/academics/:tab?/:sub?" element={<AcademicHubPage />} />
+          <Route path="/directory/:tab?" element={<DirectoryPage />} />
+          <Route path="/curriculum/:tab?" element={<CurriculumPage />} />
+          <Route path="/directory/students/add" element={<EnrollStudentPage />} />
+          <Route path="/directory/staff/add" element={<AddStaffPage />} />
+          <Route path="/directory/drivers/add" element={<AddDriverPage />} />
+          <Route path="/transportation/add-vehicle" element={<AddVehiclePage />} />
+          <Route path="/communications/announcements/add" element={<AddNoticePage />} />
+          <Route path="/communications/:tab?" element={<CommunicationsHubPage />} />
+          <Route path="/transportation" element={<TransportationHubPage />} />
+          <Route path="/finance" element={<FeesPage />} />
+          <Route path="/staff/:id" element={<StaffProfilePage />} />
+          <Route path="/drivers/:id" element={<DriverProfilePage />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/community/:tab?" element={<CommunityPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/grades" element={<GradeConfigurationPage />} />
+          <Route path="/settings/academic-years" element={<AcademicYearsPage />} />
+          <Route path="/know-your-student" element={<KnowYourStudentPage />} />
+          
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </AppProvider>
   );
 }
 

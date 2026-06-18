@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useApp } from "../../../lib/AppContext";
 
 const CREATE_EXAM = `
   mutation CreateExam($input: CreateExamDto!) {
@@ -17,6 +18,9 @@ const CREATE_EXAM = `
 
 export const AddExaminationPage = () => {
     const navigate = useNavigate();
+    const { schoolProfile, activeAcademicYear, academicYears } = useApp();
+    const activeGrades = schoolProfile?.activeGrades || ["Grade 9", "Grade 10", "Grade 11", "Grade 12"];
+
     const [showSuccess, setShowSuccess] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -24,17 +28,21 @@ export const AddExaminationPage = () => {
     const [examTitle, setExamTitle] = useState("");
     const [examType, setExamType] = useState("");
     const [academicTerm, setAcademicTerm] = useState("");
-    const [academicYear, setAcademicYear] = useState("Academic Year 2025 - 2026");
+    const [academicYearId, setAcademicYearId] = useState("");
     const [targetGrades, setTargetGrades] = useState<string[]>([]);
     
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [publishDate, setPublishDate] = useState<Date | null>(null);
 
-    const ALL_GRADES = ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"];
+    useEffect(() => {
+        if (activeAcademicYear && !academicYearId) {
+            setAcademicYearId(activeAcademicYear.id);
+        }
+    }, [activeAcademicYear, academicYearId]);
+
     const EXAM_TYPES = ["Periodic Test (PT)", "Unit Test", "Quarterly", "Half Yearly", "Annual Exam", "Mock Test", "Practical / Internal", "Continuous Evaluation"];
     const TERMS = ["Term 1", "Term 2", "Annual", "Quarterly"];
-    const ACADEMIC_YEARS = ["Academic Year 2025 - 2026", "Academic Year 2024 - 2025", "Academic Year 2023 - 2024"];
 
     const handleCreateExam = async () => {
         if (!examTitle) {
@@ -58,11 +66,12 @@ export const AddExaminationPage = () => {
                 }
             ];
 
-            await graphqlRequest<any>(CREATE_EXAM, {
+             await graphqlRequest<any>(CREATE_EXAM, {
                 input: {
                     schoolId,
                     name: examTitle,
                     type: examType || "Quarterly",
+                    academicYearId: academicYearId || activeAcademicYear?.id || "",
                     dates: datesInput
                 }
             });
@@ -114,7 +123,17 @@ export const AddExaminationPage = () => {
                                     onChange={setExamTitle} 
                                 />
                                 <PDSFormGroup label="Exam Category" type="select" options={EXAM_TYPES} placeholder="Select category" value={examType} onChange={setExamType} />
-                                <PDSFormGroup label="Academic Year" type="select" options={ACADEMIC_YEARS} placeholder="Select year" value={academicYear} onChange={setAcademicYear} />
+                                 <PDSFormGroup 
+                                    label="Academic Year" 
+                                    type="select" 
+                                    options={academicYears.map(y => y.name || "")} 
+                                    placeholder="Select year" 
+                                    value={academicYears.find(y => y.id === academicYearId)?.name || ""} 
+                                    onChange={(name) => {
+                                        const year = academicYears.find(y => y.name === name);
+                                        if (year) setAcademicYearId(year.id);
+                                    }} 
+                                />
                                 <PDSFormGroup label="Academic Term" type="select" options={TERMS} placeholder="Select term" value={academicTerm} onChange={setAcademicTerm} />
                             </div>
                         </div>
@@ -134,13 +153,13 @@ export const AddExaminationPage = () => {
                                 </div>
                             </div>
 
-                            <PDSFormGroup 
-                                label="Eligible Grades" 
-                                type="chips" 
-                                options={ALL_GRADES} 
-                                value={targetGrades} 
-                                onChange={setTargetGrades} 
-                            />
+                             <PDSFormGroup 
+                                 label="Eligible Grades" 
+                                 type="chips" 
+                                 options={activeGrades} 
+                                 value={targetGrades} 
+                                 onChange={setTargetGrades} 
+                             />
                         </div>
 
                         {/* Section Divider */}

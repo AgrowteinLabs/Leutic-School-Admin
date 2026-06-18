@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { AppFormSelect, AppFormInput } from "../../../components/FormFields";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useApp } from "../../../lib/AppContext";
 
 interface TeacherUser {
   id: string;
@@ -12,7 +13,7 @@ interface CreateClassResponse {
   schoolId: string;
   grade: string;
   section: string;
-  academicSession: string;
+  academicYearId: string;
   displayLabel?: string;
   classTeacherId: string;
   roomNumber?: string;
@@ -26,7 +27,10 @@ interface CreateClassModalProps {
 }
 
 export const CreateClassModal = ({ isOpen, onClose, onCreated }: CreateClassModalProps) => {
-  const [gradeLevel, setGradeLevel] = useState("Grade 10");
+  const { schoolProfile, activeAcademicYear } = useApp();
+  const activeGrades = schoolProfile?.activeGrades || ["Grade 9", "Grade 10", "Grade 11", "Grade 12"];
+
+  const [gradeLevel, setGradeLevel] = useState(activeGrades[0] || "Grade 10");
   const [section, setSection] = useState("");
   const [room, setRoom] = useState("");
   const [shift, setShift] = useState("Morning Shift");
@@ -34,6 +38,12 @@ export const CreateClassModal = ({ isOpen, onClose, onCreated }: CreateClassModa
   const [teachers, setTeachers] = useState<TeacherUser[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeGrades.length > 0 && !activeGrades.includes(gradeLevel)) {
+      setGradeLevel(activeGrades[0]);
+    }
+  }, [activeGrades, gradeLevel]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -87,7 +97,7 @@ export const CreateClassModal = ({ isOpen, onClose, onCreated }: CreateClassModa
         $schoolId: String!
         $grade: String!
         $section: String!
-        $academicSession: String!
+        $academicYearId: String!
         $classTeacherId: String
         $shift: ClassShift
         $roomNumber: String
@@ -96,7 +106,7 @@ export const CreateClassModal = ({ isOpen, onClose, onCreated }: CreateClassModa
           schoolId: $schoolId
           grade: $grade
           section: $section
-          academicSession: $academicSession
+          academicYearId: $academicYearId
           classTeacherId: $classTeacherId
           shift: $shift
           roomNumber: $roomNumber
@@ -105,7 +115,7 @@ export const CreateClassModal = ({ isOpen, onClose, onCreated }: CreateClassModa
           schoolId
           grade
           section
-          academicSession
+          academicYearId
           displayLabel
           classTeacherId
           shift
@@ -119,7 +129,7 @@ export const CreateClassModal = ({ isOpen, onClose, onCreated }: CreateClassModa
         schoolId,
         grade: gradeLevel,
         section,
-        academicSession: "2025-26",
+        academicYearId: activeAcademicYear?.id || "",
         classTeacherId,
         shift: mapShiftToEnum(shift),
         roomNumber: room
@@ -159,7 +169,7 @@ export const CreateClassModal = ({ isOpen, onClose, onCreated }: CreateClassModa
           <div className="grid grid-cols-2 gap-4">
             <AppFormSelect
               label="Grade Level"
-              options={["Grade 9", "Grade 10", "Grade 11", "Grade 12"]}
+              options={activeGrades}
               value={gradeLevel}
               onChange={(e) => setGradeLevel(e.target.value)}
             />

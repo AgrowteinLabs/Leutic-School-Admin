@@ -19,6 +19,7 @@ import { AppDropdown } from "../../../components/AppDropdown";
 import { AppDatePicker } from "../../../components/AppDatePicker";
 import { AppTimePicker } from "../../../components/AppTimePicker";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useApp } from "../../../lib/AppContext";
 
 // GraphQL Definitions
 const GET_CURRICULUM_DATA = `
@@ -1191,6 +1192,8 @@ const TimetableGrid = memo(
 export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
   const { tab } = useParams();
+  const { schoolProfile, activeAcademicYear } = useApp();
+  const activeGrades = schoolProfile?.activeGrades || ["Grade 9", "Grade 10", "Grade 11", "Grade 12"];
   const activeTab =
     (tab as "master" | "grades" | "mapping" | "timetable") || "master";
   const [selectedTimetableSection, setSelectedTimetableSection] = useState("");
@@ -1477,6 +1480,16 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   >([]);
   const [mappings, setMappings] = useState<Mapping[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+
+  useEffect(() => {
+    if (schoolProfile?.activeGrades) {
+      setGradeGroups((prev) =>
+        prev.map((gg) =>
+          gg.id === "high" ? { ...gg, grades: schoolProfile.activeGrades } : gg
+        )
+      );
+    }
+  }, [schoolProfile]);
 
   // Auto-persist gradeGroups (purely frontend grouping) to localStorage
   useEffect(() => {
@@ -1935,6 +1948,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               section: m.section,
               hoursPerWeek: m.hoursPerWeek || 4,
               isAdditional: m.isAdditional || false,
+              academicYearId: activeAcademicYear?.id || "",
             },
           });
         }),
@@ -2053,7 +2067,12 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     setIsSaving(true);
     try {
       await graphqlRequest(SAVE_CLASS_TIMETABLE, {
-        input: { schoolId, classId, slots },
+        input: {
+          schoolId,
+          classId,
+          academicYearId: activeAcademicYear?.id || "",
+          slots,
+        },
       });
       setHasUnsavedChanges(false);
     } catch (err) {
@@ -3907,7 +3926,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         >
           <GradeConfigForm
             subjects={subjects}
-            gradeOptions={getBackendGradeOptions(backendClasses)}
+            gradeOptions={activeGrades}
             initialData={editingGrade}
             onClose={() => {
               setShowGradeDrawer(false);
@@ -4376,12 +4395,10 @@ const MappingForm = ({
   // Update when initialData changes (for contextual + button)
   useEffect(() => {
     if (initialData) {
-      /* eslint-disable react-hooks/set-state-in-effect */
       if (initialData.grade) setGrade(initialData.grade);
       if (initialData.section) setSection(initialData.section);
       if (initialData.subjectId) setSubjectId(initialData.subjectId);
       if (initialData.teacherId) setTeacherId(initialData.teacherId);
-      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [initialData]);
 

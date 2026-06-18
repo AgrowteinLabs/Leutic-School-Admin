@@ -7,9 +7,11 @@ import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useApp } from "../../../lib/AppContext";
 
 export const EnrollStudentPage = () => {
   const navigate = useNavigate();
+  const { activeAcademicYear, academicYears } = useApp();
   const [activeStep, setActiveStep] = useState(1);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -41,7 +43,7 @@ export const EnrollStudentPage = () => {
 
   // Step 3 State
   const [admissionGrade, setAdmissionGrade] = useState("");
-  const [academicSession, setAcademicSession] = useState("2025-26");
+  const [academicYearId, setAcademicYearId] = useState("");
   const [busRoute, setBusRoute] = useState("Not Required");
   const [admissionNo, setAdmissionNo] = useState("");
   const [address, setAddress] = useState("");
@@ -57,6 +59,12 @@ export const EnrollStudentPage = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (activeAcademicYear && !academicYearId) {
+      setAcademicYearId(activeAcademicYear.id);
+    }
+  }, [activeAcademicYear, academicYearId]);
+
+  useEffect(() => {
     const fetchClassesAndSchool = async () => {
       try {
         const schoolId = localStorage.getItem("school_id");
@@ -70,8 +78,8 @@ export const EnrollStudentPage = () => {
             };
           }>(
             `
-                        query GetClassesForEnroll($schoolId: String) {
-                            classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+                        query GetClassesForEnroll($schoolId: String, $academicYearId: String) {
+                            classes(filter: { schoolId: $schoolId, academicYearId: $academicYearId }, page: 1, pageSize: 100) {
                                 items {
                                     id
                                     grade
@@ -80,19 +88,22 @@ export const EnrollStudentPage = () => {
                             }
                         }
                     `,
-            { schoolId },
+            { schoolId, academicYearId: academicYearId || undefined },
           );
 
           if (
-            classesData.classes?.items &&
-            classesData.classes.items.length > 0
+            classesData.classes?.items
           ) {
             setDbClasses(classesData.classes.items);
             const options = classesData.classes.items.map(
               (c) => `${c.grade} - ${c.section}`,
             );
             setClassOptions(options);
-            setAdmissionGrade(options[0]);
+            if (options.length > 0) {
+              setAdmissionGrade(options[0]);
+            } else {
+              setAdmissionGrade("");
+            }
           }
         } catch (classErr) {
           console.error("Failed to load classes from supergraph:", classErr);
@@ -102,7 +113,7 @@ export const EnrollStudentPage = () => {
       }
     };
     fetchClassesAndSchool();
-  }, []);
+  }, [academicYearId]);
 
   const handleFinalize = async () => {
     try {
@@ -180,7 +191,7 @@ export const EnrollStudentPage = () => {
           classId: resolvedClassId,
           guardians: guardiansList,
           enrollmentGrade: selectedClass ? selectedClass.grade : undefined,
-          academicSession,
+          academicYearId: academicYearId || activeAcademicYear?.id || "",
           busRouteLabel: busRoute,
           address: address || undefined,
           studentStatus: "ACTIVE",
@@ -574,11 +585,14 @@ export const EnrollStudentPage = () => {
                                   searchable
                                 />
                                 <PDSFormGroup
-                                  label="Academic Session"
+                                  label="Academic Year"
                                   type="select"
-                                  options={["2025-26", "2024-25"]}
-                                  value={academicSession}
-                                  onChange={setAcademicSession}
+                                  options={academicYears.map((y) => y.name || "")}
+                                  value={academicYears.find((y) => y.id === academicYearId)?.name || ""}
+                                  onChange={(name) => {
+                                    const year = academicYears.find((y) => y.name === name);
+                                    if (year) setAcademicYearId(year.id);
+                                  }}
                                 />
                                 <PDSFormGroup
                                   label="Admission Number"
