@@ -223,7 +223,6 @@ export const StaffPage = ({
             mobileNo
             schoolId
             address
-            isActive
             createdAt
             profilePhotoUrl
             employeeId
@@ -272,9 +271,7 @@ export const StaffPage = ({
         graphqlRequest<any>(statsQuery, { schoolId }).catch(() => null)
       ]);
 
-      const loaded = (teachersRes.users?.items || []).filter(
-        (u: { isActive: boolean }) => u.isActive,
-      );
+      const loaded = teachersRes.users?.items || [];
       if (statsRes?.directoryStats) {
         setStatsData(statsRes.directoryStats);
       }
@@ -301,7 +298,7 @@ export const StaffPage = ({
           role: u.role === "ADMIN" ? "Admin" : "Faculty",
           department,
           performance: u.feedbackScore || (80 + ((u.name.codePointAt(0) || 0) % 20)),
-          status: u.staffStatus || (u.isActive ? "Active" : "On Leave"),
+          status: u.staffStatus || "Active",
           img: u.profilePhotoUrl || `/Avatar/${idx % 2 === 0 ? "Female" : "Male"} Avatar Age3${5 + (idx % 4)}.png`,
           joiningDate: u.joiningDate ? new Date(u.joiningDate).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }) : formattedDate,
           email: u.email || "",

@@ -114,13 +114,14 @@ export async function graphqlRequest<T = unknown>(
   let json = await executeRequest(initialToken);
 
   if (json.errors && json.errors.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const firstError = json.errors[0] as any;
-    const errorMsg = firstError?.message || "Unknown GraphQL error";
+    const firstError = json.errors[0] as Record<string, unknown>;
+    const errorMsg = (firstError?.message as string) || "Unknown GraphQL error";
+    const extensions = firstError?.extensions as Record<string, unknown> | undefined;
+    const originalError = extensions?.originalError as Record<string, unknown> | undefined;
 
     const isAuthError =
-      firstError?.extensions?.code === "UNAUTHENTICATED" ||
-      firstError?.extensions?.originalError?.statusCode === 401 ||
+      extensions?.code === "UNAUTHENTICATED" ||
+      originalError?.statusCode === 401 ||
       errorMsg.toLowerCase().includes("invalid or expired token") ||
       errorMsg.toLowerCase().includes("unauthorized") ||
       errorMsg.toLowerCase().includes("jwt expired") ||

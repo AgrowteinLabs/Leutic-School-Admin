@@ -29,7 +29,7 @@ interface GraphQLUser {
   mobileNo?: string;
   schoolId?: string;
   address?: string;
-  isActive: boolean;
+  staffStatus?: string;
   classIds?: string[];
   createdAt: string;
 }
@@ -64,7 +64,7 @@ export const StaffProfilePage = () => {
             mobileNo
             schoolId
             address
-            isActive
+            staffStatus
             classIds
             createdAt
           }
@@ -134,7 +134,7 @@ export const StaffProfilePage = () => {
           department,
           performance: 80 + (pCode % 20),
           auraScore: 85 + (pCode % 15),
-          status: user.isActive ? "Active" : "On Leave",
+          status: user.staffStatus === "ACTIVE" ? "Active" : user.staffStatus === "ON_LEAVE" ? "On Leave" : user.staffStatus === "REMOTE" ? "Remote" : user.staffStatus === "INACTIVE" ? "Inactive" : (user.staffStatus || "Active"),
           img: `/Avatar/${pCode % 2 === 0 ? "Female" : "Male"} Avatar Age3${5 + (pCode % 4)}.png`,
           email: user.email || `${user.name.toLowerCase().replace(/\s+/g, ".")}@letuic.edu`,
           mobile: user.mobileNo || "+91 98765 43210",

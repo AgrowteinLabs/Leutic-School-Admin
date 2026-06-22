@@ -38,13 +38,12 @@ const GET_STUDENTS = `
 `;
 
 const GET_STAFF = `
-  query GetStaff($schoolId: String) {
-    users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 100 }) {
+  query SchoolStaff($schoolId: ID!) {
+    users(filter: { schoolId: $schoolId, roles: ["TEACHER", "STAFF", "SCHOOL_ADMIN"] }, page: 1, pageSize: 100) {
       items {
         id
         name
         role
-        classId
       }
     }
   }
@@ -58,23 +57,25 @@ const GET_ATTENDANCES = `
         studentId
         teacherId
         status
+        remarks
       }
     }
   }
 `;
 
-const CREATE_ATTENDANCE = `
-  mutation CreateAttendance($input: CreateAttendanceDto!) {
-    createAttendance(createAttendanceInput: $input) {
+const SAVE_STAFF_ATTENDANCE_BATCH = `
+  mutation SaveStaffAttendanceBatch($input: SaveStaffAttendanceBatchInput!) {
+    saveStaffAttendanceBatch(input: $input) {
       id
-    }
-  }
-`;
-
-const UPDATE_ATTENDANCE = `
-  mutation UpdateAttendance($id: ID!, $input: UpdateAttendanceDto!) {
-    updateAttendance(id: $id, updateAttendanceInput: $input) {
-      id
+      date
+      status
+      takenByUserId
+      entries {
+        id
+        teacherId
+        status
+        remarks
+      }
     }
   }
 `;
@@ -189,6 +190,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [staff, setStaff] = useState<StaffItem[]>([]);
   const [classSummary, setClassSummary] = useState<ClassSummaryItem | null>(null);
+  const [staffSummary, setStaffSummary] = useState<any>(null);
   const [batchStatus, setBatchStatus] = useState<BatchStatusItem | null>(null);
 
   // Fetch classes on mount
@@ -232,7 +234,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
         if (!activeClass?.id) return;
 
         const summaryQuery = `
-          query GetClassAttendanceSummary($classId: ID!, $date: String) {
+          query ClassAttendanceSummary($classId: ID!, $date: String!) {
             classAttendanceSummary(classId: $classId, date: $date) {
               totalStudents
               presentCount
@@ -288,13 +290,48 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
         setStudents(mapped);
       } else {
         // Staff tab
-        const [staffData, attendanceData] = await Promise.all([
+        const staffSummaryQuery = `
+          query StaffAttendanceSummary($schoolId: ID!, $date: String!) {
+            staffAttendanceSummary(schoolId: $schoolId, date: $date) {
+              date
+              totalStaff
+              presentCount
+              absentCount
+              halfDayCount
+              lateCount
+              onLeaveCount
+              averageAttendancePercentage
+            }
+          }
+        `;
+
+        const staffBatchStatusQuery = `
+          query StaffAttendanceBatchStatus($schoolId: ID!, $date: String!) {
+            staffAttendanceBatchStatus(schoolId: $schoolId, date: $date) {
+              date
+              takenByUserId
+              takenByRole
+              recordCount
+              canOverride
+            }
+          }
+        `;
+
+        const [staffData, attendanceData, summaryData, batchStatusData] = await Promise.all([
           graphqlRequest<GraphQLStaffResponse>(GET_STAFF, { schoolId: schoolId || undefined }),
-          graphqlRequest<GraphQLAttendancesResponse>(GET_ATTENDANCES, { dateFrom: dateStr, dateTo: dateStr })
+          graphqlRequest<GraphQLAttendancesResponse>(GET_ATTENDANCES, { dateFrom: dateStr, dateTo: dateStr }),
+          graphqlRequest<any>(staffSummaryQuery, { schoolId: schoolId || undefined, date: dateStr }).catch(() => null),
+          graphqlRequest<any>(staffBatchStatusQuery, { schoolId: schoolId || undefined, date: dateStr }).catch(() => null)
         ]);
 
         const staffList = staffData?.users?.items || [];
         const attendanceList = attendanceData?.attendances?.items || [];
+
+        const summary = summaryData?.staffAttendanceSummary;
+        const status = batchStatusData?.staffAttendanceBatchStatus;
+
+        setStaffSummary(summary || null);
+        setBatchStatus(status || null);
 
         const attMap = new Map(attendanceList.map((a) => [a.teacherId, a]));
 
@@ -302,13 +339,11 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
           const att = attMap.get(u.id);
           let status = "Present";
           if (att) {
-            if (att.status === "ABSENT") {
-              status = "Absent";
-            } else if (att.status === "HALF_DAY") {
-              status = "Half day";
-            } else if (att.status === "PRESENT") {
-              status = "Present";
-            }
+            if (att.status === "PRESENT") status = "Present";
+            else if (att.status === "ABSENT") status = "Absent";
+            else if (att.status === "HALF_DAY") status = "Half day";
+            else if (att.status === "LATE") status = "Late";
+            else if (att.status === "ON_LEAVE") status = "On leave";
           }
           return {
             id: u.id,
@@ -317,8 +352,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
             role: u.role || "Staff",
             img: `/Avatar/Female Avatar Age35.png`,
             attendanceRecordId: att?.id || null,
-            remarks: att?.remarks || "",
-            teacherClassId: u.classId
+            remarks: att?.remarks || ""
           };
         });
         setStaff(mapped);
@@ -383,44 +417,29 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
           }
         });
       } else {
-        // Staff individual records save
-        const mutations = staff.map(item => {
+        // Save or Override Staff Batch Attendance
+        const entries = staff.map(s => {
           let status = "PRESENT";
-          let remarks = item.remarks || "";
+          if (s.status === "Present") status = "PRESENT";
+          else if (s.status === "Absent") status = "ABSENT";
+          else if (s.status === "Half day") status = "HALF_DAY";
+          else if (s.status === "Late") status = "LATE";
+          else if (s.status === "On leave") status = "ON_LEAVE";
 
-          if (item.status === "Present") {
-            status = "PRESENT";
-          } else if (item.status === "Late") {
-            status = "PRESENT";
-            remarks = "Late";
-          } else if (item.status === "Half day") {
-            status = "HALF_DAY";
-          } else if (item.status === "On leave") {
-            status = "ABSENT";
-            remarks = "Leave";
-          } else if (item.status === "Absent") {
-            status = "ABSENT";
-          }
-
-          if (item.attendanceRecordId) {
-            const input: Record<string, unknown> = { status, remarks };
-            return graphqlRequest(UPDATE_ATTENDANCE, { id: item.attendanceRecordId, input });
-          } else {
-            const classId = item.teacherClassId || activeClass?.id || (classes.length > 0 ? classes[0].id : "default_class");
-            const input: Record<string, unknown> = {
-              schoolId,
-              classId,
-              date: dateStr,
-              status,
-              remarks,
-              idempotencyKey: Math.random().toString(36).substr(2, 9),
-              teacherId: item.id
-            };
-            return graphqlRequest(CREATE_ATTENDANCE, { input });
-          }
+          return {
+            teacherId: s.id,
+            status,
+            remarks: s.remarks || ""
+          };
         });
 
-        await Promise.all(mutations);
+        await graphqlRequest(SAVE_STAFF_ATTENDANCE_BATCH, {
+          input: {
+            schoolId,
+            date: dateStr,
+            entries
+          }
+        });
       }
 
       setShowSuccess(true);
@@ -474,13 +493,22 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
       const total = list.length;
       return { present, absent, late: 0, total, percentage: total > 0 ? Math.round((present / total) * 100) : 0 };
     } else {
+      if (staffSummary) {
+        return {
+          present: staffSummary.presentCount,
+          absent: staffSummary.onLeaveCount + staffSummary.absentCount,
+          late: staffSummary.lateCount + staffSummary.halfDayCount,
+          total: staffSummary.totalStaff,
+          percentage: staffSummary.averageAttendancePercentage
+        };
+      }
       const list = filteredStaff;
       const present = list.filter(s => s.status === "Present").length;
       const absent = list.filter(s => s.status === "Absent" || s.status === "On leave").length;
       const late = list.filter(s => s.status === "Late" || s.status === "Half day").length;
       return { present, absent, late, total: list.length, percentage: 0 };
     }
-  }, [activeTab, filteredStudents, filteredStaff, selectedClass, classSummary]);
+  }, [activeTab, filteredStudents, filteredStaff, selectedClass, classSummary, staffSummary]);
 
   const allFilteredArePresent = useMemo(() => {
     if (filteredStudents.length === 0) return false;

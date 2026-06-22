@@ -42,7 +42,6 @@ const GET_CURRICULUM_DATA = `
     curriculumMappings(page: 1, pageSize: 1000) {
       items {
         id
-        schoolId
         classId
         grade
         section
@@ -1629,8 +1628,9 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         setTeachers(formattedTeachers);
 
         const fetchedMappings = data.curriculumMappings?.items || [];
+        const classIds = new Set(fetchedClasses.map((c) => c.id));
         const schoolMappings = fetchedMappings.filter(
-          (m) => m.schoolId === schoolId,
+          (m) => classIds.has(m.classId),
         );
         const frontendMappings: Mapping[] = schoolMappings.map((m) => {
           return {

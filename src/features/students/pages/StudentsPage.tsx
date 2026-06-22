@@ -219,7 +219,6 @@ export const StudentsPage = ({
             address
             classId
             enrollmentGrade
-            academicYearId
             studentStatus
             bloodGroup
             auraPoints
@@ -230,7 +229,6 @@ export const StudentsPage = ({
               email
               occupation
             }
-            isActive
             createdAt
           }
         }
@@ -308,9 +306,8 @@ export const StudentsPage = ({
           : (data.classes?.total !== undefined && data.classes?.total !== null ? String(data.classes.total) : ""),
       });
 
-      // Client-side safety: exclude soft-deleted (isActive: false) users
+      // Map users directly
       const mappedStudents: StudentRecord[] = data.users.items
-        .filter((user) => user.isActive)
         .map((user) => {
           const matchedClass = user.classId ? classMap.get(user.classId) : null;
           return {
@@ -320,7 +317,7 @@ export const StudentsPage = ({
             section: matchedClass ? matchedClass.section || "" : "",
             participation: 75,
             auraScore: user.auraPoints || 0,
-            status: user.studentStatus || (user.isActive ? "Active" : "Inactive"),
+            status: user.studentStatus || "Active",
             img: "/Avatar/Male Avatar Age16.png",
             enrollmentDate: new Date(user.createdAt).toLocaleDateString(
               "en-IN",

@@ -25,7 +25,6 @@ const GET_DRIVERS = `
         mobileNo
         driverLicenseNo
         address
-        isActive
         createdAt
       }
     }
@@ -220,7 +219,7 @@ export const DriversPage = ({
         graphqlRequest<any>(GET_DRIVER_STATS, { schoolId }).catch(() => null)
       ]);
 
-      const items = (driversRes.users?.items || []).filter((u: any) => u.isActive);
+      const items = driversRes.users?.items || [];
       setRawDrivers(items);
       if (statsRes?.directoryStats) {
         setStatsData(statsRes.directoryStats);
