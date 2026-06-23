@@ -145,6 +145,12 @@ export const AddStaffPage = () => {
             address: serializedAddress,
             qualifiedGrades,
             subjectSpecializations: specializations,
+            designation: designation || undefined,
+            qualifications: qualifications || undefined,
+            yearsExperience: exp || undefined,
+            portalAccessRole: portalRole || undefined,
+            workShift: shift || undefined,
+            busRouteLabel: busAvailed && busAvailed !== "No" ? busAvailed : undefined,
           },
         },
       );
