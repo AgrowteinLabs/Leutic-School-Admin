@@ -36,7 +36,7 @@ export const AddDriverPage = () => {
 
     const handleFinalize = async () => {
         const schoolId = localStorage.getItem("school_id") || "";
-        const driverPassword = "Driver" + Math.random().toString(36).substring(2, 10) + "!";
+        const driverPassword = "Driver" + Math.random().toString(36).substring(2, 8) + Math.floor(Math.random() * 10) + "!";
 
         const createMutation = `
             mutation CreateDriver($input: CreateUserDto!) {

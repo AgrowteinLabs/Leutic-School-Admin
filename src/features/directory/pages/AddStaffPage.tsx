@@ -7,11 +7,11 @@ import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useApp } from "../../../lib/AppContext";
 
-interface ClassItem {
+interface SubjectItem {
   id: string;
-  grade: string;
-  section: string;
+  name: string;
 }
 
 export const AddStaffPage = () => {
@@ -37,46 +37,74 @@ export const AddStaffPage = () => {
   const [exp, setExp] = useState("");
   const [instEmail, setInstEmail] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
+  const { schoolProfile } = useApp();
+  const activeGrades = schoolProfile?.activeGrades && schoolProfile.activeGrades.length > 0
+    ? schoolProfile.activeGrades
+    : [
+        "Grade 1",
+        "Grade 2",
+        "Grade 3",
+        "Grade 4",
+        "Grade 5",
+        "Grade 6",
+        "Grade 7",
+        "Grade 8",
+        "Grade 9",
+        "Grade 10",
+      ];
+
   const [qualifiedGrades, setQualifiedGrades] = useState<string[]>([]);
   const [specializations, setSpecializations] = useState<string[]>([]);
 
   // Step 3 State
-  const [assignedClasses, setAssignedClasses] = useState<string[]>([]);
   const [password, setPassword] = useState("");
   const [portalRole, setPortalRole] = useState("Standard Teacher");
   const [shift, setShift] = useState("Morning (8:00 - 15:00)");
   const [busAvailed, setBusAvailed] = useState("No");
 
   // Live Data & Loading
-  const [classesList, setClassesList] = useState<ClassItem[]>([]);
+  const [subjectsList, setSubjectsList] = useState<SubjectItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const specializationOptions = subjectsList.length > 0
+    ? Array.from(new Set(subjectsList.map((s) => s.name)))
+    : [
+        "Mathematics",
+        "Physics",
+        "Chemistry",
+        "Biology",
+        "English",
+        "Social Science",
+        "Information Technology",
+        "Physical Education",
+        "Fine Arts",
+      ];
+
   useEffect(() => {
-    const loadClasses = async () => {
+    const loadOnboardingData = async () => {
       const schoolId = localStorage.getItem("school_id") || "";
-      const query = `
-                query GetClasses($schoolId: String) {
-                  classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
-                    items {
-                      id
-                      grade
-                      section
-                    }
-                  }
-                }
-            `;
+      if (!schoolId) return;
+
+      const subjectsQuery = `
+        query GetSubjects($schoolId: String!) {
+          subjects(schoolId: $schoolId) {
+            id
+            name
+          }
+        }
+      `;
+
       try {
-        const data = await graphqlRequest<{ classes: { items: ClassItem[] } }>(
-          query,
-          { schoolId: schoolId || undefined },
-        );
-        setClassesList(data.classes?.items || []);
+        const subjectsData = await graphqlRequest<{ subjects: SubjectItem[] }>(subjectsQuery, {
+          schoolId,
+        });
+        setSubjectsList(subjectsData.subjects || []);
       } catch (err) {
-        console.error("Failed to fetch classes for staff onboarding:", err);
+        console.error("Failed to fetch onboarding data:", err);
       }
     };
-    loadClasses();
+    loadOnboardingData();
   }, []);
 
   const handleFinalize = async () => {
@@ -92,15 +120,8 @@ export const AddStaffPage = () => {
     const schoolId = localStorage.getItem("school_id") || "";
     const role = portalRole === "Admin" ? "ADMIN" : "TEACHER";
 
-    // Find matching class IDs from the selection list
-    const mappedClassIds = assignedClasses
-      .map((opt) => {
-        const foundClass = classesList.find(
-          (c) => `${c.grade} - ${c.section}` === opt,
-        );
-        return foundClass ? foundClass.id : null;
-      })
-      .filter((id): id is string => !!id);
+    // No class IDs assigned directly on staff onboarding
+    const mappedClassIds: string[] = [];
 
     // Serialize department inside address field
     const serializedAddress = `Dept: ${dept || "General"} | ${address}`;
@@ -127,8 +148,8 @@ export const AddStaffPage = () => {
     try {
       const finalPassword =
         password ||
-        "Faculty" + Math.random().toString(36).substring(2, 10) + "!";
-      const response = await graphqlRequest<{ createUser: { id: string } }>(
+        "Faculty" + Math.random().toString(36).substring(2, 8) + Math.floor(Math.random() * 10) + "!";
+      await graphqlRequest<{ createUser: { id: string } }>(
         createUserMutation,
         {
           input: {
@@ -144,7 +165,10 @@ export const AddStaffPage = () => {
             classIds: mappedClassIds,
             address: serializedAddress,
             qualifiedGrades,
-            subjectSpecializations: specializations,
+            subjectSpecializations: specializations.map((name) => {
+              const found = subjectsList.find((s) => s.name.toLowerCase() === name.toLowerCase());
+              return found ? found.id : name;
+            }),
             designation: designation || undefined,
             qualifications: qualifications || undefined,
             yearsExperience: exp || undefined,
@@ -155,27 +179,7 @@ export const AddStaffPage = () => {
         },
       );
 
-      const newTeacherId = response.createUser.id;
-
-      // Update classTeacherId for each assigned class in parallel
-      if (mappedClassIds.length > 0) {
-        const updateClassMutation = `
-                    mutation UpdateClass($id: ID!, $classTeacherId: String) {
-                        updateClass(id: $id, updateClassInput: { classTeacherId: $classTeacherId }) {
-                            id
-                        }
-                    }
-                `;
-        await Promise.allSettled(
-          mappedClassIds.map((classId) =>
-            graphqlRequest(updateClassMutation, {
-              id: classId,
-              classTeacherId: newTeacherId,
-            }),
-          ),
-        );
-      }
-
+      // Class updates are no longer needed
       setShowSuccess(true);
     } catch (err: any) {
       console.error("Failed to onboard staff member:", err);
@@ -481,30 +485,16 @@ export const AddStaffPage = () => {
                                       <button
                                         type="button"
                                         onClick={() => {
-                                          const allGrades = [
-                                            "Grade 1",
-                                            "Grade 2",
-                                            "Grade 3",
-                                            "Grade 4",
-                                            "Grade 5",
-                                            "Grade 6",
-                                            "Grade 7",
-                                            "Grade 8",
-                                            "Grade 9",
-                                            "Grade 10",
-                                            "Grade 11",
-                                            "Grade 12",
-                                          ];
                                           if (
                                             qualifiedGrades.length ===
-                                            allGrades.length
+                                            activeGrades.length
                                           )
                                             setQualifiedGrades([]);
-                                          else setQualifiedGrades(allGrades);
+                                          else setQualifiedGrades(activeGrades);
                                         }}
                                         className="text-[11px] font-bold text-primary hover:text-secondary transition-colors underline underline-offset-4"
                                       >
-                                        {qualifiedGrades.length === 12
+                                        {qualifiedGrades.length === activeGrades.length
                                           ? "Deselect All"
                                           : "Select All"}
                                       </button>
@@ -512,20 +502,7 @@ export const AddStaffPage = () => {
                                     <PDSFormGroup
                                       label=""
                                       type="chips"
-                                      options={[
-                                        "Grade 1",
-                                        "Grade 2",
-                                        "Grade 3",
-                                        "Grade 4",
-                                        "Grade 5",
-                                        "Grade 6",
-                                        "Grade 7",
-                                        "Grade 8",
-                                        "Grade 9",
-                                        "Grade 10",
-                                        "Grade 11",
-                                        "Grade 12",
-                                      ]}
+                                      options={activeGrades}
                                       value={qualifiedGrades}
                                       onChange={setQualifiedGrades}
                                     />
@@ -538,27 +515,16 @@ export const AddStaffPage = () => {
                                       <button
                                         type="button"
                                         onClick={() => {
-                                          const allSpecs = [
-                                            "Mathematics",
-                                            "Physics",
-                                            "Chemistry",
-                                            "Biology",
-                                            "English",
-                                            "Social Science",
-                                            "Information Technology",
-                                            "Physical Education",
-                                            "Fine Arts",
-                                          ];
                                           if (
                                             specializations.length ===
-                                            allSpecs.length
+                                            specializationOptions.length
                                           )
                                             setSpecializations([]);
-                                          else setSpecializations(allSpecs);
+                                          else setSpecializations(specializationOptions);
                                         }}
                                         className="text-[11px] font-bold text-primary hover:text-secondary transition-colors underline underline-offset-4"
                                       >
-                                        {specializations.length === 9
+                                        {specializations.length === specializationOptions.length
                                           ? "Deselect All"
                                           : "Select All"}
                                       </button>
@@ -566,17 +532,7 @@ export const AddStaffPage = () => {
                                     <PDSFormGroup
                                       label=""
                                       type="chips"
-                                      options={[
-                                        "Mathematics",
-                                        "Physics",
-                                        "Chemistry",
-                                        "Biology",
-                                        "English",
-                                        "Social Science",
-                                        "Information Technology",
-                                        "Physical Education",
-                                        "Fine Arts",
-                                      ]}
+                                      options={specializationOptions}
                                       value={specializations}
                                       onChange={setSpecializations}
                                     />
@@ -633,22 +589,7 @@ export const AddStaffPage = () => {
                                  <span className="text-[12px] font-bold text-[#B0AFA8] tracking-tight">
                                    Class Assignments
                                  </span>
-                                {classesList.length === 0 ? (
-                                  <p className="text-[13px] text-slate-400 italic font-medium">
-                                    No classes created yet. Please create
-                                    classes first.
-                                  </p>
-                                ) : (
-                                  <PDSFormGroup
-                                    label=""
-                                    type="chips"
-                                    options={classesList.map(
-                                      (c) => `${c.grade} - ${c.section}`,
-                                    )}
-                                    value={assignedClasses}
-                                    onChange={setAssignedClasses}
-                                  />
-                                )}
+                                 {/* Class assignments are handled elsewhere */}
                               </div>
 
                               <div className="bg-slate-50 p-8 rounded-[32px] border border-slate-100 flex items-center justify-between">

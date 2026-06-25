@@ -17,26 +17,26 @@ import {
   History
 } from "lucide-react";
 
-interface ManagedUser {
-  id: string;
-  role: string;
-  name: string;
-  email?: string;
-  mobileNo?: string;
-  schoolId?: string;
-  isActive: boolean;
-  admissionNumber?: string;
-  address?: string;
-  classId?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// interface ManagedUser {
+//   id: string;
+//   role: string;
+//   name: string;
+//   email?: string;
+//   mobileNo?: string;
+//   schoolId?: string;
+//   isActive: boolean;
+//   admissionNumber?: string;
+//   address?: string;
+//   classId?: string;
+//   createdAt: string;
+//   updatedAt: string;
+// }
 
-interface ParentContact {
-  id: string;
-  mobileNo: string;
-  childrenIds: string[];
-}
+// interface ParentContact {
+//   id: string;
+//   mobileNo: string;
+//   childrenIds: string[];
+// }
 
 interface StudentProfile {
   name: string;

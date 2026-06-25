@@ -135,7 +135,7 @@ export const EnrollStudentPage = () => {
       const finalAdmissionNo =
         rollNo || `OA-2026-${Math.floor(100 + Math.random() * 900)}`;
 
-      const studentPassword = `Student${Math.random().toString(36).substring(2, 10)}!`;
+      const studentPassword = `Student${Math.random().toString(36).substring(2, 8)}${Math.floor(Math.random() * 10)}!`;
 
       // Construct guardians array
       const guardiansList = [];

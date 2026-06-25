@@ -165,6 +165,16 @@ const StudentRow = ({
   );
 };
 
+const mapStatusToDisplay = (status?: string): string => {
+  if (!status) return "Active";
+  const upper = status.toUpperCase();
+  if (upper === "ACTIVE") return "Active";
+  if (upper === "AT_RISK" || upper === "AT RISK") return "At Risk";
+  if (upper === "GRADUATED") return "Graduated";
+  if (upper === "INACTIVE") return "Inactive";
+  return status;
+};
+
 export const StudentsPage = ({
   isHubChild,
   externalStudents,
@@ -261,7 +271,7 @@ export const StudentsPage = ({
     else if (statusFilter === "Inactive") mappedStatus = "INACTIVE";
 
     let mappedGrade: string | undefined = undefined;
-    if (gradeFilter !== "Grade (All)") {
+    if (gradeFilter !== "Grade Level (All)") {
       mappedGrade = gradeFilter;
     }
 
@@ -297,13 +307,23 @@ export const StudentsPage = ({
         setStatsData(statsRes.directoryStats);
       }
 
+      let totalStudentsCount = "";
+      if (statsRes?.directoryStats?.totalCount !== undefined) {
+        totalStudentsCount = String(statsRes.directoryStats.totalCount);
+      } else if (data.users?.total !== undefined && data.users?.total !== null) {
+        totalStudentsCount = String(data.users.total);
+      }
+
+      let activeProgramsCount = "";
+      if (statsRes?.directoryStats?.activeProgramsCount !== undefined) {
+        activeProgramsCount = String(statsRes.directoryStats.activeProgramsCount);
+      } else if (data.classes?.total !== undefined && data.classes?.total !== null) {
+        activeProgramsCount = String(data.classes.total);
+      }
+
       setOverviewTotals({
-        totalStudents: statsRes?.directoryStats?.totalCount !== undefined
-          ? String(statsRes.directoryStats.totalCount)
-          : (data.users?.total !== undefined && data.users?.total !== null ? String(data.users.total) : ""),
-        activePrograms: statsRes?.directoryStats?.activeProgramsCount !== undefined
-          ? String(statsRes.directoryStats.activeProgramsCount)
-          : (data.classes?.total !== undefined && data.classes?.total !== null ? String(data.classes.total) : ""),
+        totalStudents: totalStudentsCount,
+        activePrograms: activeProgramsCount,
       });
 
       // Map users directly
@@ -317,7 +337,7 @@ export const StudentsPage = ({
             section: matchedClass ? matchedClass.section || "" : "",
             participation: 75,
             auraScore: user.auraPoints || 0,
-            status: user.studentStatus || "Active",
+            status: mapStatusToDisplay(user.studentStatus),
             img: "/Avatar/Male Avatar Age16.png",
             enrollmentDate: new Date(user.createdAt).toLocaleDateString(
               "en-IN",

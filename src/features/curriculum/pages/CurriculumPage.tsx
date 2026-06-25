@@ -193,8 +193,39 @@ const SAVE_CLASS_TIMETABLE = `
   }
 `;
 
-const getBackendGradeOptions = (classes: { grade: string }[]) =>
-  Array.from(new Set(classes.map((item) => item.grade).filter(Boolean)));
+const GET_TIMETABLE_CONFIG = `
+  query GetTimetableConfig($schoolId: String!) {
+    timetableConfig(schoolId: $schoolId) {
+      schoolStart
+      uniformDuration
+      defaultDuration
+      operationalDays
+      breaks {
+        id
+        period
+        placement
+        duration
+        type
+        label
+        days
+      }
+      periodDurationsJson
+      perDayDurationsJson
+    }
+  }
+`;
+
+const SAVE_TIMETABLE_CONFIG = `
+  mutation SaveTimetableConfig($schoolId: String!, $input: SaveTimetableConfigInput!) {
+    saveTimetableConfig(schoolId: $schoolId, input: $input) {
+      schoolStart
+    }
+  }
+`;
+
+
+// const getBackendGradeOptions = (classes: { grade: string }[]) =>
+//   Array.from(new Set(classes.map((item) => item.grade).filter(Boolean)));
 
 // Types
 interface Subject {
@@ -1506,8 +1537,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
     setIsLoading(true);
     try {
-      // Run subjects, gradeConfigs and main curriculum query in parallel
-      const [subjectsResult, gradeConfigsResult, curriculumResult] =
+      // Run subjects, gradeConfigs, main curriculum, and timetable config queries in parallel
+      const [subjectsResult, gradeConfigsResult, curriculumResult, timetableConfigResult] =
         await Promise.allSettled([
           graphqlRequest<{
             subjects: Array<{
@@ -1532,7 +1563,14 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             classes: {
               items: Array<{ id: string; grade: string; section: string }>;
             };
-            users: { items: Array<{ id: string; name: string }> };
+            users: {
+              items: Array<{
+                id: string;
+                name: string;
+                qualifiedGrades?: string[];
+                subjectSpecializations?: string[];
+              }>;
+            };
             curriculumMappings: {
               items: Array<{
                 id: string;
@@ -1547,6 +1585,25 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               }>;
             };
           }>(GET_CURRICULUM_DATA, { schoolId }),
+          graphqlRequest<{
+            timetableConfig: {
+              schoolStart: string;
+              uniformDuration: boolean;
+              defaultDuration: number;
+              operationalDays: string[];
+              breaks: Array<{
+                id: string;
+                period: number;
+                placement: "before" | "after";
+                duration: number;
+                type: "short" | "lunch" | "other";
+                label: string;
+                days: string[];
+              }>;
+              periodDurationsJson?: string;
+              perDayDurationsJson?: string;
+            } | null;
+          }>(GET_TIMETABLE_CONFIG, { schoolId }),
         ]);
 
       // 1. Load subjects from backend
@@ -1613,10 +1670,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         }
 
         const fetchedTeachers = data.users?.items || [];
-        const currentSubjects =
-          (subjectsResult.status === "fulfilled"
-            ? subjectsResult.value.subjects
-            : []) || [];
+
         const formattedTeachers: Teacher[] = fetchedTeachers.map((t) => ({
           id: t.id,
           name: t.name,
@@ -1646,10 +1700,83 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         setInitialMappings(frontendMappings);
         setMappings(frontendMappings);
       }
+
+      // 4. Load timetable configuration from backend
+      if (timetableConfigResult && timetableConfigResult.status === "fulfilled") {
+        const config = timetableConfigResult.value.timetableConfig;
+        if (config) {
+          const parsedBreaks = (config.breaks || []).map((b) => ({
+            id: b.id,
+            period: b.period,
+            placement: b.placement as "before" | "after",
+            duration: b.duration,
+            type: b.type as "short" | "lunch" | "other",
+            label: b.label,
+            days: b.days || [],
+          }));
+          let parsedPeriodDurations = {};
+          if (config.periodDurationsJson) {
+            try {
+              parsedPeriodDurations = JSON.parse(config.periodDurationsJson);
+              setPeriodDurations(parsedPeriodDurations);
+            } catch (e) {
+              console.error("Failed to parse periodDurationsJson:", e);
+            }
+          }
+          let parsedPerDayDurations = {};
+          if (config.perDayDurationsJson) {
+            try {
+              parsedPerDayDurations = JSON.parse(config.perDayDurationsJson);
+              setPerDayDurations(parsedPerDayDurations);
+            } catch (e) {
+              console.error("Failed to parse perDayDurationsJson:", e);
+            }
+          }
+
+          setScheduleConfig({
+            schoolStart: config.schoolStart || "08:30",
+            uniformDuration: config.uniformDuration ?? true,
+            defaultDuration: config.defaultDuration ?? 60,
+          });
+          if (config.operationalDays && config.operationalDays.length > 0) {
+            setActiveDays(config.operationalDays);
+          }
+          setBreakConfig(parsedBreaks);
+
+          setInitialTimetableConfig(
+            JSON.stringify({
+              schoolStart: config.schoolStart || "08:30",
+              uniformDuration: config.uniformDuration ?? true,
+              defaultDuration: config.defaultDuration ?? 60,
+              operationalDays: config.operationalDays || [],
+              breaks: parsedBreaks,
+              periodDurations: parsedPeriodDurations,
+              perDayDurations: parsedPerDayDurations,
+            })
+          );
+        } else {
+          // Serialize default frontend config
+          setInitialTimetableConfig(
+            JSON.stringify({
+              schoolStart: "08:30",
+              uniformDuration: true,
+              defaultDuration: 60,
+              operationalDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+              breaks: breakConfig,
+              periodDurations: {},
+              perDayDurations: {},
+            })
+          );
+        }
+      }
     } catch (err) {
       console.error("Error fetching curriculum data:", err);
     } finally {
       setIsLoading(false);
+      // Wait for states to settle before enabling the change listener
+      setTimeout(() => {
+        isInitialLoad.current = false;
+      }, 500);
     }
   }, []);
 
@@ -1798,6 +1925,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           id: editingSubject.id,
           input: {
             name: subjectData.name,
+            code: subjectData.code,
+            category: subjectData.category,
             department: subjectData.department || "General",
           },
         });
@@ -1808,6 +1937,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               ? {
                   ...s,
                   name: updated.name,
+                  code: updated.code,
+                  category: updated.category,
                   department: updated.department,
                 }
               : s,
@@ -1982,8 +2113,113 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     ]);
   }, []);
 
+  // Tracking states to detect changes for Timetable slots and Configs
+  const isInitialLoad = useRef(true);
+  const [initialTimetableConfig, setInitialTimetableConfig] = useState<string>("");
+  const [initialSectionEntries, setInitialSectionEntries] = useState<string>("[]");
+
+  const currentConfigStr = useMemo(() => {
+    return JSON.stringify({
+      schoolStart: scheduleConfig.schoolStart,
+      uniformDuration: scheduleConfig.uniformDuration,
+      defaultDuration: scheduleConfig.defaultDuration,
+      operationalDays: activeDays,
+      breaks: breakConfig.map((b) => ({
+        id: b.id,
+        period: b.period,
+        placement: b.placement,
+        duration: b.duration,
+        type: b.type,
+        label: b.label,
+        days: b.days,
+      })),
+      periodDurations,
+      perDayDurations,
+    });
+  }, [scheduleConfig, activeDays, breakConfig, periodDurations, perDayDurations]);
+
+  useEffect(() => {
+    if (isInitialLoad.current || !initialTimetableConfig) return;
+    if (currentConfigStr !== initialTimetableConfig) {
+      setHasUnsavedChanges(true);
+    }
+  }, [currentConfigStr, initialTimetableConfig]);
+
+  const currentSectionEntries = useMemo(() => {
+    return timetableEntries
+      .filter((e) => e.section === selectedTimetableSection)
+      .map((e) => ({
+        day: e.day,
+        period: e.period,
+        subjectId: e.subjectId,
+        teacherId: e.teacherId,
+        spanPeriods: e.spanPeriods || 1,
+      }));
+  }, [timetableEntries, selectedTimetableSection]);
+
   // Load timetable from backend when a section is selected
   const [isTimetableLoading, setIsTimetableLoading] = useState(false);
+
+  useEffect(() => {
+    if (isInitialLoad.current || isTimetableLoading) return;
+    const currentStr = JSON.stringify(currentSectionEntries);
+    if (currentStr !== initialSectionEntries) {
+      setHasUnsavedChanges(true);
+    }
+  }, [currentSectionEntries, initialSectionEntries, isTimetableLoading]);
+
+  const handleDiscardChanges = useCallback(() => {
+    if (activeTab === "timetable") {
+      if (initialTimetableConfig) {
+        try {
+          const cfg = JSON.parse(initialTimetableConfig);
+          setScheduleConfig({
+            schoolStart: cfg.schoolStart,
+            uniformDuration: cfg.uniformDuration,
+            defaultDuration: cfg.defaultDuration,
+          });
+          setActiveDays(cfg.operationalDays);
+          setBreakConfig(cfg.breaks);
+          setPeriodDurations(cfg.periodDurations);
+          setPerDayDurations(cfg.perDayDurations);
+        } catch (e) {
+          console.error("Failed to parse initialTimetableConfig on discard:", e);
+        }
+      }
+      if (initialSectionEntries && selectedTimetableSection) {
+        try {
+          const entries = JSON.parse(initialSectionEntries);
+          const reconstructed = entries.map((slot: any) => ({
+            section: selectedTimetableSection,
+            day: slot.day,
+            period: slot.period,
+            subjectId: slot.subjectId,
+            subjectName: subjects.find((s) => s.id === slot.subjectId)?.name || slot.subjectId,
+            teacherId: slot.teacherId,
+            teacherName: teachers.find((t) => t.id === slot.teacherId)?.name || slot.teacherId,
+            curriculumMappingId: "",
+            spanPeriods: slot.spanPeriods || 1,
+          }));
+          handleLoadTimetableEntries(selectedTimetableSection, reconstructed);
+        } catch (e) {
+          console.error("Failed to parse initialSectionEntries on discard:", e);
+        }
+      }
+    } else {
+      setMappings(initialMappings);
+    }
+    setHasUnsavedChanges(false);
+  }, [
+    activeTab,
+    initialTimetableConfig,
+    initialSectionEntries,
+    selectedTimetableSection,
+    initialMappings,
+    handleLoadTimetableEntries,
+    subjects,
+    teachers,
+  ]);
+
   useEffect(() => {
     if (!selectedTimetableSection) return;
     const section = sections.find(
@@ -2024,6 +2260,17 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           };
         });
         handleLoadTimetableEntries(selectedTimetableSection, entries);
+        setInitialSectionEntries(
+          JSON.stringify(
+            entries.map((e) => ({
+              day: e.day,
+              period: e.period,
+              subjectId: e.subjectId,
+              teacherId: e.teacherId,
+              spanPeriods: e.spanPeriods || 1,
+            }))
+          )
+        );
       })
       .catch((err) => console.error("Failed to load timetable:", err))
       .finally(() => setIsTimetableLoading(false));
@@ -2066,6 +2313,43 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
     setIsSaving(true);
     try {
+      const configInput = {
+        schoolStart: scheduleConfig.schoolStart,
+        uniformDuration: scheduleConfig.uniformDuration,
+        defaultDuration: scheduleConfig.defaultDuration,
+        operationalDays: activeDays,
+        breaks: breakConfig.map((b) => ({
+          id: b.id,
+          period: b.period,
+          placement: b.placement,
+          duration: b.duration,
+          type: b.type,
+          label: b.label,
+          days: b.days,
+        })),
+        periodDurations,
+        perDayDurations,
+      };
+
+      // Save general timetable configuration (gracefully catches if backend endpoint is not yet implemented)
+      try {
+        await graphqlRequest(SAVE_TIMETABLE_CONFIG, {
+          schoolId,
+          input: {
+            schoolStart: configInput.schoolStart,
+            uniformDuration: configInput.uniformDuration,
+            defaultDuration: configInput.defaultDuration,
+            operationalDays: configInput.operationalDays,
+            breaks: configInput.breaks,
+            periodDurationsJson: JSON.stringify(configInput.periodDurations),
+            perDayDurationsJson: JSON.stringify(configInput.perDayDurations),
+          },
+        });
+        setInitialTimetableConfig(JSON.stringify(configInput));
+      } catch (configErr) {
+        console.warn("Backend saveTimetableConfig failed (possibly not implemented on backend yet):", configErr);
+      }
+
       await graphqlRequest(SAVE_CLASS_TIMETABLE, {
         input: {
           schoolId,
@@ -2074,6 +2358,17 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           slots,
         },
       });
+      setInitialSectionEntries(
+        JSON.stringify(
+          sectionEntries.map((e) => ({
+            day: e.day,
+            period: e.period,
+            subjectId: e.subjectId,
+            teacherId: e.teacherId,
+            spanPeriods: e.spanPeriods || 1,
+          }))
+        )
+      );
       setHasUnsavedChanges(false);
     } catch (err) {
       console.error("Failed to save schedule:", err);
@@ -3814,14 +4109,14 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setHasUnsavedChanges(false)}
+                    onClick={handleDiscardChanges}
                     className="h-10 px-6 rounded-xl text-[12px] font-bold text-[#B0AFA8] hover:text-secondary hover:bg-slate-50 transition-all"
                   >
                     Discard
                   </button>
                   <button
                     disabled={isSaving}
-                    onClick={handleSaveChanges}
+                    onClick={activeTab === "timetable" ? handleSaveSchedule : handleSaveChanges}
                     className="h-10 px-8 bg-secondary text-white rounded-xl text-[12px] font-bold shadow-lg shadow-secondary/10 hover:bg-secondary/90 active:scale-95 disabled:opacity-50 transition-all flex items-center gap-2"
                   >
                     <span

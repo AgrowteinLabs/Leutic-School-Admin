@@ -7,6 +7,52 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
+const STUDENT_CLASS_CSV_TEMPLATE = `FullName,AdmissionNumber,RollNumber,Gender,BloodGroup,Address,MobileNo,Email,Password,FatherName,FatherMobile,MotherName,MotherMobile
+John Doe,ADM-001,1,Male,O+,123 Main St,9876543210,john@example.com,JohnPass1!,Robert Doe,9876543211,Jane Doe,9876543212
+Alice Smith,ADM-002,2,Female,A-,456 Elm St,9876543220,alice@example.com,AlicePass2!,Tom Smith,9876543221,Mary Smith,9876543222`;
+
+const parseCSV = (text: string): string[][] => {
+  const lines = text.split(/\r?\n/);
+  return lines
+    .map((line) => {
+      const result: string[] = [];
+      let current = "";
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === "," && !inQuotes) {
+          result.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    })
+    .filter((row) => row.length > 0 && row.some((cell) => cell !== ""));
+};
+
+const escapeCSV = (val: string) => {
+  if (val === undefined || val === null) return "";
+  const stringVal = String(val);
+  if (stringVal.includes(",") || stringVal.includes('"') || stringVal.includes("\n") || stringVal.includes("\r")) {
+    return `"${stringVal.replace(/"/g, '""')}"`;
+  }
+  return stringVal;
+};
+
+interface ImportResult {
+  rowNumber: number;
+  identifier: string;
+  status: "success" | "failed";
+  error?: string;
+  originalRow: Record<string, string>;
+  tempPassword?: string;
+}
+
 interface StudentUI {
   uid: string;
   name: string;
@@ -479,6 +525,7 @@ interface ManageDrawerProps {
   onApplyChanges: (fields: { grade: string; section: string; room: string; teacherName: string }) => void;
   onRemoveStudent: (studentId: string) => void;
   onAddStudent: (studentId: string) => void;
+  onBulkImport: () => void;
 }
 
 const ManageClassDrawer = ({
@@ -490,7 +537,8 @@ const ManageClassDrawer = ({
   onDelete,
   onApplyChanges,
   onRemoveStudent,
-  onAddStudent
+  onAddStudent,
+  onBulkImport
 }: ManageDrawerProps) => {
   const [grade, setGrade] = useState(classData?.grade || "");
   const [section, setSection] = useState(classData?.section || "");
@@ -498,11 +546,6 @@ const ManageClassDrawer = ({
   const [teacher, setTeacher] = useState(classData?.teacher || "");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleBulkImport = () => {
-    fileInputRef.current?.click();
-  };
 
   if (!isOpen) return null;
 
@@ -515,18 +558,6 @@ const ManageClassDrawer = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[1000] overflow-hidden">
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            accept=".csv,.xlsx"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                alert("Bulk CSV import is simulated. Selected: " + file.name);
-              }
-            }}
-          />
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -587,7 +618,7 @@ const ManageClassDrawer = ({
                     <span className="text-[10px] font-bold text-[#B0AFA8] capitalize tracking-wide pl-7">{classData.students.length} mapped students</span>
                   </div>
                   <button
-                    onClick={handleBulkImport}
+                    onClick={onBulkImport}
                     className="text-[11px] font-bold text-primary flex items-center gap-1.5 hover:underline transition-all"
                   >
                     <span className="material-symbols-outlined text-[16px]">upload_file</span>
@@ -728,6 +759,15 @@ export const ClassDetailsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [studentSearch, setStudentSearch] = useState("");
+
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [parsedRecords, setParsedRecords] = useState<any[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [importResults, setImportResults] = useState<ImportResult[]>([]);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -960,6 +1000,224 @@ export const ClassDetailsPage = () => {
       loadData();
     }
   }, [id, loadData]);
+
+  const downloadTemplate = () => {
+    const content = STUDENT_CLASS_CSV_TEMPLATE;
+    const filename = "student_class_import_template.csv";
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setErrorMsg(null);
+    setImportStatus(null);
+    setSelectedFile(file);
+    setImportResults([]);
+    setCsvHeaders([]);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const rows = parseCSV(text);
+        if (rows.length < 2) {
+          setErrorMsg("The CSV file must contain a header row and at least one data row.");
+          return;
+        }
+
+        const rawHeaders = rows[0];
+        setCsvHeaders(rawHeaders);
+
+        const headers = rawHeaders.map((h) => h.toLowerCase().replace(/\s/g, ""));
+        const dataRows = rows.slice(1);
+
+        const records = dataRows.map((row) => {
+          const record: Record<string, string> = {};
+          headers.forEach((header, idx) => {
+            record[header] = row[idx] || "";
+          });
+          return record;
+        });
+
+        const invalid = records.some(r => !r.fullname || !r.admissionnumber);
+        if (invalid) {
+          setErrorMsg("Missing required columns: FullName or AdmissionNumber in one or more rows.");
+          return;
+        }
+
+        setParsedRecords(records);
+      } catch (err) {
+        setErrorMsg("Failed to parse CSV file. Ensure it is a valid comma-separated text file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImport = async () => {
+    if (parsedRecords.length === 0) return;
+    setImporting(true);
+    setImportStatus("Importing records...");
+    setImportResults([]);
+    const schoolId = localStorage.getItem("school_id") || "";
+
+    const bulkCreateUsersMutation = `
+      mutation BulkCreateUsers($inputs: [CreateUserDto!]!) {
+        bulkCreateUsers(inputs: $inputs) {
+          totalCount
+          succeededCount
+          failedCount
+          results {
+            rowNumber
+            identifier
+            status
+            error
+            tempPassword
+          }
+        }
+      }
+    `;
+
+    try {
+      const inputs = parsedRecords.map((r) => {
+        const guardians = [];
+        if (r.fathername) {
+          guardians.push({
+            relationship: "Father",
+            fullName: r.fathername,
+            mobileNo: r.fathermobile || undefined,
+          });
+        }
+        if (r.mothername) {
+          guardians.push({
+            relationship: "Mother",
+            fullName: r.mothername,
+            mobileNo: r.mothermobile || undefined,
+          });
+        }
+
+        return {
+          role: "STUDENT",
+          name: r.fullname,
+          admissionNumber: r.admissionnumber,
+          rollNumber: r.rollnumber || undefined,
+          gender: r.gender || "Male",
+          bloodGroup: r.bloodgroup || undefined,
+          address: r.address || undefined,
+          mobileNo: r.mobileno || undefined,
+          email: r.email || undefined,
+          password: r.password || undefined,
+          schoolId,
+          classId: id,
+          studentStatus: "ACTIVE",
+          guardians,
+        };
+      });
+
+      const response = await graphqlRequest<{
+        bulkCreateUsers: {
+          totalCount: number;
+          succeededCount: number;
+          failedCount: number;
+          results: Array<{
+            rowNumber: number;
+            identifier: string;
+            status: "SUCCESS" | "FAILED";
+            error?: string;
+            tempPassword?: string;
+          }>;
+        };
+      }>(bulkCreateUsersMutation, { inputs });
+
+      const { succeededCount, failedCount, results: backendResults } = response.bulkCreateUsers;
+
+      const results: ImportResult[] = backendResults.map((res, idx) => ({
+        rowNumber: res.rowNumber || idx + 2,
+        identifier: res.identifier,
+        status: res.status === "SUCCESS" ? ("success" as const) : ("failed" as const),
+        error: res.error || undefined,
+        originalRow: parsedRecords[idx],
+        tempPassword: res.tempPassword || undefined,
+      }));
+
+      setImportResults(results);
+
+      if (failedCount === 0) {
+        setImportStatus(`Success! Successfully imported all ${succeededCount} records.`);
+      } else {
+        setImportStatus(`Import Aborted! 0 records imported. The entire transaction was rolled back due to validation failures on ${failedCount} row(s).`);
+      }
+    } catch (err: any) {
+      console.error("Bulk import failed:", err);
+      setImportStatus(`Error: ${err.message || "An unexpected error occurred."}`);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const downloadFailedCSV = () => {
+    const failedResults = importResults.filter((res) => res.status === "failed");
+    if (failedResults.length === 0) return;
+
+    const headers = csvHeaders.map((h) => h.toLowerCase().replace(/\s/g, ""));
+    const rawHeaders = [...csvHeaders, "ErrorReason"];
+
+    const csvRows = [];
+    csvRows.push(rawHeaders.map(escapeCSV).join(","));
+
+    failedResults.forEach((res) => {
+      const rowValues = csvHeaders.map((_, idx) => {
+        const normalizedKey = headers[idx];
+        return res.originalRow[normalizedKey] || "";
+      });
+      rowValues.push(res.error || "Unknown error");
+      csvRows.push(rowValues.map(escapeCSV).join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `failed_student_class_import.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadCredentialsCSV = () => {
+    const succeededResults = importResults.filter((res) => res.status === "success");
+    if (succeededResults.length === 0) return;
+
+    const csvRows = [["FullName", "Email", "Password"].join(",")];
+
+    succeededResults.forEach((res) => {
+      const fullName = res.originalRow.fullname || "";
+      const email = res.originalRow.email || res.identifier;
+      const password = res.tempPassword || res.originalRow.password || "Autogenerated by Backend";
+      csvRows.push([escapeCSV(fullName), escapeCSV(email), escapeCSV(password)].join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `imported_student_class_credentials.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleDeleteClass = async () => {
     const removeMutation = `
@@ -1332,6 +1590,10 @@ export const ClassDetailsPage = () => {
         onApplyChanges={handleApplyChanges}
         onRemoveStudent={handleRemoveStudent}
         onAddStudent={handleAddStudent}
+        onBulkImport={() => {
+          setShowManageDrawer(false);
+          setShowBulkModal(true);
+        }}
       />
 
       <DeleteConfirmationModal
@@ -1340,6 +1602,196 @@ export const ClassDetailsPage = () => {
         className={`${classDetails.grade}-${classDetails.section}`}
         onConfirm={handleDeleteClass}
       />
+
+      {/* Bulk Import Modal */}
+      {showBulkModal && (
+        <div className="fixed inset-0 z-[2100] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl p-8 space-y-6 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-foreground text-2xl font-bold">Import Students List</h3>
+                <p className="text-sm text-[#B0AFA8] font-medium mt-1">Upload CSV files to enroll multiple students to this class at once.</p>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowBulkModal(false);
+                  setSelectedFile(null);
+                  setParsedRecords([]);
+                  setErrorMsg(null);
+                  setImportStatus(null);
+                  setImportResults([]);
+                  setCsvHeaders([]);
+                }} 
+                className="size-10 rounded-full hover:bg-[#F7F8F4] flex items-center justify-center text-[#B0AFA8] transition-all" 
+                aria-label="Close modal"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Upload Drag & Drop Box */}
+            <label className="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-[#F7F8F4] group hover:border-primary transition-all cursor-pointer relative">
+              <input 
+                type="file" 
+                accept=".csv" 
+                onChange={handleFileChange} 
+                className="absolute inset-0 opacity-0 cursor-pointer" 
+              />
+              <div className="size-16 rounded-3xl bg-white shadow-sm flex items-center justify-center text-[#B0AFA8] mb-4 group-hover:bg-primary group-hover:text-foreground transition-all">
+                <span className="material-symbols-outlined text-3xl">cloud_upload</span>
+              </div>
+              <p className="text-[15px] font-bold text-foreground">
+                {selectedFile ? selectedFile.name : "Select CSV file"}
+              </p>
+              <p className="text-[12px] text-[#B0AFA8] font-medium mt-1">
+                {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "Supports .csv files (Max 10MB)"}
+              </p>
+            </label>
+
+            {errorMsg && (
+              <div className="p-4 bg-rose-50 border border-rose-100 text-rose-800 text-[12px] font-bold rounded-2xl flex items-center gap-3">
+                <span className="material-symbols-outlined text-rose-600">error</span>
+                <p className="text-left leading-tight">{errorMsg}</p>
+              </div>
+            )}
+
+            {importStatus && (
+              <div className="space-y-4">
+                <div className={cn(
+                  "p-4 border text-[12px] font-bold rounded-2xl flex items-center justify-between gap-3",
+                  importResults.some(r => r.status === "failed") || importStatus.toLowerCase().includes("error")
+                    ? "bg-rose-50 border-rose-100 text-rose-800"
+                    : "bg-emerald-50 border-emerald-100 text-emerald-800"
+                )}>
+                  <div className="flex items-center gap-3">
+                    <span className={cn(
+                      "material-symbols-outlined",
+                      importResults.some(r => r.status === "failed") || importStatus.toLowerCase().includes("error") ? "text-rose-600" : "text-emerald-600"
+                    )}>
+                      {importResults.some(r => r.status === "failed") || importStatus.toLowerCase().includes("error") ? "error" : "check_circle"}
+                    </span>
+                    <p className="text-left leading-tight">{importStatus}</p>
+                  </div>
+                  {importResults.some(r => r.status === "failed") && (
+                    <button
+                      onClick={downloadFailedCSV}
+                      className="text-[11px] font-bold text-rose-700 hover:underline flex items-center gap-1 shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">download</span>
+                      Download Failed CSV
+                    </button>
+                  )}
+                  {importResults.some(r => r.status === "success") && (
+                    <button
+                      type="button"
+                      onClick={downloadCredentialsCSV}
+                      className="text-[11px] font-bold text-emerald-700 hover:underline flex items-center gap-1 shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">vpn_key</span>
+                      Download Credentials
+                    </button>
+                  )}
+                </div>
+
+                {importResults.some(r => r.status === "failed") && (
+                  <div className="border border-slate-100 rounded-2xl overflow-hidden bg-slate-50/50">
+                    <div className="px-4 py-2 border-b border-slate-100 bg-[#F7F8F4] flex justify-between items-center">
+                      <p className="text-[11px] font-bold text-foreground">Detailed Failure Log</p>
+                      <p className="text-[10px] text-[#B0AFA8] font-bold">{importResults.filter(r => r.status === "failed").length} issues found</p>
+                    </div>
+                    <div className="max-h-36 overflow-y-auto px-4 py-2 space-y-1.5 divide-y divide-slate-100">
+                      {importResults
+                        .filter((res) => res.status === "failed")
+                        .map((res, idx) => (
+                          <div key={idx} className="text-[11px] leading-relaxed flex items-start gap-2 py-1 text-slate-700">
+                            <span className="font-bold text-rose-600 shrink-0">Row {res.rowNumber}:</span>
+                            <span className="font-bold shrink-0">{res.identifier}</span>
+                            <span className="text-[#B0AFA8]">—</span>
+                            <span className="text-slate-600">{res.error}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {parsedRecords.length > 0 && !importStatus && !errorMsg && (
+              <div className="p-4 bg-blue-50/50 border border-blue-100 text-blue-800 text-[12px] font-bold rounded-2xl flex items-center gap-3">
+                <span className="material-symbols-outlined text-blue-600">info</span>
+                <p className="text-left leading-tight">Ready to import {parsedRecords.length} records successfully validated!</p>
+              </div>
+            )}
+
+            {/* Template Download Option */}
+            <div className="bg-[#F7F8F4] rounded-2xl p-5 border border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-primary">download</span>
+                <div className="text-left">
+                  <p className="text-[12px] font-bold text-foreground">Download Template</p>
+                  <p className="text-[10px] text-[#B0AFA8] font-medium">Pre-formatted student import sheet</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={downloadTemplate} 
+                className="text-[11px] font-bold text-primary hover:underline"
+              >
+                Download CSV
+              </button>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 pt-4 border-t border-slate-50">
+              {importResults.length > 0 ? (
+                <button 
+                  onClick={() => {
+                    setShowBulkModal(false);
+                    setSelectedFile(null);
+                    setParsedRecords([]);
+                    setErrorMsg(null);
+                    setImportStatus(null);
+                    setImportResults([]);
+                    setCsvHeaders([]);
+                    loadData();
+                  }}
+                  className="btn-primary flex-1"
+                >
+                  Close & Refresh Roster
+                </button>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => {
+                      setShowBulkModal(false);
+                      setSelectedFile(null);
+                      setParsedRecords([]);
+                      setErrorMsg(null);
+                      setImportStatus(null);
+                      setImportResults([]);
+                      setCsvHeaders([]);
+                    }} 
+                    className="btn-outline flex-1"
+                    disabled={importing}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleImport}
+                    disabled={parsedRecords.length === 0 || importing || !!errorMsg} 
+                    className={cn(
+                      "btn-primary flex-1",
+                      (parsedRecords.length === 0 || importing || !!errorMsg) && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    {importing ? "Importing..." : `Import ${parsedRecords.length || ""} Records`}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

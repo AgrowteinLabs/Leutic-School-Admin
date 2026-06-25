@@ -36,11 +36,13 @@ const ALL_POSSIBLE_GRADES = [
 ];
 
 const PRESETS = [
-    { label: "K-12 School (LKG - 12)", start: "LKG", end: "Grade 12" },
-    { label: "Primary & Secondary (1 - 10)", start: "Grade 1", end: "Grade 10" },
-    { label: "High & Senior Secondary (5 - 12)", start: "Grade 5", end: "Grade 12" },
-    { label: "High School Only (9 - 12)", start: "Grade 9", end: "Grade 12" },
-    { label: "Custom Range", start: "Grade 1", end: "Grade 12" }
+  { label: "Pre-Primary", start: "LKG", end: "UKG" },
+  { label: "Primary School", start: "Grade 1", end: "Grade 5" },
+  { label: "Middle School", start: "Grade 6", end: "Grade 8" },
+  { label: "Secondary School", start: "Grade 9", end: "Grade 10" },
+  { label: "Senior Secondary School", start: "Grade 11", end: "Grade 12" },
+  { label: "K-12 School", start: "LKG", end: "Grade 12" },
+  { label: "Custom Range", start: "Grade 1", end: "Grade 12" }
 ];
 
 const getGroupedGradesString = (grades: string[]) => {
