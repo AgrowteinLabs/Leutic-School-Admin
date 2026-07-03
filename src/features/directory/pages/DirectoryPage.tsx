@@ -9,13 +9,13 @@ import { DriversPage } from "../../transportation/pages/DriversPage";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
 // CSV Templates
-const STUDENT_CSV_TEMPLATE = `FullName,AdmissionNumber,RollNumber,EnrollmentGrade,Gender,BloodGroup,Address,MobileNo,Email,Password,FatherName,FatherMobile,MotherName,MotherMobile
-John Doe,ADM-001,1,Grade 9,Male,O+,123 Main St,9876543210,john@example.com,JohnPass1!,Robert Doe,9876543211,Jane Doe,9876543212
-Alice Smith,ADM-002,2,Grade 10,Female,A-,456 Elm St,9876543220,alice@example.com,AlicePass2!,Tom Smith,9876543221,Mary Smith,9876543222`;
+const STUDENT_CSV_TEMPLATE = `FullName,AdmissionNumber,RollNumber,EnrollmentGrade,EnrollmentSection,Gender,BloodGroup,Address,MobileNo,Email,Password,FatherName,FatherMobile,MotherName,MotherMobile
+John Doe,ADM-001,1,Grade 9,A,Male,O+,123 Main St,9876543210,john@example.com,JohnPass1!,Robert Doe,9876543211,Jane Doe,9876543212
+Alice Smith,ADM-002,2,Grade 10,B,Female,A-,456 Elm St,9876543220,alice@example.com,AlicePass2!,Tom Smith,9876543221,Mary Smith,9876543222`;
 
-const STAFF_CSV_TEMPLATE = `FullName,Email,MobileNo,Role,Password,EmployeeId,Designation,Department,Qualifications,YearsExperience,WorkShift,BusRouteLabel,Address,QualifiedGrades,SubjectSpecializations
-Dr. Alan Turing,alan.turing@school.edu,9876543210,TEACHER,Turing123!,EMP-001,Senior Lecturer,Mathematics,PhD Computer Science,10,Morning (8:00 - 15:00),Yes - Route A,123 Science Way,Grade 9;Grade 10,Mathematics;Information Technology
-Ada Lovelace,ada.lovelace@school.edu,9876543211,TEACHER,,EMP-002,Assistant Professor,Science,MSc Informatics,5,Morning (8:00 - 15:00),No,456 Analytical St,Grade 11;Grade 12,Physics;Chemistry`;
+const STAFF_CSV_TEMPLATE = `FullName,Email,MobileNo,Role,Password,EmployeeId,Designation,Department,Qualifications,YearsExperience,WorkShift,BusRouteLabel,Address,QualifiedGrades,SubjectSpecializations,EnrollmentGrade,EnrollmentSection
+Dr. Alan Turing,alan.turing@school.edu,9876543210,TEACHER,Turing123!,EMP-001,Senior Lecturer,Mathematics,PhD Computer Science,10,Morning (8:00 - 15:00),Yes - Route A,123 Science Way,Grade 9;Grade 10,Mathematics;Information Technology,Grade 9,A
+Ada Lovelace,ada.lovelace@school.edu,9876543211,TEACHER,,EMP-002,Assistant Professor,Science,MSc Informatics,5,Morning (8:00 - 15:00),No,456 Analytical St,Grade 11;Grade 12,Physics;Chemistry,Grade 10,B`;
 
 const DRIVER_CSV_TEMPLATE = `FullName,MobileNo,Password,LicenseNo,LicenseClass,YearsExperience,Address
 John Driver,9876543210,Driver123!,DL-12345,Heavy Vehicle,8,123 Transport Way`;
@@ -51,6 +51,28 @@ const normalizeDepartment = (dept?: string): string | undefined => {
   if (match) return match;
 
   return "Mathematics";
+};
+
+const normalizeGrade = (gradeVal?: string): string | undefined => {
+  if (!gradeVal || !gradeVal.trim()) return undefined;
+  const trimmed = gradeVal.trim();
+  
+  const matchGradeX = trimmed.match(/^grade\s+(\d+)$/i);
+  if (matchGradeX) {
+    return `Grade ${matchGradeX[1]}`;
+  }
+  
+  const matchNum = trimmed.match(/^(\d+)$/);
+  if (matchNum) {
+    return `Grade ${matchNum[1]}`;
+  }
+  
+  const matchOrdinal = trimmed.match(/^(\d+)(?:st|nd|rd|th)?(?:\s+grade)?$/i);
+  if (matchOrdinal) {
+    return `Grade ${matchOrdinal[1]}`;
+  }
+  
+  return trimmed;
 };
 
 // Basic CSV Parser
@@ -182,9 +204,9 @@ export const DirectoryPage = () => {
 
         // Validate headers & basic fields depending on activeTab
         if (activeTab === "students") {
-          const invalid = records.some(r => !r.fullname || !r.admissionnumber || !r.enrollmentgrade);
+          const invalid = records.some(r => !r.fullname || !r.admissionnumber || !r.enrollmentgrade || !r.enrollmentsection);
           if (invalid) {
-            setErrorMsg("Missing required columns: FullName, AdmissionNumber, or EnrollmentGrade in one or more rows.");
+            setErrorMsg("Missing required columns: FullName, AdmissionNumber, EnrollmentGrade, or EnrollmentSection in one or more rows.");
             return;
           }
         } else if (activeTab === "staff") {
@@ -254,8 +276,46 @@ export const DirectoryPage = () => {
         console.error("Failed to fetch subjects for staff import mapping:", err);
       }
 
+      // Fetch classes to map grade/section browser-side
+      let dbClasses: { id: string; grade: string; section: string | null }[] = [];
+      try {
+        const classesQuery = `
+          query GetClasses($schoolId: String!) {
+            classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 1000) {
+              items {
+                id
+                grade
+                section
+              }
+            }
+          }
+        `;
+        const classesData = await graphqlRequest<{ classes: { items: { id: string; grade: string; section: string | null }[] } }>(
+          classesQuery,
+          { schoolId }
+        );
+        dbClasses = classesData.classes?.items || [];
+      } catch (err) {
+        console.error("Failed to fetch classes for import mapping:", err);
+      }
+
       const inputs = parsedRecords.map((r) => {
         let payload: any = {};
+
+        const gradeVal = normalizeGrade(r.enrollmentgrade || r.grade);
+        const sectionVal = (r.enrollmentsection || r.section || "").trim().toUpperCase();
+
+        let resolvedClassId = null;
+        if (gradeVal && sectionVal) {
+          const matchClass = dbClasses.find(
+            (c) =>
+              normalizeGrade(c.grade) === gradeVal &&
+              (c.section || "").trim().toUpperCase() === sectionVal
+          );
+          if (matchClass) {
+            resolvedClassId = matchClass.id;
+          }
+        }
 
         if (activeTab === "students") {
           const guardians = [];
@@ -279,7 +339,9 @@ export const DirectoryPage = () => {
             name: r.fullname,
             admissionNumber: r.admissionnumber,
             rollNumber: r.rollnumber || undefined,
-            enrollmentGrade: r.enrollmentgrade,
+            classId: resolvedClassId,
+            enrollmentGrade: gradeVal,
+            enrollmentSection: sectionVal || undefined,
             gender: r.gender || "Male",
             bloodGroup: r.bloodgroup || undefined,
             address: r.address || undefined,
@@ -309,6 +371,7 @@ export const DirectoryPage = () => {
             mobileNo: r.mobileno,
             password: r.password || undefined,
             schoolId,
+            classId: resolvedClassId,
             employeeId: r.employeeid || undefined,
             designation: r.designation || undefined,
             department: normalizeDepartment(r.department),
@@ -320,6 +383,8 @@ export const DirectoryPage = () => {
             address: r.address || undefined,
             qualifiedGrades: qGrades,
             subjectSpecializations: mappedSpecs,
+            enrollmentGrade: gradeVal,
+            enrollmentSection: sectionVal || undefined,
           };
         } else if (activeTab === "drivers") {
           payload = {

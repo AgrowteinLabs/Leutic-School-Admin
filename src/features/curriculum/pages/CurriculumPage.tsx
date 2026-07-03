@@ -56,7 +56,7 @@ const GET_CURRICULUM_DATA = `
 `;
 
 const CREATE_CURRICULUM_MAPPING = `
-  mutation CreateCurriculumMapping($input: CreateCurriculumMappingInput!) {
+  mutation CreateCurriculumMapping($input: CreateCurriculumMappingDto!) {
     createCurriculumMapping(createCurriculumMappingInput: $input) {
       id
     }
@@ -64,7 +64,7 @@ const CREATE_CURRICULUM_MAPPING = `
 `;
 
 const UPDATE_CURRICULUM_MAPPING = `
-  mutation UpdateCurriculumMapping($id: ID!, $input: UpdateCurriculumMappingInput!) {
+  mutation UpdateCurriculumMapping($id: ID!, $input: UpdateCurriculumMappingDto!) {
     updateCurriculumMapping(id: $id, updateCurriculumMappingInput: $input) {
       id
       teacherId
@@ -2331,24 +2331,20 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         perDayDurations,
       };
 
-      // Save general timetable configuration (gracefully catches if backend endpoint is not yet implemented)
-      try {
-        await graphqlRequest(SAVE_TIMETABLE_CONFIG, {
-          schoolId,
-          input: {
-            schoolStart: configInput.schoolStart,
-            uniformDuration: configInput.uniformDuration,
-            defaultDuration: configInput.defaultDuration,
-            operationalDays: configInput.operationalDays,
-            breaks: configInput.breaks,
-            periodDurationsJson: JSON.stringify(configInput.periodDurations),
-            perDayDurationsJson: JSON.stringify(configInput.perDayDurations),
-          },
-        });
-        setInitialTimetableConfig(JSON.stringify(configInput));
-      } catch (configErr) {
-        console.warn("Backend saveTimetableConfig failed (possibly not implemented on backend yet):", configErr);
-      }
+      // Save general timetable configuration
+      await graphqlRequest(SAVE_TIMETABLE_CONFIG, {
+        schoolId,
+        input: {
+          schoolStart: configInput.schoolStart,
+          uniformDuration: configInput.uniformDuration,
+          defaultDuration: configInput.defaultDuration,
+          operationalDays: configInput.operationalDays,
+          breaks: configInput.breaks,
+          periodDurationsJson: JSON.stringify(configInput.periodDurations),
+          perDayDurationsJson: JSON.stringify(configInput.perDayDurations),
+        },
+      });
+      setInitialTimetableConfig(JSON.stringify(configInput));
 
       await graphqlRequest(SAVE_CLASS_TIMETABLE, {
         input: {

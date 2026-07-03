@@ -9,19 +9,43 @@ import { AppTimePicker } from "../../../components/AppTimePicker";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
 const GET_COMMUNITY_POSTS = `
-  query GetCommunityPosts($schoolId: String!) {
-    communityPosts(schoolId: $schoolId) {
+  query GetCommunityPosts($schoolId: String!, $targetClassId: String) {
+    communityPosts(schoolId: $schoolId, targetClassId: $targetClassId) {
       id
-      schoolId
-      classId
-      authorId
-      authorRole
+      title
+      category
+      audience
+      targetClassIds
       content
       assetUrl
+      documentUrl
+      locationPin
+      eventTitle
+      eventVenue
+      eventDate
+      eventStartTime
+      eventIsRSVP
+      eventCTAText
+      eventCTALink
+      pollQuestion
+      pollOptions {
+        id
+        text
+        votes
+      }
       status
-      reactions
-      replies
+      views
+      hasAcceptedAnswer
       createdAt
+      authorId
+      replies {
+        id
+        content
+        isVerified
+        parentId
+        createdAt
+        authorId
+      }
     }
   }
 `;
@@ -42,17 +66,68 @@ const CREATE_POST = `
   mutation CreatePost($input: CreatePostDto!) {
     createPost(createPostInput: $input) {
       id
-      content
       status
     }
   }
 `;
 
-const MODERATE_POST = `
-  mutation ModeratePost($postId: ID!, $status: PostStatus!) {
-    moderatePost(postId: $postId, status: $status) {
+const CREATE_REPLY = `
+  mutation CreateReply($input: CreateReplyDto!) {
+    createReply(createReplyInput: $input) {
+      id
+      content
+      parentId
+      isVerified
+    }
+  }
+`;
+
+const VERIFY_REPLY = `
+  mutation VerifyReply($replyId: ID!) {
+    verifyReply(replyId: $replyId) {
+      id
+      hasAcceptedAnswer
+      replies {
+        id
+        isVerified
+      }
+    }
+  }
+`;
+
+const UPVOTE_REPLY = `
+  mutation UpvoteReply($replyId: ID!) {
+    upvoteReply(replyId: $replyId) {
+      id
+      isUpvoted
+    }
+  }
+`;
+
+const APPROVE_POST = `
+  mutation ApprovePost($postId: ID!) {
+    moderatePost(postId: $postId, status: "APPROVED") {
       id
       status
+    }
+  }
+`;
+
+const REJECT_POST = `
+  mutation RejectPost($postId: ID!, $reason: String) {
+    rejectPost(postId: $postId, reason: $reason) {
+      id
+      status
+      rejectionReason
+    }
+  }
+`;
+
+const ACKNOWLEDGE_POST = `
+  mutation AcknowledgePost($postId: ID!) {
+    acknowledgePost(postId: $postId) {
+      id
+      views
     }
   }
 `;
@@ -321,6 +396,23 @@ export const CommunityPost = ({ post }: { post: Post }) => {
                     <button className="size-10 rounded-full hover:bg-slate-50 text-muted-gray hover:text-brand-navy flex items-center justify-center transition-all">
                         <span className="material-symbols-outlined text-[20px]">share</span>
                     </button>
+                    {post.type === "announcement" && (
+                        <button
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                    await graphqlRequest(ACKNOWLEDGE_POST, { postId: post.id });
+                                    alert("Announcement Acknowledged!");
+                                } catch (err) {
+                                    console.error("Failed to acknowledge post:", err);
+                                }
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-muted-gray hover:text-brand-navy font-bold transition-all text-[11px]"
+                        >
+                            <span className="material-symbols-outlined text-[16px]">done_all</span>
+                            Acknowledge
+                        </button>
+                    )}
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="flex -space-x-2">
@@ -443,6 +535,11 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const [selectedAudiences, setSelectedAudiences] = useState<string[]>(["School-wide"]);
     const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
     const [attachments, setAttachments] = useState<{ id: string, type: 'image' | 'file' | 'location' | 'event' | 'poll', name: string, url?: string, detail?: string }[]>([]);
+
+    const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+    const [dbClasses, setDbClasses] = useState<{ id: string; grade: string; section: string | null }[]>([]);
+    const [pollQuestion, setPollQuestion] = useState("");
+
     const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
     const [eventDetails, setEventDetails] = useState({ title: '', date: '', time: '', venue: '', rsvp: false, buttonText: '', buttonLink: '' });
     const [isAdvancedEventOpen, setIsAdvancedEventOpen] = useState(false);
@@ -506,10 +603,26 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const fetchData = async () => {
         try {
             const schoolId = localStorage.getItem("school_id") || "";
-            const [postsData, usersData] = await Promise.all([
-                graphqlRequest<any>(GET_COMMUNITY_POSTS, { schoolId }),
-                graphqlRequest<any>(GET_SCHOOL_USERS, { schoolId })
+            const classesQuery = `
+              query GetClasses($schoolId: String!) {
+                classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 200) {
+                  items {
+                    id
+                    grade
+                    section
+                  }
+                }
+              }
+            `;
+
+            const [postsData, usersData, classesData] = await Promise.all([
+                graphqlRequest<any>(GET_COMMUNITY_POSTS, { schoolId, targetClassId: selectedClassId || undefined }),
+                graphqlRequest<any>(GET_SCHOOL_USERS, { schoolId }),
+                graphqlRequest<any>(classesQuery, { schoolId }).catch(() => ({ classes: { items: [] } }))
             ]);
+
+            const classItems = classesData?.classes?.items || [];
+            setDbClasses(classItems);
 
             const userList = usersData.users?.items || [];
             const newMap = new Map<string, any>(userList.map((u: any) => [u.id as string, u]));
@@ -517,23 +630,37 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             const rawPosts = postsData.communityPosts || [];
             const mapped = rawPosts.map((p: any) => {
                 let type: "announcement" | "competition" | "qa" | "poll" = "announcement";
-                let content = p.content;
+                let content = p.content || "";
                 let metadata: any = undefined;
 
-                if (content.startsWith("{") && content.endsWith("}")) {
-                    try {
-                        const parsed = JSON.parse(content);
-                        if (parsed.type) {
-                            type = parsed.type;
-                            content = parsed.content || "";
-                            metadata = parsed.metadata;
-                        }
-                    } catch (e) {}
+                if (p.category === "QA" || p.category === "qa") {
+                    type = "qa";
+                } else if (p.pollQuestion) {
+                    type = "poll";
+                    metadata = {
+                        pollOptions: (p.pollOptions || []).map((o: any) => ({
+                            label: o.text,
+                            votes: o.votes || 0
+                        })),
+                        totalVotes: (p.pollOptions || []).reduce((acc: number, o: any) => acc + (o.votes || 0), 0),
+                        isVoted: false
+                    };
+                } else if (p.eventTitle) {
+                    type = "competition";
+                    content = p.eventTitle + "\n" + (p.content || "");
+                    metadata = {
+                        venue: p.eventVenue,
+                        date: p.eventDate ? new Date(p.eventDate).toLocaleDateString("en-IN", { month: "short", day: "2-digit" }) : undefined,
+                        tags: [p.category || "Campus"],
+                        rsvp: p.eventIsRSVP,
+                        ctaText: p.eventCTAText,
+                        ctaLink: p.eventCTALink
+                    };
                 }
 
                 const authorUser = newMap.get(p.authorId);
                 const authorName = authorUser ? authorUser.name : "St. Mary's Public School";
-                const authorRole = authorUser ? authorUser.role : p.authorRole || "Admin";
+                const authorRole = authorUser ? authorUser.role : "Admin";
 
                 const timeStr = new Date(p.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit" });
 
@@ -541,8 +668,6 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 try {
                     if (Array.isArray(p.replies)) {
                         commentsCount = p.replies.length;
-                    } else if (p.replies && typeof p.replies === "object") {
-                        commentsCount = Object.keys(p.replies).length;
                     }
                 } catch (e) {}
 
@@ -555,7 +680,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                     content,
                     image: p.assetUrl || undefined,
                     time: timeStr,
-                    reactions: 0,
+                    reactions: p.views || 0,
                     comments: commentsCount,
                     isVerified: p.status === "APPROVED",
                     metadata,
@@ -571,11 +696,15 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
     useEffect(() => {
         fetchData();
-    }, [activeTab]);
+    }, [activeTab, selectedClassId]);
 
     const handleModerate = async (postId: string | number, status: "APPROVED" | "REJECTED") => {
         try {
-            await graphqlRequest(MODERATE_POST, { postId, status });
+            if (status === "APPROVED") {
+                await graphqlRequest(APPROVE_POST, { postId });
+            } else {
+                await graphqlRequest(REJECT_POST, { postId });
+            }
             fetchData();
         } catch (err) {
             console.error("Error moderating post:", err);
@@ -635,7 +764,8 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         replyText,
         setReplyText,
         handlePostResponse,
-        handleVerify
+        handleVerify,
+        handleUpvote
     }: any) => {
         return (
             <div className="relative py-2 transition-all">
@@ -660,7 +790,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                         <p className="text-[13px] text-brand-navy/70 leading-relaxed font-normal break-words whitespace-pre-wrap">{resp.content}</p>
                         <div className="flex items-center gap-4 mt-3">
                             <button onClick={() => setReplyingTo(replyingTo === resp.id ? null : resp.id)} className="text-[11px] font-semibold text-muted-gray/40 hover:text-brand-navy transition-colors">Reply</button>
-                            <button className="text-[11px] font-semibold text-muted-gray/40 hover:text-brand-navy transition-colors">Upvote</button>
+                            <button onClick={() => handleUpvote(resp.id)} className="text-[11px] font-semibold text-muted-gray/40 hover:text-brand-navy transition-colors">Upvote</button>
                             {!resp.isVerified && (
                                 <button
                                     onClick={() => handleVerify(questionId, resp.id)}
@@ -677,7 +807,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                     <textarea autoFocus value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder={`Reply to ${resp.author}...`} className="w-full bg-slate-50/50 border border-slate-100 rounded-xl p-3 text-[13px] outline-none focus:outline-none focus-visible:outline-none focus:border-primary/30 transition-all min-h-[80px] resize-none" />
                                     <div className="flex justify-end gap-3 mt-2">
                                         <button onClick={() => { setReplyingTo(null); setReplyText(""); }} className="text-[11px] font-semibold text-muted-gray/60 hover:text-brand-navy transition-colors">Cancel</button>
-                                        <button onClick={() => handlePostResponse(questionId, resp.author, resp.originalIndex)} className="bg-brand-navy text-white text-[11px] font-bold px-3 py-1 rounded-lg hover:bg-brand-navy/90 transition-all">Reply</button>
+                                        <button onClick={() => handlePostResponse(questionId, resp.id)} className="bg-brand-navy text-white text-[11px] font-bold px-3 py-1 rounded-lg hover:bg-brand-navy/90 transition-all">Reply</button>
                                     </div>
                                 </motion.div>
                             )}
@@ -713,6 +843,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         setReplyText={setReplyText}
                                         handlePostResponse={handlePostResponse}
                                         handleVerify={handleVerify}
+                                        handleUpvote={handleUpvote}
                                     />
                                 </div>
                             );
@@ -773,18 +904,15 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             return mapped;
         }, [posts, filter]);
 
-        const handlePostResponse = async (questionId: string, targetAuthor?: string) => {
+        const handlePostResponse = async (questionId: string, parentReplyId?: string) => {
             if (!replyText.trim()) return;
 
             try {
-                await graphqlRequest<any>(`
-                    mutation CreateReply($input: CreateReplyDto!) {
-                        createReply(createReplyInput: $input)
-                    }
-                `, {
+                await graphqlRequest<any>(CREATE_REPLY, {
                     input: {
                         postId: questionId,
-                        content: replyingTo ? `@${targetAuthor} ${replyText}` : replyText
+                        parentId: parentReplyId || null,
+                        content: replyText
                     }
                 });
                 
@@ -800,15 +928,21 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
         const handleVerify = async (_questionId: string, responseId: string) => {
             try {
-                await graphqlRequest<any>(`
-                    mutation VerifyReply($replyId: ID!) {
-                        verifyReply(replyId: $replyId)
-                    }
-                `, { replyId: responseId });
+                await graphqlRequest<any>(VERIFY_REPLY, { replyId: responseId });
                 fetchData();
             } catch (err) {
                 console.error("Failed to verify reply:", err);
                 alert("Failed to verify reply.");
+            }
+        };
+
+        const handleUpvote = async (replyId: string) => {
+            try {
+                await graphqlRequest<any>(UPVOTE_REPLY, { replyId });
+                fetchData();
+            } catch (err) {
+                console.error("Failed to upvote reply:", err);
+                alert("Failed to upvote reply.");
             }
         };
 
@@ -926,6 +1060,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                 setReplyText={setReplyText}
                                                                 handlePostResponse={handlePostResponse}
                                                                 handleVerify={handleVerify}
+                                                                handleUpvote={handleUpvote}
                                                             />
                                                         </div>
                                                     ));
@@ -1226,6 +1361,8 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                 type="text"
                                                                                                 placeholder="What would you like to ask the community?"
                                                                                                 className="w-full bg-transparent border-b border-amber-100/50 py-3 text-[13px] font-bold text-brand-navy outline-none placeholder:text-muted-gray/30 focus:border-amber-500/30 transition-all"
+                                                                                                value={pollQuestion}
+                                                                                                onChange={(e) => setPollQuestion(e.target.value)}
                                                                                             />
                                                                                         </div>
 
@@ -1454,29 +1591,30 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                         <span className="text-[10px] font-bold text-brand-navy/30 uppercase tracking-widest">Custom Class Selection</span>
                                                                                                         <button
                                                                                                             onClick={() => {
-                                                                                                                const allCls = ["10A", "10B", "9A", "9C", "8B", "7A"];
-                                                                                                                if (selectedClasses.length === allCls.length) {
+                                                                                                                const allIds = dbClasses.map(c => c.id);
+                                                                                                                if (selectedClasses.length === allIds.length) {
                                                                                                                     setSelectedClasses([]);
                                                                                                                 } else {
-                                                                                                                    setSelectedClasses(allCls);
+                                                                                                                    setSelectedClasses(allIds);
                                                                                                                 }
                                                                                                             }}
                                                                                                             className="text-[9px] font-bold text-primary hover:underline"
                                                                                                         >
-                                                                                                            {selectedClasses.length === 6 ? "Unselect All" : "Select All"}
+                                                                                                            {selectedClasses.length === dbClasses.length ? "Unselect All" : "Select All"}
                                                                                                         </button>
                                                                                                     </div>
                                                                                                     <div className="space-y-1">
-                                                                                                        {["10A", "10B", "9A", "9C", "8B", "7A"].filter(cls => cls.toLowerCase().includes(audienceSearch.toLowerCase())).map(cls => {
-                                                                                                            const isActive = selectedClasses.includes(cls);
+                                                                                                        {dbClasses.filter(c => `${c.grade} ${c.section || ""}`.toLowerCase().includes(audienceSearch.toLowerCase())).map(cls => {
+                                                                                                            const label = `${cls.grade} - ${cls.section || ""}`;
+                                                                                                            const isActive = selectedClasses.includes(cls.id);
                                                                                                             return (
                                                                                                                 <button
-                                                                                                                    key={cls}
+                                                                                                                    key={cls.id}
                                                                                                                     onClick={() => {
-                                                                                                                        if (selectedClasses.includes(cls)) {
-                                                                                                                            setSelectedClasses(selectedClasses.filter(c => c !== cls));
+                                                                                                                        if (selectedClasses.includes(cls.id)) {
+                                                                                                                            setSelectedClasses(selectedClasses.filter(c => c !== cls.id));
                                                                                                                         } else {
-                                                                                                                            setSelectedClasses([...selectedClasses, cls]);
+                                                                                                                            setSelectedClasses([...selectedClasses, cls.id]);
                                                                                                                         }
                                                                                                                     }}
                                                                                                                     className={cn(
@@ -1488,7 +1626,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                                                         <div className={cn("size-4 rounded-md border flex items-center justify-center transition-all", isActive ? "bg-primary border-primary" : "border-slate-200 group-hover:border-slate-300")}>
                                                                                                                             {isActive && <span className="material-symbols-outlined text-[12px] text-white">check</span>}
                                                                                                                         </div>
-                                                                                                                        <span className={cn("text-[11px] font-bold", isActive ? "text-primary" : "text-muted-gray")}>Grade {cls}</span>
+                                                                                                                        <span className={cn("text-[11px] font-bold", isActive ? "text-primary" : "text-muted-gray")}>{label}</span>
                                                                                                                     </div>
                                                                                                                 </button>
                                                                                                             );
@@ -1546,43 +1684,45 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                         onClick={async () => {
                                                                             try {
                                                                                 const schoolId = localStorage.getItem("school_id") || "";
-                                                                                let content = postContent;
-
                                                                                 const eventAtt = attachments.find(a => a.type === 'event');
                                                                                 const pollAtt = attachments.find(a => a.type === 'poll');
+                                                                                const imgAtt = attachments.find(a => a.type === 'image');
+
+                                                                                let category = "CAMPUS";
+                                                                                if (postCategory === "Academic") category = "ACADEMIC";
+                                                                                else if (postCategory === "Events" || eventAtt) category = "EVENTS";
+                                                                                else if (postCategory === "Campus") category = "CAMPUS";
+
+                                                                                const inputPayload: any = {
+                                                                                    schoolId,
+                                                                                    content: postContent,
+                                                                                    category,
+                                                                                    audience: selectedAudiences,
+                                                                                    targetClassIds: selectedClasses,
+                                                                                    assetUrl: imgAtt ? imgAtt.url : undefined
+                                                                                };
 
                                                                                 if (eventAtt) {
-                                                                                    content = JSON.stringify({
-                                                                                        type: "competition",
-                                                                                        content: postContent,
-                                                                                        metadata: {
-                                                                                            venue: eventDetails.venue,
-                                                                                            date: eventDetails.date,
-                                                                                            tags: [postCategory]
-                                                                                        }
-                                                                                    });
+                                                                                    inputPayload.eventTitle = eventDetails.title || undefined;
+                                                                                    inputPayload.eventVenue = eventDetails.venue || undefined;
+                                                                                    inputPayload.eventDate = eventDetails.date ? new Date(eventDetails.date).toISOString() : undefined;
+                                                                                    inputPayload.eventStartTime = eventDetails.time || undefined;
+                                                                                    inputPayload.eventIsRSVP = eventDetails.rsvp || false;
+                                                                                    inputPayload.eventCTAText = eventDetails.buttonText || undefined;
+                                                                                    inputPayload.eventCTALink = eventDetails.buttonLink || undefined;
                                                                                 } else if (pollAtt) {
-                                                                                    content = JSON.stringify({
-                                                                                        type: "poll",
-                                                                                        content: postContent,
-                                                                                        metadata: {
-                                                                                            pollOptions: pollOptions.filter(o => o.trim() !== "").map(o => ({ label: o, votes: 0 })),
-                                                                                            totalVotes: 0,
-                                                                                            isVoted: false
-                                                                                        }
-                                                                                    });
+                                                                                    inputPayload.pollQuestion = pollQuestion || postContent;
+                                                                                    inputPayload.pollOptions = pollOptions
+                                                                                        .filter(o => o.trim() !== "")
+                                                                                        .map((o, idx) => ({
+                                                                                            id: String(idx + 1),
+                                                                                            text: o,
+                                                                                            votes: 0
+                                                                                        }));
                                                                                 }
 
-                                                                                const imgAtt = attachments.find(a => a.type === 'image');
-                                                                                const assetUrl = imgAtt ? imgAtt.url : undefined;
-
                                                                                 await graphqlRequest(CREATE_POST, {
-                                                                                    input: {
-                                                                                        schoolId,
-                                                                                        content,
-                                                                                        assetUrl,
-                                                                                        classId: selectedClasses.length > 0 ? selectedClasses[0] : undefined
-                                                                                    }
+                                                                                    input: inputPayload
                                                                                 });
 
                                                                                 setPostContent("");
@@ -1593,6 +1733,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                 setEventDetails({ title: '', date: '', time: '', venue: '', rsvp: false, buttonText: '', buttonLink: '' });
                                                                                 setIsAdvancedEventOpen(false);
                                                                                 setPollOptions(['', '']);
+                                                                                setPollQuestion("");
                                                                                 setIsAudienceMenuOpen(false);
 
                                                                                 fetchData();
@@ -1776,6 +1917,41 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                         transition={{ duration: 0.3, ease: "easeOut" }}
                                     >
                                         <div className="space-y-12">
+                                            {/* Class Filter Module */}
+                                            <div className="space-y-6">
+                                                <h3 className="font-black text-muted-gray uppercase tracking-[0.2em] mb-6" style={{ fontSize: 'var(--font-size-small)' }}>Filter by Class</h3>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button
+                                                        onClick={() => setSelectedClassId(null)}
+                                                        className={cn(
+                                                            "px-4 py-2 rounded-xl text-[11px] font-bold border transition-all",
+                                                            selectedClassId === null
+                                                                ? "bg-brand-navy text-primary border-brand-navy"
+                                                                : "bg-white text-muted-gray border-slate-100 hover:border-slate-200"
+                                                        )}
+                                                    >
+                                                        All Classes
+                                                    </button>
+                                                    {dbClasses.map((cls) => {
+                                                        const isSelected = selectedClassId === cls.id;
+                                                        return (
+                                                            <button
+                                                                key={cls.id}
+                                                                onClick={() => setSelectedClassId(isSelected ? null : cls.id)}
+                                                                className={cn(
+                                                                    "px-4 py-2 rounded-xl text-[11px] font-bold border transition-all",
+                                                                    isSelected
+                                                                        ? "bg-brand-navy text-primary border-brand-navy"
+                                                                        : "bg-white text-muted-gray border-slate-100 hover:border-slate-200"
+                                                                )}
+                                                            >
+                                                                {cls.grade} - {cls.section || ""}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
                                             {/* Contributors Module */}
                                             <div className="space-y-6 pt-10 border-t border-slate-50">
                                                 <h3 className="font-black text-muted-gray uppercase tracking-[0.2em] mb-6" style={{ fontSize: 'var(--font-size-small)' }}>Contributors</h3>

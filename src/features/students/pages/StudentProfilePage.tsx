@@ -74,7 +74,7 @@ export const StudentProfilePage = () => {
         setError(null);
 
         const profileQuery = `
-          query GetStudentProfile($id: String!) {
+          query GetStudentProfile($id: ID!) {
             studentProfile(studentId: $id) {
               id
               name
@@ -82,7 +82,6 @@ export const StudentProfilePage = () => {
               classId
               bloodGroup
               studentStatus
-              createdAt
               guardians {
                 relationship
                 fullName
