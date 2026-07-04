@@ -113,8 +113,8 @@ export const ClassesPage = () => {
     const schoolId = localStorage.getItem("school_id") || "";
     
     const classesQuery = `
-      query GetClasses($schoolId: String) {
-        classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+      query GetClasses($schoolId: String, $academicYearId: String) {
+        classes(filter: { schoolId: $schoolId, academicYearId: $academicYearId }, page: 1, pageSize: 100) {
           items {
             id
             schoolId
@@ -144,7 +144,10 @@ export const ClassesPage = () => {
     
     try {
       const results = await Promise.allSettled([
-        graphqlRequest<{ classes: { items: GraphQLClass[] } }>(classesQuery, { schoolId: schoolId || undefined }),
+        graphqlRequest<{ classes: { items: GraphQLClass[] } }>(classesQuery, { 
+          schoolId: schoolId || undefined,
+          academicYearId: activeAcademicYear?.id || undefined
+        }),
         graphqlRequest<{ users: { items: GraphQLUser[] } }>(teachersQuery, { schoolId: schoolId || undefined })
       ]);
       

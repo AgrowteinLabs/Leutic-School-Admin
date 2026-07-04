@@ -1,19 +1,55 @@
+import { useState, useEffect } from "react";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
 export const ParticipationOverview = () => {
-    // circumference at r=56: 2 × π × 56 ≈ 351.86
-    // 4px gap between each segment; offsets pre-computed
+    const [stats, setStats] = useState<any>(null);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const schoolId = localStorage.getItem("school_id") || "";
+                const res = await graphqlRequest<any>(`
+                    query GetTodayAttendanceStats($schoolId: String!) {
+                        todayAttendanceStats(schoolId: $schoolId) {
+                            totalStudents
+                            presentCount
+                            absentCount
+                            lateCount
+                            attendancePercentage
+                        }
+                    }
+                `, { schoolId });
+                setStats(res.todayAttendanceStats);
+            } catch (e) {
+                console.error("Failed to fetch today's attendance stats:", e);
+            }
+        };
+        fetchStats();
+    }, []);
+
+    const total = stats?.totalStudents ?? 1240;
+    const present = stats?.presentCount ?? 1068;
+    const absent = stats?.absentCount ?? 124;
+    const late = stats?.lateCount ?? 48;
+    const percent = stats?.attendancePercentage ?? 86;
+
+    const C = 351.86; // circumference at r=56: 2 × π × 56 ≈ 351.86
+    const presentArc = total > 0 ? (present / total) * C : 0;
+    const absentArc = total > 0 ? (absent / total) * C : 0;
+    const lateArc = total > 0 ? (late / total) * C : 0;
+
     const attendanceData = [
-        { label: "Present", count: 1068, color: "bg-[#2E7D32]", arc: 298.6, offset: -2, stroke: "#2E7D32" },
-        { label: "Absent", count: 124, color: "bg-[#E63535]", arc: 31.19, offset: -304.6, stroke: "#E63535" },
-        { label: "Late", count: 48, color: "bg-[#EF9800]", arc: 10.07, offset: -339.79, stroke: "#EF9800" },
+        { label: "Present", count: present, color: "bg-[#2E7D32]", arc: presentArc, offset: -2, stroke: "#2E7D32" },
+        { label: "Absent", count: absent, color: "bg-[#E63535]", arc: absentArc, offset: -(presentArc + 6), stroke: "#E63535" },
+        { label: "Late", count: late, color: "bg-[#EF9800]", arc: lateArc, offset: -(presentArc + absentArc + 10), stroke: "#EF9800" },
     ];
-    const C = 351.86;
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-6">
                 <div>
                     <h3 className="text-foreground text-[15px] font-semibold">Today's Attendance</h3>
-                    <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">1,240 total students</p>
+                    <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">{total.toLocaleString()} total students</p>
                 </div>
                 <button className="text-[11px] font-medium text-[#3D6B2C] hover:underline underline-offset-2">
                     Full Report
@@ -36,7 +72,7 @@ export const ParticipationOverview = () => {
                         ))}
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-semibold text-foreground">86%</span>
+                        <span className="text-2xl font-semibold text-foreground">{percent}%</span>
                         <span className="text-[12px] text-[#B0AFA8] font-medium">Present</span>
                     </div>
                 </div>

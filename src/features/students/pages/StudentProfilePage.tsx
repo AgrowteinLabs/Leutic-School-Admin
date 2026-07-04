@@ -53,7 +53,46 @@ interface StudentProfile {
   phone: string;
   status: string;
   img: string;
-  parents: Array<{ role: string; name: string; ph: string }>;
+  parents: Array<{ role: string; name: string; ph: string; occupation: string }>;
+  participationIntelligence: {
+    attendanceConsistency: number;
+    assignmentHygiene: number;
+    classEngagement: number;
+    activityDensity: number;
+  };
+  highlights: Array<{
+    id: string;
+    label: string;
+    detail: string;
+    icon: string;
+    status: string;
+  }>;
+  termPerformances: Array<{
+    termName: string;
+    letterGrade: string;
+    percentageScore: string;
+  }>;
+  subjectMasteries: Array<{
+    subjectName: string;
+    masteryPercentage: number;
+  }>;
+  behavioralRecords: Array<{
+    id: string;
+    date: string;
+    title: string;
+    comment: string;
+    staffName: string;
+    createdAt?: string;
+  }>;
+  behavioralAuditLog: {
+    lastAuditDate: string;
+    auditedBy: string;
+  } | null;
+  parentMeetings: Array<{
+    title: string;
+    dateString: string;
+    summaryText: string;
+  }>;
 }
 
 export const StudentProfilePage = () => {
@@ -74,8 +113,8 @@ export const StudentProfilePage = () => {
         setError(null);
 
         const profileQuery = `
-          query GetStudentProfile($id: ID!) {
-            studentProfile(studentId: $id) {
+          query StudentProfileBundle($studentIdID: ID!, $studentIdStr: String!) {
+            studentProfile(studentId: $studentIdID) {
               id
               name
               admissionNumber
@@ -83,6 +122,7 @@ export const StudentProfilePage = () => {
               bloodGroup
               studentStatus
               guardians {
+                id
                 relationship
                 fullName
                 mobileNo
@@ -91,33 +131,64 @@ export const StudentProfilePage = () => {
               }
               overview {
                 auraPoints
+                participationIntelligence {
+                  attendanceConsistency
+                  assignmentHygiene
+                  classEngagement
+                  activityDensity
+                }
+                highlights {
+                  id
+                  label
+                  detail
+                  icon
+                  status
+                }
               }
+              academicHistory {
+                termPerformances {
+                  termName
+                  letterGrade
+                  percentageScore
+                }
+                subjectMasteries {
+                  subjectName
+                  masteryPercentage
+                }
+              }
+              behavioralRecords {
+                id
+                date
+                title
+                comment
+                staffName
+                createdAt
+              }
+              behavioralAuditLog {
+                lastAuditDate
+                auditedBy
+              }
+              parentMeetings {
+                title
+                dateString
+                summaryText
+              }
+            }
+            studentProgress(studentId: $studentIdStr) {
+              studentId
+              overallAverage
+            }
+            studentAttendanceSummary(studentId: $studentIdStr) {
+              percentage
             }
           }
         `;
 
-        const [profileRes, attendanceRes, progressRes] = await Promise.all([
-          graphqlRequest<{ studentProfile: any }>(profileQuery, { id }),
-          graphqlRequest<{ studentAttendanceSummary: { percentage: number; presentCount: number; absentCount: number; totalDays: number } }>(`
-            query GetAttendance($studentId: String!) {
-              studentAttendanceSummary(studentId: $studentId) {
-                percentage
-                presentCount
-                absentCount
-                totalDays
-              }
-            }
-          `, { studentId: id }).catch(() => null),
-          graphqlRequest<{ studentProgress: { overallAverage: number } }>(`
-            query GetProgress($studentId: String!) {
-              studentProgress(studentId: $studentId) {
-                overallAverage
-              }
-            }
-          `, { studentId: id }).catch(() => null),
-        ]);
-
-        const profileObj = profileRes?.studentProfile;
+        const res = await graphqlRequest<any>(profileQuery, { 
+          studentIdID: id, 
+          studentIdStr: id 
+        });
+        const profileObj = res?.studentProfile;
         if (!profileObj) {
           throw new Error("Student profile record not found.");
         }
@@ -134,13 +205,14 @@ export const StudentProfilePage = () => {
           : null;
 
         const classDetail = classRes?.class;
-        const attendanceDetail = attendanceRes?.studentAttendanceSummary;
-        const progressDetail = progressRes?.studentProgress;
+        const attendanceDetail = res?.studentAttendanceSummary;
+        const progressDetail = res?.studentProgress;
 
         const parentsWithNames = (profileObj.guardians || []).map((g: any, idx: number) => ({
           role: g.relationship || (idx === 0 ? "Father" : idx === 1 ? "Mother" : "Guardian"),
           name: g.fullName,
           ph: g.mobileNo || "N/A",
+          occupation: g.occupation || "Not Specified"
         }));
 
         setStudent({
@@ -152,15 +224,27 @@ export const StudentProfilePage = () => {
           auraScore: profileObj.overview?.auraPoints || 0,
           attendanceRate: attendanceDetail?.percentage || 95,
           gpa: progressDetail?.overallAverage ? (progressDetail.overallAverage / 25).toFixed(1) : "3.5",
-          enrollmentDate: new Date(profileObj.createdAt || Date.now()).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }),
+          enrollmentDate: new Date(Date.now()).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }),
           bloodGroup: profileObj.bloodGroup || "O+",
           guardianName: parentsWithNames[0]?.name || "Guardian of " + profileObj.name,
           phone: parentsWithNames[0]?.ph || "+91 99999-99999",
           status: profileObj.studentStatus || "Active",
           img: "/Avatar/Male Avatar Age16.png",
           parents: parentsWithNames.length > 0 ? parentsWithNames : [
-            { role: "Guardian", name: "Guardian of " + profileObj.name, ph: "+91 99999-99999" }
-          ]
+            { role: "Guardian", name: "Guardian of " + profileObj.name, ph: "+91 99999-99999", occupation: "Not Specified" }
+          ],
+          participationIntelligence: profileObj.overview?.participationIntelligence || {
+            attendanceConsistency: 98,
+            assignmentHygiene: 94,
+            classEngagement: 86,
+            activityDensity: 90
+          },
+          highlights: profileObj.overview?.highlights || [],
+          termPerformances: profileObj.academicHistory?.termPerformances || [],
+          subjectMasteries: profileObj.academicHistory?.subjectMasteries || [],
+          behavioralRecords: profileObj.behavioralRecords || [],
+          behavioralAuditLog: profileObj.behavioralAuditLog || null,
+          parentMeetings: profileObj.parentMeetings || []
         });
 
       } catch (err: unknown) {
@@ -197,41 +281,40 @@ export const StudentProfilePage = () => {
                         </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        {[
-                            { term: "Current Session", grade: "A+", points: "96.4%" },
-                            { term: "Prior Session", grade: "A", points: "92.1%" },
-                            { term: "Annual Avg", grade: "A", points: "94.2%" },
-                        ].map((stat, i) => (
-                            <div key={i} className="p-5 rounded-xl bg-[#F7F8F4] border border-slate-100/50 text-center sm:text-left">
-                                <p className="text-[10px] font-bold text-[#B0AFA8] mb-2 uppercase tracking-tighter">{stat.term}</p>
-                                <div className="flex items-baseline justify-center sm:justify-start gap-2">
-                                    <span className="text-2xl font-bold text-foreground tracking-tight">{stat.grade}</span>
-                                    <span className="text-[12px] font-medium text-[#444441]">{stat.points}</span>
-                                </div>
-                            </div>
-                        ))}
+                        {student.termPerformances.length > 0 ? (
+                          student.termPerformances.map((stat, i) => (
+                              <div key={i} className="p-5 rounded-xl bg-[#F7F8F4] border border-slate-100/50 text-center sm:text-left">
+                                  <p className="text-[10px] font-bold text-[#B0AFA8] mb-2 uppercase tracking-tighter">{stat.termName}</p>
+                                  <div className="flex items-baseline justify-center sm:justify-start gap-2">
+                                      <span className="text-2xl font-bold text-foreground tracking-tight">{stat.letterGrade}</span>
+                                      <span className="text-[12px] font-medium text-[#444441]">{stat.percentageScore}</span>
+                                  </div>
+                              </div>
+                          ))
+                        ) : (
+                          <div className="col-span-3 text-center py-6 text-[12px] text-muted-gray/70 italic">No academic history records found</div>
+                        )}
                     </div>
                 </div>
 
                 <div className={cn("bg-white rounded-2xl border border-slate-100 shadow-sm", cardPadding)}>
                     <h3 className="text-foreground font-semibold text-base mb-6 text-center md:text-left">Course Material Masteries</h3>
                     <div className="space-y-6">
-                        {[
-                            { subject: "Advanced Mathematics", val: 96 },
-                            { subject: "Classical Physics", val: 92 },
-                            { subject: "Modern World History", val: 84 },
-                            { subject: "English Rhetoric", val: 88 },
-                        ].map((sub, i) => (
-                            <div key={i} className="flex items-center gap-6">
-                                <div className="flex-1">
-                                    <p className="text-[13px] font-semibold text-foreground mb-2">{sub.subject}</p>
-                                    <div className="h-1 bg-[#F0F0EC] rounded-full overflow-hidden">
-                                        <div className="h-full bg-primary" style={{ width: `${sub.val}%` }} />
-                                    </div>
-                                </div>
-                                <span className="text-[14px] font-bold text-foreground w-10 text-right">{sub.val}%</span>
-                            </div>
-                        ))}
+                        {student.subjectMasteries.length > 0 ? (
+                          student.subjectMasteries.map((sub, i) => (
+                              <div key={i} className="flex items-center gap-6">
+                                  <div className="flex-1">
+                                      <p className="text-[13px] font-semibold text-foreground mb-2">{sub.subjectName}</p>
+                                      <div className="h-1 bg-[#F0F0EC] rounded-full overflow-hidden">
+                                          <div className="h-full bg-primary" style={{ width: `${sub.masteryPercentage}%` }} />
+                                      </div>
+                                  </div>
+                                  <span className="text-[14px] font-bold text-foreground w-10 text-right">{sub.masteryPercentage}%</span>
+                              </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-6 text-[12px] text-muted-gray/70 italic">No subject masteries recorded</div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -259,23 +342,25 @@ export const StudentProfilePage = () => {
                     </div>
 
                     <div className="space-y-12">
-                        {[
-                            { date: "Oct 12, 2023", title: "Leadership Excellence", comment: "Demonstrated exceptional situational leadership during the group science symposium.", staff: "Manoj P." },
-                            { date: "Sept 25, 2023", title: "Community Service", comment: "Contributed 12+ hours to organizing the district-level sports meet.", staff: "Dhanya S." },
-                            { date: "Aug 14, 2023", title: "Administrative Note", comment: "Late arrival to registration (Approved).", staff: "Arya" },
-                        ].map((rec, i) => (
-                            <div key={i} className="flex gap-6 sm:gap-10 relative group">
-                                {i !== 2 && <div className="absolute left-[5px] top-6 bottom-[-32px] w-[1px] bg-[#F0F0EC]" />}
-                                <div className="size-2.5 rounded-full bg-slate-200 group-hover:bg-primary transition-colors shrink-0 mt-2 z-10" />
-                                <div className="flex-1 space-y-2 pb-8">
-                                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1">
-                                        <p className="text-[13px] font-bold text-foreground">{rec.title}</p>
-                                        <p className="text-[11px] font-medium text-[#B0AFA8]">{rec.date} • {rec.staff}</p>
-                                    </div>
-                                    <p className="text-[13px] text-[#444441] font-medium leading-relaxed italic pr-4 md:pr-10">"{rec.comment}"</p>
-                                </div>
-                            </div>
-                        ))}
+                        {student.behavioralRecords.length > 0 ? (
+                          student.behavioralRecords.map((rec, i) => (
+                              <div key={i} className="flex gap-6 sm:gap-10 relative group">
+                                  {i !== student.behavioralRecords.length - 1 && <div className="absolute left-[5px] top-6 bottom-[-32px] w-[1px] bg-[#F0F0EC]" />}
+                                  <div className="size-2.5 rounded-full bg-slate-200 group-hover:bg-primary transition-colors shrink-0 mt-2 z-10" />
+                                  <div className="flex-1 space-y-2 pb-8">
+                                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1">
+                                          <p className="text-[13px] font-bold text-foreground">{rec.title}</p>
+                                          <p className="text-[11px] font-medium text-[#B0AFA8]">
+                                            {new Date(rec.createdAt || rec.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} • {rec.staffName}
+                                          </p>
+                                      </div>
+                                      <p className="text-[13px] text-[#444441] font-medium leading-relaxed italic pr-4 md:pr-10">"{rec.comment}"</p>
+                                  </div>
+                              </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-[13px] text-[#B0AFA8] italic">No behavioral records found.</div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -286,7 +371,13 @@ export const StudentProfilePage = () => {
                         <History size={18} className="text-[#B0AFA8]" />
                         <h3 className="font-semibold text-sm">Security Log</h3>
                     </div>
-                    <p className="text-[11px] text-[#B0AFA8] font-medium mb-6 leading-relaxed">Last behavioral audit was performed by Admin Arya on Oct 15, 2023.</p>
+                    {student.behavioralAuditLog ? (
+                      <p className="text-[11px] text-[#B0AFA8] font-medium mb-6 leading-relaxed">
+                        Last behavioral audit was performed by {student.behavioralAuditLog.auditedBy} on {new Date(student.behavioralAuditLog.lastAuditDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}.
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-[#B0AFA8] font-medium mb-6 leading-relaxed">No behavioral audits performed yet.</p>
+                    )}
                     <button className="text-[11px] font-bold text-primary hover:underline">View Verification History</button>
                 </div>
             </div>
@@ -309,7 +400,8 @@ export const StudentProfilePage = () => {
                     {student.parents.map((g, i) => (
                         <div key={i} className="p-6 bg-[#F7F8F4] rounded-2xl border border-slate-100 transition-all hover:border-primary/20">
                             <p className="text-[10px] font-bold text-[#B0AFA8] mb-2 uppercase tracking-widest leading-none">{g.role} Information</p>
-                            <p className="text-[15px] font-semibold text-foreground mb-3 mt-2">{g.name}</p>
+                            <p className="text-[15px] font-semibold text-foreground mb-1 mt-2">{g.name}</p>
+                            <p className="text-[11px] font-medium text-muted-gray mb-3">Occupation: {g.occupation}</p>
                             <span className="flex items-center justify-center md:justify-start gap-2 text-[12px] font-bold text-primary">
                                 <Phone size={14} strokeWidth={3} fill="currentColor" className="opacity-20" />
                                 {g.ph}
@@ -326,10 +418,16 @@ export const StudentProfilePage = () => {
                         <Lock size={18} className="text-primary" />
                     </div>
                     <div className="space-y-8 relative before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[1px] before:bg-white/10 pl-6">
-                        <div className="border-l-2 border-primary/40 pl-4">
-                            <p className="text-[10px] font-bold text-primary mb-2 uppercase tracking-widest italic leading-none">Bridge Meeting • Oct 04</p>
-                            <p className="text-[13px] font-normal text-white/80 leading-relaxed italic">"Discussed career goals. Suggested Engineering track."</p>
-                        </div>
+                        {student.parentMeetings.length > 0 ? (
+                          student.parentMeetings.map((m, idx) => (
+                            <div key={idx} className="border-l-2 border-primary/40 pl-4">
+                                <p className="text-[10px] font-bold text-primary mb-2 uppercase tracking-widest italic leading-none">{m.title} • {m.dateString}</p>
+                                <p className="text-[13px] font-normal text-white/80 leading-relaxed italic">"{m.summaryText}"</p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-[12px] text-white/40 italic">No parent meetings recorded</p>
+                        )}
                     </div>
                 </div>
                 <div className="relative z-10 pt-10">
@@ -397,10 +495,10 @@ export const StudentProfilePage = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
                   {[
-                    { label: "Attendance Consistency", val: 98, color: "bg-primary" },
-                    { label: "Assignment Hygiene", val: 94, color: "bg-secondary" },
-                    { label: "Class Engagement", val: 86, color: "bg-orange-400" },
-                    { label: "Activity Density", val: 90, color: "bg-emerald-500" },
+                    { label: "Attendance Consistency", val: student.participationIntelligence.attendanceConsistency, color: "bg-primary" },
+                    { label: "Assignment Hygiene", val: student.participationIntelligence.assignmentHygiene, color: "bg-secondary" },
+                    { label: "Class Engagement", val: student.participationIntelligence.classEngagement, color: "bg-orange-400" },
+                    { label: "Activity Density", val: student.participationIntelligence.activityDensity, color: "bg-emerald-500" },
                   ].map((p, i) => (
                     <div key={i} className="space-y-3">
                       <div className="flex justify-between items-end">
@@ -427,14 +525,11 @@ export const StudentProfilePage = () => {
                         </h3>
                     </div>
                     <div className="divide-y divide-slate-50 pb-2">
-                        {[
-                            { label: "Varsity Sports", detail: "Team Captain — Regional Playoff Ready", status: "Active Lead", icon: "sports_soccer" },
-                            { label: "Digital Science", detail: "Lead Architect — District Robotics", status: "Active Lead", icon: "memory" },
-                            { label: "Public Service", detail: "Secretary — Student Council 2023", status: "Completed", icon: "groups" },
-                        ].map((m, i) => (
+                        {student.highlights.length > 0 ? (
+                          student.highlights.map((m, i) => (
                             <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-8 hover:bg-[#F7F8F4] transition-all group cursor-pointer">
                                 <div className="size-10 rounded-xl bg-[#F7F8F4] flex items-center justify-center text-[#B0AFA8] group-hover:bg-primary/10 group-hover:text-primary transition-all shrink-0">
-                                    <span className="material-symbols-outlined text-xl">{m.icon}</span>
+                                    <span className="material-symbols-outlined text-xl">{m.icon || "star"}</span>
                                 </div>
                                 <div className="flex-1">
                                     <h4 className="text-[14px] font-bold text-foreground leading-none mb-1.5">{m.label}</h4>
@@ -450,7 +545,10 @@ export const StudentProfilePage = () => {
                                     <ChevronRight size={14} className="text-slate-200 group-hover:text-primary transition-all translate-x-2 group-hover:translate-x-0" />
                                 </div>
                             </div>
-                        ))}
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-[13px] text-[#B0AFA8] italic">No highlights recorded yet.</div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -458,19 +556,26 @@ export const StudentProfilePage = () => {
             {/* Right Secure Column */}
             <div className={cn("md:col-span-4", colSpacing)}>
                 <div className="bg-white rounded-2xl border border-[#FECACA] shadow-sm overflow-hidden text-center md:text-left">
-                    <div className="bg-[#FEE2E2]0 px-6 py-4 flex justify-between items-center text-white">
+                    <div className="bg-red-600 px-6 py-4 flex justify-between items-center text-white">
                         <h3 className="font-bold text-sm flex items-center gap-2">
                              <AlertCircle size={16} strokeWidth={3} />
                              Critical Flags
                         </h3>
-                        <span className="bg-white/20 px-2 py-0.5 rounded-full text-[9px] font-bold border border-white/20">02</span>
+                        <span className="bg-white/20 px-2 py-0.5 rounded-full text-[9px] font-bold border border-white/20">
+                          {student.behavioralRecords.filter((r: any) => r.title.toLowerCase().includes("conflict") || r.title.toLowerCase().includes("critical") || r.title.toLowerCase().includes("incident")).length.toString().padStart(2, "0")}
+                        </span>
                     </div>
                     <div className="p-6">
-                        <div className="p-4 bg-[#FEE2E2] border border-[#FECACA] rounded-xl space-y-3">
-                            <p className="text-[#B91C1C] font-bold text-[13px]">Behavioral Conflict</p>
-                            <p className="text-[11px] text-[#B91C1C]/80 font-medium italic leading-relaxed">"Reported incident Oct 14. Referral pending."</p>
-                            <button className="text-[10px] font-black text-foreground hover:underline underline-offset-4 tracking-widest uppercase">Open File</button>
-                        </div>
+                        {student.behavioralRecords.filter((r: any) => r.title.toLowerCase().includes("conflict") || r.title.toLowerCase().includes("critical") || r.title.toLowerCase().includes("incident")).length > 0 ? (
+                          student.behavioralRecords.filter((r: any) => r.title.toLowerCase().includes("conflict") || r.title.toLowerCase().includes("critical") || r.title.toLowerCase().includes("incident")).map((rec: any, idx: number) => (
+                            <div key={idx} className="p-4 bg-[#FEE2E2] border border-[#FECACA] rounded-xl space-y-3 mb-3 text-left">
+                                <p className="text-[#B91C1C] font-bold text-[13px]">{rec.title}</p>
+                                <p className="text-[11px] text-[#B91C1C]/80 font-medium italic leading-relaxed">"{rec.comment}"</p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-[12px] text-muted-gray/70 italic py-2">No critical flags noted.</p>
+                        )}
                     </div>
                 </div>
 
@@ -481,11 +586,19 @@ export const StudentProfilePage = () => {
                             <Lock size={16} className="text-primary" />
                         </div>
                         <div className="space-y-6 relative border-l border-white/10 pl-6">
-                            <div className="relative pb-2">
-                                <div className="absolute -left-[27px] top-1.5 size-1.5 rounded-full bg-primary" />
-                                <p className="text-[9px] font-bold text-primary mb-2 uppercase tracking-widest leading-none">Oct 12 • Principal</p>
-                                <p className="text-[12px] text-white/50 leading-relaxed italic group-/80 transition-colors">"Confirmed Engineering track during PTM."</p>
-                            </div>
+                            {student.behavioralRecords.length > 0 ? (
+                              student.behavioralRecords.slice(0, 3).map((rec, idx) => (
+                                <div key={idx} className="relative pb-2 text-left">
+                                    <div className="absolute -left-[27px] top-1.5 size-1.5 rounded-full bg-primary" />
+                                    <p className="text-[9px] font-bold text-primary mb-2 uppercase tracking-widest leading-none">
+                                      {new Date(rec.createdAt || rec.date).toLocaleDateString("en-IN", { month: "short", day: "numeric" })} • {rec.staffName}
+                                    </p>
+                                    <p className="text-[12px] text-white/50 leading-relaxed italic group-/80 transition-colors">"{rec.comment.slice(0, 50)}..."</p>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-[11px] text-white/40 italic">No behavioral log entries.</p>
+                            )}
                         </div>
                         <button className="w-full mt-10 py-3.5 bg-white/5 border border-dashed border-white/10 rounded-xl text-[10px] font-bold text-white/30 hover:bg-white/10 transition-all uppercase tracking-widest">
                             + Write Secure Entry

@@ -196,11 +196,10 @@ export const AcademicYearsPage = () => {
       const res = await graphqlRequest<{ initiateAcademicYearRollover: string }>(RUN_ROLLOVER, {
         id: editingYearId,
         options: {
-          students: rollStudents,
-          teachers: rollTeachers,
-          subjects: rollSubjects,
-          timetable: rollTimetable,
-          auraPoints: rollAura
+          promoteStudents: rollStudents,
+          archivePastGrades: true,
+          copyCurriculumMaps: rollSubjects,
+          transferActiveTeachers: rollTeachers
         }
       });
       setSuccessMsg(res?.initiateAcademicYearRollover || "Rollover initiated successfully!");

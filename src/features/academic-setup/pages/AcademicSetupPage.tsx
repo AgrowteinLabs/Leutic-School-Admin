@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppDatePicker } from "../../../components/AppDatePicker";
+import { useApp } from "../../../lib/AppContext";
 
 // PDS Components
 import { PDSPageHeader } from "../../../components/pds/PDSPageHeader";
@@ -26,16 +27,17 @@ export const AcademicSetupPage = ({ isHubChild, routeSub }: { isHubChild?: boole
         }
     }, [routeSub]);
 
-    // Mock Data for List
-    const [academicYears] = useState([
-        { id: 1, name: "Academic Year 2023 - 2024", start: "June 01, 2023", end: "May 31, 2024", status: "Completed", terms: 3 },
-        { id: 2, name: "Academic Year 2024 - 2025", start: "June 01, 2024", end: "May 31, 2025", status: "Active", terms: 3 },
-        { id: 3, name: "Academic Year 2025 - 2026", start: "June 01, 2025", end: "May 31, 2026", status: "Draft", terms: 2 },
-    ]);
+    const { academicYears } = useApp();
 
-    // Sort: Latest first
     const sortedYears = useMemo(() => {
-        return [...academicYears].sort((a, b) => b.id - a.id);
+        return (academicYears || []).map((y: any) => ({
+            id: y.id,
+            name: y.name || `Academic Year ${new Date(y.startDate).getFullYear()} - ${new Date(y.endDate).getFullYear()}`,
+            start: new Date(y.startDate).toLocaleDateString("en-IN", { month: "long", day: "2-digit", year: "numeric" }),
+            end: new Date(y.endDate).toLocaleDateString("en-IN", { month: "long", day: "2-digit", year: "numeric" }),
+            status: y.status === "ACTIVE" ? "Active" : y.status === "COMPLETED" ? "Completed" : "Draft",
+            terms: (y.terms || []).length
+        })).sort((a: any, b: any) => b.name.localeCompare(a.name));
     }, [academicYears]);
 
     const steps = [
@@ -142,7 +144,7 @@ export const AcademicSetupPage = ({ isHubChild, routeSub }: { isHubChild?: boole
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                                    {sortedYears.map((year) => (
+                                    {sortedYears.map((year: any) => (
                                         <div key={year.id} className="p-6 rounded-[28px] bg-white border border-slate-100 transition-all hover:-translate-y-1 group relative overflow-hidden flex flex-col justify-between min-h-[220px]">
                                             <div className="flex justify-between items-start mb-4">
                                                 <div className="size-10 rounded-xl bg-[#F7F8F4] flex items-center justify-center text-secondary group-hover:bg-primary group-hover:text-foreground transition-all">

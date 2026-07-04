@@ -19,6 +19,19 @@ interface StaffDetails {
   address: string;
   joinDate: string;
   assignedClasses: string[];
+  scheduleSlots: Array<{
+    id: string;
+    dayOfWeek: string;
+    slotIndex: number;
+    classLabel: string;
+    startTime: string;
+  }>;
+  achievements: Array<{
+    id: string;
+    title: string;
+    badgeIcon?: string;
+  }>;
+  facultyInsights: string[];
 }
 
 interface GraphQLUser {
@@ -32,6 +45,25 @@ interface GraphQLUser {
   staffStatus?: string;
   classIds?: string[];
   createdAt: string;
+  employeeId?: string;
+  designation?: string;
+  department?: string;
+  performance?: number;
+  auraScore?: number;
+  feedbackScore?: number;
+  scheduleSlots?: Array<{
+    id: string;
+    dayOfWeek: string;
+    slotIndex: number;
+    classLabel: string;
+    startTime: string;
+  }>;
+  achievements?: Array<{
+    id: string;
+    title: string;
+    badgeIcon?: string;
+  }>;
+  facultyInsights?: string[];
 }
 
 interface ClassItem {
@@ -67,17 +99,37 @@ export const StaffProfilePage = () => {
             staffStatus
             classIds
             createdAt
+            employeeId
+            designation
+            department
+            performance
+            auraScore
+            feedbackScore
+            scheduleSlots {
+              id
+              dayOfWeek
+              slotIndex
+              classLabel
+              startTime
+            }
+            achievements {
+              id
+              title
+              badgeIcon
+            }
+            facultyInsights
           }
         }
       `;
 
       const classesQuery = `
         query GetClasses($schoolId: String) {
-          classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+          classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 500) {
             items {
               id
               grade
               section
+              displayLabel
             }
           }
         }
@@ -129,18 +181,21 @@ export const StaffProfilePage = () => {
         setStaffDetails({
           uid: user.id,
           name: user.name,
-          id: "ST-1024-0" + (pCode % 100),
+          id: user.employeeId || "ST-1024-0" + (pCode % 100),
           role: user.role === "TEACHER" ? "Faculty" : user.role,
-          department,
-          performance: 80 + (pCode % 20),
-          auraScore: 85 + (pCode % 15),
+          department: user.department || department,
+          performance: user.performance ?? (80 + (pCode % 20)),
+          auraScore: user.auraScore ?? (85 + (pCode % 15)),
           status: user.staffStatus === "ACTIVE" ? "Active" : user.staffStatus === "ON_LEAVE" ? "On Leave" : user.staffStatus === "REMOTE" ? "Remote" : user.staffStatus === "INACTIVE" ? "Inactive" : (user.staffStatus || "Active"),
           img: `/Avatar/${pCode % 2 === 0 ? "Female" : "Male"} Avatar Age3${5 + (pCode % 4)}.png`,
           email: user.email || `${user.name.toLowerCase().replace(/\s+/g, ".")}@letuic.edu`,
           mobile: user.mobileNo || "+91 98765 43210",
           address: cleanAddress || "Not Provided",
           joinDate: formattedDate,
-          assignedClasses: assignedClassNames
+          assignedClasses: assignedClassNames,
+          scheduleSlots: user.scheduleSlots || [],
+          achievements: user.achievements || [],
+          facultyInsights: user.facultyInsights || []
         });
 
       } catch (err: unknown) {
@@ -276,31 +331,36 @@ export const StaffProfilePage = () => {
                   <button className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline transition-all">Full View</button>
                 </div>
                 <div className="p-4 grid grid-cols-5 gap-3">
-                  {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day, idx) => (
+                  {["Mon", "Tue", "Wed", "Thu", "Fri"].map((day) => (
                     <div key={day} className="space-y-3">
                       <div className="text-center pb-2">
                         <span className="text-[9px] font-black text-muted-gray uppercase tracking-[0.2em]">{day}</span>
                       </div>
                       <div className="space-y-2">
-                        {[1, 2].map(slot => (
-                          <div key={slot} className={cn(
-                            "group p-2.5 rounded-xl border transition-all cursor-pointer relative",
-                            idx % 2 === 0 && slot === 1 
-                              ? "bg-primary/5 border-primary/20 hover:bg-primary/10" 
-                              : "bg-slate-50/50 border-slate-100 border-dashed hover:border-slate-200"
-                          )}>
-                            {idx % 2 === 0 && slot === 1 ? (
-                              <>
-                                <p className="text-[10px] font-black text-brand-navy leading-tight">GR-{10+idx}-A</p>
-                                <p className="text-[8px] font-bold text-muted-gray mt-0.5">09:00 AM</p>
-                              </>
-                            ) : (
-                              <div className="h-6 flex items-center justify-center">
-                                <span className="material-symbols-outlined text-[14px] text-slate-200 group-hover:text-slate-300 transition-colors">add</span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                        {[1, 2].map(slot => {
+                          const slotData = staffDetails.scheduleSlots.find(
+                            s => s.dayOfWeek.toLowerCase() === day.toLowerCase() && s.slotIndex === slot
+                          );
+                          return (
+                            <div key={slot} className={cn(
+                              "group p-2.5 rounded-xl border transition-all cursor-pointer relative",
+                              slotData 
+                                ? "bg-primary/5 border-primary/20 hover:bg-primary/10" 
+                                : "bg-slate-50/50 border-slate-100 border-dashed hover:border-slate-200"
+                            )}>
+                              {slotData ? (
+                                <>
+                                  <p className="text-[10px] font-black text-brand-navy leading-tight">{slotData.classLabel}</p>
+                                  <p className="text-[8px] font-bold text-muted-gray mt-0.5">{slotData.startTime}</p>
+                                </>
+                              ) : (
+                                <div className="h-6 flex items-center justify-center">
+                                  <span className="material-symbols-outlined text-[14px] text-slate-200 group-hover:text-slate-300 transition-colors">add</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -326,14 +386,18 @@ export const StaffProfilePage = () => {
                 <div className="bg-white rounded-[24px] border border-slate-100/60 p-5 shadow-sm shadow-slate-100/20">
                   <h4 className="text-[12px] font-black text-brand-navy uppercase tracking-widest mb-4">Achievements</h4>
                   <div className="space-y-3">
-                    {["Gold Star Educator '24", "Curriculum Innovator", "Perfect Attendance"].map((ach, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="size-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-[14px] filled">military_tech</span>
+                    {staffDetails.achievements.length > 0 ? (
+                      staffDetails.achievements.map((ach) => (
+                        <div key={ach.id || ach.title} className="flex items-center gap-3">
+                          <div className="size-6 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[14px] filled">{ach.badgeIcon || "military_tech"}</span>
+                          </div>
+                          <span className="text-[12px] font-bold text-brand-navy">{ach.title}</span>
                         </div>
-                        <span className="text-[12px] font-bold text-brand-navy">{ach}</span>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <div className="text-[12px] text-muted-gray/70 italic text-center py-2">No achievements recorded</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -366,16 +430,16 @@ export const StaffProfilePage = () => {
                   <span className="material-symbols-outlined text-primary text-[18px]">lightbulb</span>
                 </div>
                 <div className="space-y-4">
-                  {[
-                    "Maintains 98% laboratory session attendance.",
-                    "Pioneered 'Interactive Geometry' for Grade 10.",
-                    "High peer-rating in collaborative leadership."
-                  ].map((insight, i) => (
-                    <div key={i} className="flex gap-3">
-                      <div className="size-1 rounded-full bg-primary mt-1.5 shrink-0" />
-                      <p className="text-[12px] font-medium text-brand-navy/70 leading-relaxed italic">"{insight}"</p>
-                    </div>
-                  ))}
+                  {staffDetails.facultyInsights.length > 0 ? (
+                    staffDetails.facultyInsights.map((insight, i) => (
+                      <div key={i} className="flex gap-3">
+                        <div className="size-1 rounded-full bg-primary mt-1.5 shrink-0" />
+                        <p className="text-[12px] font-medium text-brand-navy/70 leading-relaxed italic">"{insight}"</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-[12px] text-muted-gray/70 italic">No insights available</div>
+                  )}
                 </div>
               </div>
             </div>

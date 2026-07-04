@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 
 // Components
 import { TopBar } from "../../../components/Header";
@@ -14,75 +15,115 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [programsList, setProgramsList] = useState<any[]>([]);
 
-  const programs = [
-    {
-      name: "Regional Science Fair 2024",
-      category: "Academic",
-      participants: 45,
-      status: "Active" as const,
-      leadTeacher: "Dr. Sunitha V.",
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        const schoolId = localStorage.getItem("school_id") || "";
+        const res = await graphqlRequest<any>(`
+          query GetSpecialPrograms($schoolId: String) {
+            specialPrograms(schoolId: $schoolId) {
+              id
+              name
+              status
+              description
+              credits
+              studentCount
+            }
+          }
+        `, { schoolId });
+        setProgramsList(res.specialPrograms || []);
+      } catch (err) {
+        console.error("Failed to load special programs:", err);
+      }
+    };
+    fetchPrograms();
+  }, []);
+
+  const programs = useMemo(() => {
+    if (programsList.length === 0) {
+      return [
+        {
+          name: "Regional Science Fair 2024",
+          category: "Academic",
+          participants: 45,
+          status: "Active" as const,
+          leadTeacher: "Dr. Sunitha V.",
+          startDate: "Oct 15",
+          endDate: "Dec 10",
+          location: "Main Auditorium",
+          targetGrades: "Grades 9-12"
+        },
+        {
+          name: "District Athletics League",
+          category: "Sports",
+          participants: 120,
+          status: "Warning" as const,
+          leadTeacher: "Coach Sreekumar",
+          startDate: "Nov 01",
+          endDate: "Feb 15",
+          location: "School Ground",
+          targetGrades: "All Grades"
+        },
+        {
+          name: "Inter-High Arts Expo",
+          category: "Creative Arts",
+          participants: 58,
+          status: "Planning" as const,
+          leadTeacher: "Ms. Amrita S. Sher-Gil",
+          startDate: "Jan 05",
+          endDate: "Mar 20",
+          location: "Arts Studio",
+          targetGrades: "Grades 6-12"
+        },
+        {
+          name: "National Coding Challenge",
+          category: "Technology",
+          participants: 32,
+          status: "Active" as const,
+          leadTeacher: "Mr. Satya Nadella",
+          startDate: "Sep 20",
+          endDate: "Nov 30",
+          location: "Computer Lab 1",
+          targetGrades: "Grade 12"
+        },
+        {
+          name: "Annual Music Festival",
+          category: "Arts & Culture",
+          participants: 85,
+          status: "Active" as const,
+          leadTeacher: "Mrs. M.S. Subbulakshmi",
+          startDate: "Nov 20",
+          endDate: "Dec 22",
+          location: "Open Theater",
+          targetGrades: "All Grades"
+        },
+        {
+          name: "Community Service Drive",
+          category: "Social",
+          participants: 200,
+          status: "Completed" as const,
+          leadTeacher: "Ms. Medha Patkar",
+          startDate: "Aug 01",
+          endDate: "Sep 30",
+          location: "City Center",
+          targetGrades: "Grades 10-12"
+        }
+      ];
+    }
+    return programsList.map((p) => ({
+      name: p.name,
+      category: p.description || "Academic Enrichment",
+      participants: p.studentCount || 0,
+      status: p.status === "ACTIVE" ? ("Active" as const) : ("Completed" as const),
+      leadTeacher: `Credits: ${p.credits}`,
       startDate: "Oct 15",
       endDate: "Dec 10",
-      location: "Main Auditorium",
+      location: "Main Campus",
       targetGrades: "Grades 9-12"
-    },
-    {
-      name: "District Athletics League",
-      category: "Sports",
-      participants: 120,
-      status: "Warning" as const,
-      leadTeacher: "Coach Sreekumar",
-      startDate: "Nov 01",
-      endDate: "Feb 15",
-      location: "School Ground",
-      targetGrades: "All Grades"
-    },
-    {
-      name: "Inter-High Arts Expo",
-      category: "Creative Arts",
-      participants: 58,
-      status: "Planning" as const,
-      leadTeacher: "Ms. Amrita S. Sher-Gil",
-      startDate: "Jan 05",
-      endDate: "Mar 20",
-      location: "Arts Studio",
-      targetGrades: "Grades 6-12"
-    },
-    {
-      name: "National Coding Challenge",
-      category: "Technology",
-      participants: 32,
-      status: "Active" as const,
-      leadTeacher: "Mr. Satya Nadella",
-      startDate: "Sep 20",
-      endDate: "Nov 30",
-      location: "Computer Lab 1",
-      targetGrades: "Grade 12"
-    },
-    {
-      name: "Annual Music Festival",
-      category: "Arts & Culture",
-      participants: 85,
-      status: "Active" as const,
-      leadTeacher: "Mrs. M.S. Subbulakshmi",
-      startDate: "Nov 20",
-      endDate: "Dec 22",
-      location: "Open Theater",
-      targetGrades: "All Grades"
-    },
-    {
-      name: "Community Service Drive",
-      category: "Social",
-      participants: 200,
-      status: "Completed" as const,
-      leadTeacher: "Ms. Medha Patkar",
-      startDate: "Aug 01",
-      endDate: "Sep 30",
-      location: "City Center",
-      targetGrades: "Grades 10-12"
-    },
-  ];
+    }));
+  }, [programsList]);
 
   const categories = ["All Categories", "Academic", "Sports", "Creative Arts", "Technology", "Arts & Culture", "Social"];
 

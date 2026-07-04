@@ -76,11 +76,31 @@ async function attemptTokenRefresh(): Promise<string | null> {
   return activeRefreshPromise;
 }
 
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+
+const queryCache = new Map<string, CacheEntry>();
+const CACHE_TTL = 30000; // 30 seconds cache
+
 export async function graphqlRequest<T = unknown>(
   query: string,
   variables: Record<string, unknown> = {},
   options: RequestInit = {}
 ): Promise<T> {
+  const isMutation = query.trim().startsWith("mutation");
+  const cacheKey = JSON.stringify({ query, variables });
+
+  if (isMutation) {
+    queryCache.clear();
+  } else {
+    const cached = queryCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return cached.data as T;
+    }
+  }
+
   const executeRequest = async (tokenToUse: string | null) => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL || "/graphql";
 
@@ -157,6 +177,10 @@ export async function graphqlRequest<T = unknown>(
 
   if (!json.data) {
     throw new Error("No data returned from GraphQL server");
+  }
+
+  if (!isMutation) {
+    queryCache.set(cacheKey, { data: json.data, timestamp: Date.now() });
   }
 
   return json.data;

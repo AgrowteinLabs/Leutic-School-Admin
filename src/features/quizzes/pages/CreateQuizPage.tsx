@@ -1,6 +1,7 @@
 import React, { useState, useCallback, memo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
@@ -792,12 +793,42 @@ export const CreateQuizPage = () => {
     return () => clearTimeout(handler);
   }, [quizData]);
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     setIsPublishing(true);
-    setTimeout(() => {
-      setIsPublishing(false);
+    try {
+      const schoolId = localStorage.getItem("school_id") || "";
+      const input = {
+        schoolId,
+        title: quizData.title,
+        subject: quizData.subject,
+        durationMinutes: parseInt(quizData.durationPerQuestion) || 30,
+        targetGrade: quizData.recipient.startsWith("Class:") 
+          ? quizData.recipient.replace("Class: ", "") 
+          : quizData.recipient,
+        status: "ACTIVE",
+        questions: quizData.questions.map((q) => ({
+          questionText: q.text,
+          options: q.options,
+          correctOptionIndex: q.correctOptions[0] || 0,
+          points: q.points
+        }))
+      };
+      
+      await graphqlRequest<any>(`
+        mutation CreateQuiz($input: CreateQuizInput!) {
+          createQuiz(input: $input) {
+            id
+            title
+          }
+        }
+      `, { input });
       setShowSuccess(true);
-    }, 1500);
+    } catch (err: any) {
+      console.error("Failed to publish quiz:", err);
+      alert("Failed to publish quiz: " + err.message);
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (

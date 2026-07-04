@@ -53,12 +53,15 @@ export const DashboardPage = () => {
     const [studentsCount, setStudentsCount] = useState<number | null>(null);
     const [teachersCount, setTeachersCount] = useState<number | null>(null);
     const [classesList, setClassesList] = useState<DashboardClass[]>([]);
+    const [summary, setSummary] = useState<any>(null);
+    const [alerts, setAlerts] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
-            const schoolId = localStorage.getItem("school_id") || undefined;
+            const schoolId = localStorage.getItem("school_id") || "";
+            if (!schoolId) return;
             const query = `
-                query GetDashboardData($schoolId: String) {
+                query GetDashboardData($schoolId: String!) {
                     students: users(filter: { role: "STUDENT", schoolId: $schoolId, page: 1, pageSize: 1 }) {
                         total
                     }
@@ -72,6 +75,23 @@ export const DashboardPage = () => {
                             section
                         }
                     }
+                    dashboardStatSummary(schoolId: $schoolId) {
+                        todayAttendanceRate
+                        pendingActionsCount
+                        urgentActionsCount
+                    }
+                    classMonitorAlerts(schoolId: $schoolId) {
+                        items {
+                            classId
+                            grade
+                            section
+                            classTeacherName
+                            issueType
+                            issueDetails
+                            scorePercentage
+                            severityStatus
+                        }
+                    }
                 }
             `;
             try {
@@ -79,11 +99,30 @@ export const DashboardPage = () => {
                     students: { total: number };
                     teachers: { total: number };
                     classes: { items: DashboardClass[] };
+                    dashboardStatSummary: {
+                        todayAttendanceRate: number;
+                        pendingActionsCount: number;
+                        urgentActionsCount: number;
+                    };
+                    classMonitorAlerts: {
+                        items: Array<{
+                            classId: string;
+                            grade: string;
+                            section: string;
+                            classTeacherName: string;
+                            issueType: string;
+                            issueDetails: string;
+                            scorePercentage: number;
+                            severityStatus: string;
+                        }>;
+                    };
                 }
                 const res = await graphqlRequest<DashboardDataResponse>(query, { schoolId });
                 setStudentsCount(res.students?.total ?? 0);
                 setTeachersCount(res.teachers?.total ?? 0);
                 setClassesList(res.classes?.items ?? []);
+                setSummary(res.dashboardStatSummary || null);
+                setAlerts(res.classMonitorAlerts?.items || []);
             } catch (err) {
                 console.error("Error loading dashboard counts:", err);
             }
@@ -131,24 +170,36 @@ export const DashboardPage = () => {
                 const classMap = new Map(classesList.map(c => [c.id, c]));
                 const matchedClass = foundUser.classId ? classMap.get(foundUser.classId) : null;
                 
-                // Fetch actual aura points
-                let auraScore = 80;
+                let overviewData = {
+                    participationRate: 75,
+                    attendanceRate: 92,
+                    gpa: 3.5,
+                    statusAlert: foundUser.isActive ? "Active" : "Inactive"
+                };
                 try {
-                    interface AuraResponse {
-                        studentAuraPoints: {
-                            totalPoints: number;
+                    interface OverviewResponse {
+                        studentOverview: {
+                            participationRate: number;
+                            attendanceRate: number;
+                            gpa: number;
+                            statusAlert: string;
                         };
                     }
-                    const auraRes = await graphqlRequest<AuraResponse>(`
-                        query GetStudentAura($studentId: String!) {
-                            studentAuraPoints(studentId: $studentId) {
-                                totalPoints
+                    const overviewRes = await graphqlRequest<OverviewResponse>(`
+                        query GetStudentOverview($id: ID!) {
+                            studentOverview(id: $id) {
+                                participationRate
+                                attendanceRate
+                                gpa
+                                statusAlert
                             }
                         }
-                    `, { studentId: foundUser.id });
-                    auraScore = auraRes.studentAuraPoints?.totalPoints ?? 80;
+                    `, { id: foundUser.id });
+                    if (overviewRes.studentOverview) {
+                        overviewData = overviewRes.studentOverview;
+                    }
                 } catch (e: unknown) {
-                    console.error("Failed to fetch aura points in search:", e);
+                    console.error("Failed to fetch student overview in search:", e);
                 }
 
                 setSelectedStudent({
@@ -156,11 +207,11 @@ export const DashboardPage = () => {
                     id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
                     grade: matchedClass ? matchedClass.grade : "Unassigned",
                     section: matchedClass ? (matchedClass.section || "") : "",
-                    participation: 75,
-                    auraScore,
-                    attendanceRate: 92,
-                    gpa: 3.5,
-                    status: foundUser.isActive ? "Active" : "Inactive",
+                    participation: overviewData.participationRate,
+                    auraScore: overviewData.participationRate,
+                    attendanceRate: overviewData.attendanceRate,
+                    gpa: overviewData.gpa,
+                    status: overviewData.statusAlert,
                     img: "/Avatar/Male Avatar Age16.png",
                     phone: foundUser.mobileNo || "+91 99999-99999"
                 });
@@ -210,21 +261,34 @@ export const DashboardPage = () => {
                 const res = await graphqlRequest<GetClassStudentsResponse>(query, { classId: matchedClass.id });
                 const foundUser = res.users?.items?.[0];
                 if (foundUser) {
-                    let auraScore = 68;
+                    let overviewData = {
+                        participationRate: 62,
+                        attendanceRate: 72,
+                        gpa: 2.8,
+                        statusAlert: "At Risk"
+                    };
                     try {
-                        interface AuraResponse {
-                            studentAuraPoints: {
-                                totalPoints: number;
+                        interface OverviewResponse {
+                            studentOverview: {
+                                participationRate: number;
+                                attendanceRate: number;
+                                gpa: number;
+                                statusAlert: string;
                             };
                         }
-                        const auraRes = await graphqlRequest<AuraResponse>(`
-                            query GetStudentAura($studentId: String!) {
-                                studentAuraPoints(studentId: $studentId) {
-                                    totalPoints
+                        const overviewRes = await graphqlRequest<OverviewResponse>(`
+                            query GetStudentOverview($id: ID!) {
+                                studentOverview(id: $id) {
+                                    participationRate
+                                    attendanceRate
+                                    gpa
+                                    statusAlert
                                 }
                             }
-                        `, { studentId: foundUser.id });
-                        auraScore = auraRes.studentAuraPoints?.totalPoints ?? 68;
+                        `, { id: foundUser.id });
+                        if (overviewRes.studentOverview) {
+                            overviewData = overviewRes.studentOverview;
+                        }
                     } catch (e: unknown) {}
                     
                     setSelectedStudent({
@@ -232,11 +296,11 @@ export const DashboardPage = () => {
                         id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
                         grade: matchedClass.grade,
                         section: matchedClass.section || "",
-                        participation: 62,
-                        auraScore,
-                        attendanceRate: 72,
-                        gpa: 2.8,
-                        status: "At Risk",
+                        participation: overviewData.participationRate,
+                        auraScore: overviewData.participationRate,
+                        attendanceRate: overviewData.attendanceRate,
+                        gpa: overviewData.gpa,
+                        status: overviewData.statusAlert,
                         img: "/Avatar/Male Avatar Age16.png",
                         phone: foundUser.mobileNo || "+91 99999-99999"
                     });
@@ -293,15 +357,15 @@ export const DashboardPage = () => {
                         />
                         <StatCard
                             label="Attendance Today"
-                            value="86%"
+                            value={summary ? `${summary.todayAttendanceRate}%` : "..."}
                             trend="+1.2%"
                             trendType="up"
                             icon="fact_check"
                         />
                         <StatCard
                             label="Pending Actions"
-                            value="07"
-                            trend="3 urgent"
+                            value={summary ? String(summary.pendingActionsCount).padStart(2, "0") : "..."}
+                            trend={summary ? `${summary.urgentActionsCount} urgent` : "..."}
                             trendType="down"
                             icon="pending_actions"
                         />
@@ -470,55 +534,58 @@ export const DashboardPage = () => {
                                 Full Report
                             </button>
                         </div>
-
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 relative z-10">
-                            {[
-                                { grade: "11-C", teacher: "Mr. Manoj P.", issue: "Attendance Drop", detail: "-22% Morning", score: 62, status: "critical" },
-                                { grade: "9-D", teacher: "Ms. Dhanya S.", issue: "Grade Decline", detail: "Average Drop", score: 76, status: "warning" },
-                                { grade: "10-A", teacher: "Dr. Lakshmi K.", issue: "Absenteeism", detail: "Unusual spikes", score: 68, status: "warning" },
-                            ].map((item, i) => (
-                                <div key={i} className="group relative" onClick={() => handleClassMonitorClick(item.grade)}>
-                                    <div className="flex items-center gap-4 p-5 rounded-[18px] bg-white border border-slate-100 hover:border-primary/20 transition-all duration-500 cursor-pointer h-full">
-                                        {/* Circular Gauge */}
-                                        <div className="relative size-12 shrink-0">
-                                            <svg className="size-full -rotate-90">
-                                                <circle cx="24" cy="24" r="20" fill="none" strokeWidth="3.5" stroke="#F0F0EC" />
-                                                <circle cx="24" cy="24" r="20" fill="none" strokeWidth="3.5"
-                                                    strokeDasharray={2 * Math.PI * 20}
-                                                    strokeDashoffset={2 * Math.PI * 20 * (1 - item.score / 100)}
-                                                    stroke={item.status === "critical" ? "#E63535" : "#EF9800"}
-                                                    strokeLinecap="round"
-                                                />
-                                            </svg>
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <span className="text-[10px] font-black text-foreground">{item.score}%</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                                <span className="text-[12.5px] font-black text-foreground tracking-tight">{item.grade}</span>
-                                                <div className={cn(
-                                                    "px-2 py-0.5 rounded-full text-[7px] font-black border capitalize",
-                                                    item.status === "critical"
-                                                        ? "bg-[#FEE2E2] text-[#E63535] border-[#FECACA]"
-                                                        : "bg-[#FEF9C3] text-[#EF9800] border-[#FDE68A]"
-                                                )}>
-                                                    {item.status}
+                            {alerts.length > 0 ? (
+                                alerts.map((item, i) => (
+                                    <div key={i} className="group relative" onClick={() => handleClassMonitorClick(item.grade)}>
+                                        <div className="flex items-center gap-4 p-5 rounded-[18px] bg-white border border-slate-100 hover:border-primary/20 transition-all duration-500 cursor-pointer h-full">
+                                            {/* Circular Gauge */}
+                                            <div className="relative size-12 shrink-0">
+                                                <svg className="size-full -rotate-90">
+                                                    <circle cx="24" cy="24" r="20" fill="none" strokeWidth="3.5" stroke="#F0F0EC" />
+                                                    <circle cx="24" cy="24" r="20" fill="none" strokeWidth="3.5"
+                                                        strokeDasharray={2 * Math.PI * 20}
+                                                        strokeDashoffset={2 * Math.PI * 20 * (1 - item.scorePercentage / 100)}
+                                                        stroke={item.severityStatus === "critical" ? "#E63535" : "#EF9800"}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <span className="text-[10px] font-black text-foreground">{item.scorePercentage}%</span>
                                                 </div>
                                             </div>
-                                            <h5 className="text-[12.5px] font-bold text-foreground truncate">{item.issue}</h5>
-                                            <p className="text-[10px] text-[#B0AFA8] font-medium leading-tight truncate">{item.detail}</p>
-                                        </div>
-
-                                        {/* Hover premium action */}
-                                        <div className="size-8 shrink-0 rounded-[12px] bg-primary text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0 shadow-lg shadow-primary/20 scale-75 group-hover:scale-100 ring-4 ring-primary/5">
-                                            <span className="material-symbols-outlined text-[18px] font-bold">arrow_forward_ios</span>
+     
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <span className="text-[12.5px] font-black text-foreground tracking-tight">{item.grade}{item.section ? `-${item.section}` : ""}</span>
+                                                    <div className={cn(
+                                                        "px-2 py-0.5 rounded-full text-[7px] font-black border capitalize",
+                                                        item.severityStatus === "critical"
+                                                            ? "bg-[#FEE2E2] text-[#E63535] border-[#FECACA]"
+                                                            : "bg-[#FEF9C3] text-[#EF9800] border-[#FDE68A]"
+                                                    )}>
+                                                        {item.severityStatus}
+                                                    </div>
+                                                </div>
+                                                <h5 className="text-[12.5px] font-bold text-foreground truncate">
+                                                  {item.issueType === "ATTENDANCE_DROP" ? "Attendance Drop" : item.issueType === "ABSENTEEISM" ? "Absenteeism" : "Grade Decline"}
+                                                </h5>
+                                                <p className="text-[10px] text-[#B0AFA8] font-medium leading-tight truncate">{item.issueDetails}</p>
+                                            </div>
+     
+                                            {/* Hover premium action */}
+                                            <div className="size-8 shrink-0 rounded-[12px] bg-primary text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0 shadow-lg shadow-primary/20 scale-75 group-hover:scale-100 ring-4 ring-primary/5">
+                                                <span className="material-symbols-outlined text-[18px] font-bold">arrow_forward_ios</span>
+                                            </div>
                                         </div>
                                     </div>
+                                ))
+                            ) : (
+                                <div className="col-span-3 text-center py-6 text-[12px] text-muted-gray/70 italic bg-white rounded-[18px] border border-slate-100 w-full">
+                                    No active alerts in monitor.
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
                 </div>
