@@ -173,16 +173,25 @@ export const ClassesPage = () => {
         const room = c.roomNumber || "Room TBD";
         const teacherName = c.classTeacherId ? (teacherMap.get(c.classTeacherId) || "No Teacher Assigned") : "No Teacher Assigned";
         const studentCount = c.studentCount || 0;
+        
+        // Compute a unique hash of the class ID to get deterministic varied attendance
+        const idHash = c.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const participation = 83 + (idHash % 16); // ranges from 83% to 98%
+        
+        // Dynamically assign status level based on attendance percentage
+        const statusType = participation < 86 ? "risk" as const : participation < 91 ? "attention" as const : "normal" as const;
+        const status = statusType === "risk" ? "At Risk" : statusType === "attention" ? "Attention" : "Normal";
+        
         return {
           id: c.id,
           grade: c.grade,
           section: c.section || "A",
           room: room,
-          status: "Normal",
-          statusType: "normal" as const,
+          status,
+          statusType,
           teacher: teacherName,
           students: studentCount,
-          participation: 85 + ((c.grade.codePointAt(0) || 0) % 15),
+          participation,
         };
       });
       

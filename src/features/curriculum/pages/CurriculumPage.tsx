@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { MenuDropdown } from "../../../components/MenuDropdown";
@@ -313,6 +314,10 @@ const SlotSearchInput = ({
   subjects,
   teachers,
   onAssign,
+  day,
+  period,
+  getTeacherConflict,
+  onRequestConfirm,
 }: {
   selectedSection: string;
   mappings: {
@@ -331,6 +336,22 @@ const SlotSearchInput = ({
     teacherName: string;
     curriculumMappingId: string;
   }) => void;
+  day?: string;
+  period?: number;
+  getTeacherConflict?: (
+    teacherId: string,
+    day: string,
+    period: number,
+    spanPeriods: number,
+    currentSection: string
+  ) => TimetableEntry | null;
+  onRequestConfirm?: (
+    teacherName: string,
+    section: string,
+    day: string,
+    period: number,
+    onConfirm: () => void
+  ) => void;
 }) => {
   const [query, setQuery] = useState("");
   const filtered =
@@ -367,30 +388,59 @@ const SlotSearchInput = ({
             filtered.map((m) => {
               const sub = subjects.find((s) => s.id === m.subjectId);
               const teacher = teachers.find((t) => t.id === m.teacherId);
+              const conflict = (day && period && getTeacherConflict)
+                ? getTeacherConflict(m.teacherId, day, period, 1, selectedSection)
+                : null;
               return (
                 <button
                   key={m.id}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAssign({
-                      subjectId: m.subjectId,
-                      subjectName: sub?.name ?? "",
-                      teacherId: m.teacherId,
-                      teacherName: teacher?.name ?? m.teacherId,
-                      curriculumMappingId: m.id,
-                    });
+                    if (conflict && onRequestConfirm) {
+                      onRequestConfirm(
+                        teacher?.name || m.teacherId,
+                        conflict.section,
+                        day || "",
+                        period || 0,
+                        () => {
+                          onAssign({
+                            subjectId: m.subjectId,
+                            subjectName: sub?.name ?? "",
+                            teacherId: m.teacherId,
+                            teacherName: teacher?.name ?? m.teacherId,
+                            curriculumMappingId: m.id,
+                          });
+                        }
+                      );
+                    } else {
+                      onAssign({
+                        subjectId: m.subjectId,
+                        subjectName: sub?.name ?? "",
+                        teacherId: m.teacherId,
+                        teacherName: teacher?.name ?? m.teacherId,
+                        curriculumMappingId: m.id,
+                      });
+                    }
                   }}
                   className="w-full px-5 py-4 hover:bg-primary/5 text-left transition-colors flex items-center justify-between group/opt"
                 >
-                  <div className="space-y-0.5">
-                    <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">
-                      {sub?.name}
-                    </p>
+                  <div className="space-y-0.5 flex-1 pr-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[13px] font-semibold text-secondary group-hover/opt:text-primary transition-colors">
+                        {sub?.name}
+                      </p>
+                      {conflict && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 text-[9px] font-semibold uppercase tracking-wider shrink-0">
+                          <span className="material-symbols-outlined text-[10px]">warning</span>
+                          Busy ({conflict.section})
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[10px] font-medium text-slate-400">
                       {teacher?.name ?? m.teacherId}
                     </p>
                   </div>
-                  <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
+                  <span className="material-symbols-outlined text-[18px] text-primary opacity-0 group-hover/opt:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0 shrink-0">
                     add_circle
                   </span>
                 </button>
@@ -482,6 +532,13 @@ interface TimetableGridProps {
     wasUniform: boolean,
   ) => void;
   timetableRef: React.RefObject<HTMLDivElement | null>;
+  getTeacherConflict?: (
+    teacherId: string,
+    day: string,
+    period: number,
+    spanPeriods: number,
+    currentSection: string
+  ) => TimetableEntry | null;
 }
 
 const TimetableGrid = memo(
@@ -505,6 +562,7 @@ const TimetableGrid = memo(
     onEntriesChange,
     onPeriodDurationChange,
     timetableRef,
+    getTeacherConflict,
   }: TimetableGridProps) => {
     const [extendingSlot, setExtendingSlot] = useState<{
       day: string;
@@ -521,6 +579,30 @@ const TimetableGrid = memo(
       day: string;
       period: number;
     } | null>(null);
+    const [conflictToConfirm, setConflictToConfirm] = useState<{
+      teacherName: string;
+      section: string;
+      day: string;
+      period: number;
+      onConfirm: () => void;
+    } | null>(null);
+
+    const handleRequestConfirmConflict = useCallback((
+      teacherName: string,
+      section: string,
+      day: string,
+      period: number,
+      onConfirm: () => void
+    ) => {
+      setConflictToConfirm({
+        teacherName,
+        section,
+        day,
+        period,
+        onConfirm,
+      });
+    }, []);
+
     const schoolStartMins = timeToMins(scheduleConfig.schoolStart);
 
     const handleTimetableSlotMouseUp = useCallback((day: string, p: number) => {
@@ -935,6 +1017,9 @@ const TimetableGrid = memo(
                     if (!dayCfg) return null;
                     const entry = entriesBySlot.get(`${day}-${p}`);
                     const spanP = entry?.spanPeriods || 1;
+                    const cellConflict = (entry && getTeacherConflict)
+                      ? getTeacherConflict(entry.teacherId, day, p, spanP, selectedTimetableSection)
+                      : null;
                     const endP = Math.min(
                       p + spanP - 1,
                       periods[periods.length - 1],
@@ -982,7 +1067,8 @@ const TimetableGrid = memo(
                           isInHRange && "bg-primary/[0.04]",
                           entry &&
                             spanP > 1 &&
-                            "border-l-[3px] border-l-slate-300",
+                            (cellConflict ? "border-l-[3px] border-l-red-500" : "border-l-[3px] border-l-slate-300"),
+                          cellConflict && "bg-red-50/20 hover:bg-red-50/30 border border-red-200/50 shadow-sm",
                         )}
                         role={entry ? undefined : "button"}
                         tabIndex={entry ? undefined : 0}
@@ -1060,10 +1146,18 @@ const TimetableGrid = memo(
                                 </span>
                               </div>
                             )}
-                            <div className="flex flex-col items-start text-left gap-0.5 animate-in fade-in duration-500 h-full justify-center">
-                              <h4 className="text-[14px] font-semibold text-secondary leading-tight group-hover:text-primary transition-colors">
-                                {entry.subjectName}
-                              </h4>
+                            <div className="flex flex-col items-start text-left gap-0.5 animate-in fade-in duration-500 h-full justify-center relative w-full">
+                              <div className="flex items-center gap-1.5 w-full flex-wrap">
+                                <h4 className="text-[14px] font-semibold text-secondary leading-tight group-hover:text-primary transition-colors">
+                                  {entry.subjectName}
+                                </h4>
+                                {cellConflict && (
+                                  <span className="inline-flex items-center gap-0.5 px-1 py-0.25 rounded bg-red-50 text-red-600 border border-red-100 text-[8px] font-bold uppercase tracking-wide z-10 shrink-0">
+                                    <span className="material-symbols-outlined text-[9px]">error</span>
+                                    Conflict: {cellConflict.section}
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-[11px] font-medium text-slate-400 tracking-tight">
                                 {entry.teacherName}
                               </p>
@@ -1203,6 +1297,10 @@ const TimetableGrid = memo(
                                 subjects={subjects}
                                 teachers={teachers}
                                 onAssign={(data) => handleAssignSlot(day, ap, data)}
+                                day={day}
+                                period={ap}
+                                getTeacherConflict={getTeacherConflict}
+                                onRequestConfirm={handleRequestConfirmConflict}
                               />
                             </div>
                           </div>
@@ -1214,6 +1312,63 @@ const TimetableGrid = memo(
             })}
           </div>
         </section>
+
+        {/* ── Confirmation Modal (Schedule Conflict Alert) ── */}
+        {createPortal(
+          <AnimatePresence>
+            {conflictToConfirm && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[200] flex items-center justify-center p-6"
+              >
+                <div
+                  className="absolute inset-0 bg-secondary/40 backdrop-blur-sm"
+                  onClick={() => setConflictToConfirm(null)}
+                />
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                  className="bg-white rounded-[32px] shadow-2xl p-8 max-w-md w-full relative z-10 border border-slate-100"
+                >
+                  <div className="size-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 mb-6 border border-amber-100">
+                    <span className="material-symbols-outlined text-[28px]">
+                      warning
+                    </span>
+                  </div>
+                  <h3 className="text-[20px] font-bold text-secondary mb-2">
+                    Schedule Conflict
+                  </h3>
+                  <p className="text-[14px] text-slate-500 leading-relaxed mb-8">
+                    Teacher <strong>{conflictToConfirm.teacherName}</strong> is already scheduled for class section <strong>"{conflictToConfirm.section}"</strong> on {conflictToConfirm.day} period {conflictToConfirm.period}.
+                    <br /><br />
+                    Do you still want to assign them and create a conflict?
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setConflictToConfirm(null)}
+                      className="flex-1 h-12 rounded-xl text-[13px] font-bold text-[#B0AFA8] hover:bg-slate-50 transition-all border border-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        conflictToConfirm.onConfirm();
+                        setConflictToConfirm(null);
+                      }}
+                      className="flex-1 h-12 rounded-xl bg-amber-500 text-white text-[13px] font-bold hover:bg-amber-600 transition-all shadow-md shadow-amber-500/10"
+                    >
+                      Assign Anyway
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
       </div>
     );
   },
@@ -1230,6 +1385,8 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const [timetableEntries, setTimetableEntries] = useState<TimetableEntry[]>(
     [],
   );
+  const [isAllTimetablesLoaded, setIsAllTimetablesLoaded] = useState(false);
+  const [isAllTimetablesLoading, setIsAllTimetablesLoading] = useState(false);
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [pendingTab, setPendingTab] = useState<string | null>(null);
@@ -1784,6 +1941,11 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     fetchAllData();
   }, [fetchAllData]);
 
+  useEffect(() => {
+    setIsAllTimetablesLoaded(false);
+    setTimetableEntries([]);
+  }, [activeAcademicYear?.id]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [deptFilter, setDeptFilter] = useState("All Departments");
@@ -2275,6 +2437,109 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       .catch((err) => console.error("Failed to load timetable:", err))
       .finally(() => setIsTimetableLoading(false));
   }, [selectedTimetableSection, sections, handleLoadTimetableEntries]);
+
+  useEffect(() => {
+    if (
+      activeTab !== "timetable" ||
+      isAllTimetablesLoaded ||
+      isAllTimetablesLoading ||
+      sections.length === 0
+    ) {
+      return;
+    }
+
+    const loadAllTimetables = async () => {
+      setIsAllTimetablesLoading(true);
+      try {
+        const promises = sections.map(async (section) => {
+          if (!section.classId) return;
+          try {
+            const data = await graphqlRequest<{
+              classTimetable: Array<{
+                id: string;
+                classId: string;
+                day: string;
+                period: number;
+                subjectId: string;
+                subjectName: string;
+                teacherId: string;
+                teacherName: string;
+                curriculumMappingId: string;
+                spanPeriods?: number;
+              }>;
+            }>(GET_CLASS_TIMETABLE, { classId: section.classId });
+
+            const sectionKey = `${section.grade}-${section.id}`;
+            const slots = data.classTimetable || [];
+            const entries: TimetableEntry[] = slots.map((slot) => ({
+              section: sectionKey,
+              day: slot.day,
+              period: slot.period,
+              subjectId: slot.subjectId,
+              subjectName: slot.subjectName,
+              teacherId: slot.teacherId,
+              teacherName: slot.teacherName || "Unassigned",
+              curriculumMappingId: slot.curriculumMappingId,
+              spanPeriods: slot.spanPeriods || 1,
+            }));
+
+            handleLoadTimetableEntries(sectionKey, entries);
+          } catch (err) {
+            console.error(
+              `Failed to load timetable for section ${section.grade}-${section.id}:`,
+              err,
+            );
+          }
+        });
+
+        await Promise.allSettled(promises);
+        setIsAllTimetablesLoaded(true);
+      } catch (err) {
+        console.error("Failed to load all timetables:", err);
+      } finally {
+        setIsAllTimetablesLoading(false);
+      }
+    };
+
+    loadAllTimetables();
+  }, [
+    activeTab,
+    isAllTimetablesLoaded,
+    isAllTimetablesLoading,
+    sections,
+    handleLoadTimetableEntries,
+  ]);
+
+  const getTeacherConflict = useCallback(
+    (
+      teacherId: string,
+      day: string,
+      period: number,
+      spanPeriods: number = 1,
+      currentSection: string,
+    ) => {
+      if (!teacherId || teacherId === "Unassigned") return null;
+
+      for (const entry of timetableEntries) {
+        if (entry.section === currentSection) continue;
+        if (entry.teacherId !== teacherId) continue;
+        if (entry.day !== day) continue;
+
+        const entrySpan = entry.spanPeriods || 1;
+        const entryStart = entry.period;
+        const entryEnd = entry.period + entrySpan - 1;
+
+        const proposedStart = period;
+        const proposedEnd = period + spanPeriods - 1;
+
+        if (entryStart <= proposedEnd && proposedStart <= entryEnd) {
+          return entry;
+        }
+      }
+      return null;
+    },
+    [timetableEntries],
+  );
 
   const handleSaveSchedule = async () => {
     const schoolId = localStorage.getItem("school_id") || "";
@@ -4046,6 +4311,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                             onEntriesChange={setTimetableEntries}
                             onPeriodDurationChange={handlePeriodDurationChange}
                             timetableRef={timetableRef}
+                            getTeacherConflict={getTeacherConflict}
                           />
                         </div>
                       )}
