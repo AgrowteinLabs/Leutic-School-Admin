@@ -56,18 +56,24 @@ const GET_CURRICULUM_DATA = `
   }
 `;
 
-const CREATE_CURRICULUM_MAPPING = `
-  mutation CreateCurriculumMapping($input: CreateCurriculumMappingDto!) {
-    createCurriculumMapping(createCurriculumMappingInput: $input) {
+const BULK_SAVE_CURRICULUM_MAPPINGS = `
+  mutation BulkSaveCurriculumMappings(
+    $schoolId: String!
+    $academicYearId: String!
+    $grade: String!
+    $section: String!
+    $inputs: [BulkCurriculumMappingInput!]!
+  ) {
+    bulkSaveCurriculumMappings(
+      schoolId: $schoolId
+      academicYearId: $academicYearId
+      grade: $grade
+      section: $section
+      inputs: $inputs
+    ) {
       id
-    }
-  }
-`;
-
-const UPDATE_CURRICULUM_MAPPING = `
-  mutation UpdateCurriculumMapping($id: ID!, $input: UpdateCurriculumMappingDto!) {
-    updateCurriculumMapping(id: $id, updateCurriculumMappingInput: $input) {
-      id
+      classId
+      subjectId
       teacherId
     }
   }
@@ -2228,34 +2234,45 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         return initial && initial.teacherId !== m.teacherId;
       });
 
+      const groups: Record<string, { grade: string; section: string; inputs: any[] }> = {};
+      
+      const modifications = [...toCreate, ...toUpdate];
+      modifications.forEach((m) => {
+        const classObj = backendClasses.find(
+          (c) => c.grade === m.grade && c.section === m.section,
+        );
+        if (!classObj) return;
+        
+        const key = `${m.grade}-${m.section}`;
+        if (!groups[key]) {
+          groups[key] = {
+            grade: m.grade,
+            section: m.section,
+            inputs: []
+          };
+        }
+        
+        groups[key].inputs.push({
+          classId: classObj.id,
+          subjectId: m.subjectId,
+          teacherId: m.teacherId,
+          hoursPerWeek: m.hoursPerWeek || 4,
+          isAdditional: m.isAdditional || false
+        });
+      });
+
+      const savePromises = Object.values(groups).map((g) => {
+        return graphqlRequest(BULK_SAVE_CURRICULUM_MAPPINGS, {
+          schoolId,
+          academicYearId: activeAcademicYear?.id || "",
+          grade: g.grade,
+          section: g.section,
+          inputs: g.inputs
+        });
+      });
+
       await Promise.all([
-        ...toCreate.map((m) => {
-          const classObj = backendClasses.find(
-            (c) => c.grade === m.grade && c.section === m.section,
-          );
-          if (!classObj) return Promise.resolve();
-          return graphqlRequest(CREATE_CURRICULUM_MAPPING, {
-            input: {
-              schoolId,
-              classId: classObj.id,
-              teacherId: m.teacherId,
-              subjectId: m.subjectId,
-              grade: m.grade,
-              section: m.section,
-              hoursPerWeek: m.hoursPerWeek || 4,
-              isAdditional: m.isAdditional || false,
-              academicYearId: activeAcademicYear?.id || "",
-            },
-          });
-        }),
-        ...toUpdate.map((m) => {
-          return graphqlRequest(UPDATE_CURRICULUM_MAPPING, {
-            id: m.id,
-            input: {
-              teacherId: m.teacherId,
-            },
-          });
-        }),
+        ...savePromises,
         ...toDelete.map((m) => {
           return graphqlRequest(REMOVE_CURRICULUM_MAPPING, { id: m.id });
         }),

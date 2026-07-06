@@ -69,18 +69,15 @@ const GET_MARKS = `
   }
 `;
 
-const CREATE_MARK = `
-  mutation CreateMark($input: CreateMarkDto!) {
-    createMark(createMarkInput: $input) {
+const BULK_SAVE_MARKS = `
+  mutation BulkSaveMarks($inputs: [BulkMarkInput!]!) {
+    bulkSaveMarks(inputs: $inputs) {
       id
-    }
-  }
-`;
-
-const UPDATE_MARK = `
-  mutation UpdateMark($id: ID!, $input: UpdateMarkDto!) {
-    updateMark(id: $id, updateMarkInput: $input) {
-      id
+      studentId
+      examId
+      subject
+      marksObtained
+      totalMarks
     }
   }
 `;
@@ -106,15 +103,36 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
   const [studentMarks, setStudentMarks] = useState<any[]>([]);
   const [originalStudentMarks, setOriginalStudentMarks] = useState<any[]>([]);
 
+  const [dbSubjects, setDbSubjects] = useState<any[]>([]);
+  const [dbMappings, setDbMappings] = useState<any[]>([]);
+
   // Load classes and exams on mount
   useEffect(() => {
     const initPage = async () => {
       setIsLoading(true);
       try {
-        const schoolId = localStorage.getItem("school_id");
-        const [classesRes, examsRes] = await Promise.all([
+        const schoolId = localStorage.getItem("school_id") || "";
+        const [classesRes, examsRes, subjectsRes, mappingsRes] = await Promise.all([
           graphqlRequest<any>(GET_CLASSES, { schoolId }),
-          graphqlRequest<any>(GET_EXAMS)
+          graphqlRequest<any>(GET_EXAMS),
+          graphqlRequest<any>(`
+            query GetSubjects($schoolId: String!) {
+              subjects(schoolId: $schoolId) {
+                id
+                name
+              }
+            }
+          `, { schoolId }),
+          graphqlRequest<any>(`
+            query GetMappings {
+              curriculumMappings(page: 1, pageSize: 1000) {
+                items {
+                  classId
+                  subjectId
+                }
+              }
+            }
+          `)
         ]);
 
         const classesList = classesRes.classes?.items || [];
@@ -129,6 +147,9 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
         if (examsList.length > 0) {
           setSelectedExam(examsList[0].name);
         }
+
+        setDbSubjects(subjectsRes?.subjects || []);
+        setDbMappings(mappingsRes?.curriculumMappings?.items || []);
       } catch (err) {
         console.error("Error loading exams and classes:", err);
       } finally {
@@ -158,12 +179,25 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
   }, [exams, selectedExam]);
 
   const activeSubjects = useMemo(() => {
+    if (activeClass?.id && dbMappings.length > 0 && dbSubjects.length > 0) {
+      const mappedSubjectIds = dbMappings
+        .filter((m: any) => m.classId === activeClass.id)
+        .map((m: any) => m.subjectId);
+      
+      const mappedSubjects = dbSubjects
+        .filter((s: any) => mappedSubjectIds.includes(s.id))
+        .map((s: any) => s.name);
+        
+      if (mappedSubjects.length > 0) {
+        return mappedSubjects;
+      }
+    }
     if (activeExam?.dates && activeExam.dates.length > 0) {
       const subs = activeExam.dates.map((d: any) => d.subject);
       return Array.from(new Set(subs)) as string[];
     }
     return subjects;
-  }, [activeExam]);
+  }, [activeClass?.id, dbMappings, dbSubjects, activeExam]);
 
   const subjectOptions = useMemo(() => {
     return ["All Subjects", ...activeSubjects];
@@ -237,46 +271,27 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
     if (!activeExam?.id) return;
     setIsSaving(true);
     try {
-      const mutations = [];
+      const inputs = [];
       for (const student of studentMarks) {
         for (const sub of activeSubjects) {
           const valStr = student.marks[sub];
           const originalValStr = originalStudentMarks.find(s => s.id === student.id)?.marks[sub] || "";
           
           if (valStr !== originalValStr) {
-            const markId = student.markIds[sub];
-            
-            if (markId) {
-              const marksVal = valStr === "" ? 0 : parseFloat(valStr);
-              mutations.push(
-                graphqlRequest(UPDATE_MARK, {
-                  id: markId,
-                  input: {
-                    marks: marksVal,
-                    totalMarks: 100
-                  }
-                })
-              );
-            } else if (valStr !== "") {
-              const marksVal = parseFloat(valStr);
-              mutations.push(
-                graphqlRequest(CREATE_MARK, {
-                  input: {
-                    studentId: student.id,
-                    examId: activeExam.id,
-                    subject: sub,
-                    marks: marksVal,
-                    totalMarks: 100
-                  }
-                })
-              );
-            }
+            const marksVal = valStr === "" ? 0 : parseFloat(valStr);
+            inputs.push({
+              studentId: student.id,
+              examId: activeExam.id,
+              subject: sub,
+              marks: marksVal,
+              totalMarks: 100
+            });
           }
         }
       }
 
-      if (mutations.length > 0) {
-        await Promise.all(mutations);
+      if (inputs.length > 0) {
+        await graphqlRequest(BULK_SAVE_MARKS, { inputs });
       }
       setIsSuccessModalOpen(true);
       fetchRegistry();

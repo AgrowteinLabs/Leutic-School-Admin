@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useApp } from "../../../lib/AppContext";
 import {
   GraduationCap,
   Users,
@@ -99,6 +100,7 @@ export const StudentProfilePage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("Overview");
+  const { schoolProfile } = useApp();
 
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -702,7 +704,7 @@ export const StudentProfilePage = () => {
 
             <div className="flex flex-col items-center md:items-end gap-1.5 opacity-60 transition-all hover:opacity-100 cursor-default group">
               <p className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest leading-none group-hover:text-primary transition-colors">Digital Registry</p>
-              <p className="text-lg sm:text-xl font-bold text-foreground italic tracking-tight underline decoration-primary/30 decoration-4 underline-offset-8">Adarsha Vidya Bhavan</p>
+              <p className="text-lg sm:text-xl font-bold text-foreground italic tracking-tight underline decoration-primary/30 decoration-4 underline-offset-8">{schoolProfile?.name || "Adarsha Vidya Bhavan"}</p>
             </div>
           </div>
 
