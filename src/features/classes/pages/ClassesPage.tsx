@@ -132,7 +132,7 @@ export const ClassesPage = () => {
     `;
     
     const teachersQuery = `
-      query GetTeachers($schoolId: String) {
+      query GetTeachers($schoolId: ID) {
         users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 200 }) {
           items {
             id

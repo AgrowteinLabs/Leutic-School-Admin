@@ -61,26 +61,26 @@ export const DashboardPage = () => {
             const schoolId = localStorage.getItem("school_id") || "";
             if (!schoolId) return;
             const query = `
-                query GetDashboardData($schoolId: String!) {
-                    students: users(filter: { role: "STUDENT", schoolId: $schoolId, page: 1, pageSize: 1 }) {
+                query GetDashboardData($schoolIdForClasses: String!, $schoolIdForUsers: ID!) {
+                    students: users(filter: { role: "STUDENT", schoolId: $schoolIdForUsers, page: 1, pageSize: 1 }) {
                         total
                     }
-                    teachers: users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 1 }) {
+                    teachers: users(filter: { role: "TEACHER", schoolId: $schoolIdForUsers, page: 1, pageSize: 1 }) {
                         total
                     }
-                    classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+                    classes(filter: { schoolId: $schoolIdForClasses }, page: 1, pageSize: 100) {
                         items {
                             id
                             grade
                             section
                         }
                     }
-                    dashboardStatSummary(schoolId: $schoolId) {
+                    dashboardStatSummary(schoolId: $schoolIdForClasses) {
                         todayAttendanceRate
                         pendingActionsCount
                         urgentActionsCount
                     }
-                    classMonitorAlerts(schoolId: $schoolId) {
+                    classMonitorAlerts(schoolId: $schoolIdForClasses) {
                         items {
                             classId
                             grade
@@ -117,7 +117,10 @@ export const DashboardPage = () => {
                         }>;
                     };
                 }
-                const res = await graphqlRequest<DashboardDataResponse>(query, { schoolId });
+                const res = await graphqlRequest<DashboardDataResponse>(query, { 
+                    schoolIdForClasses: schoolId,
+                    schoolIdForUsers: schoolId
+                });
                 setStudentsCount(res.students?.total ?? 0);
                 setTeachersCount(res.teachers?.total ?? 0);
                 setClassesList(res.classes?.items ?? []);
@@ -134,7 +137,7 @@ export const DashboardPage = () => {
         if (!term.trim()) return;
         const schoolId = localStorage.getItem("school_id") || undefined;
         const query = `
-            query SearchDashboardStudent($schoolId: String, $name: String!) {
+            query SearchDashboardStudent($schoolId: ID, $name: String!) {
                 users(filter: { role: "STUDENT", schoolId: $schoolId, name: $name, page: 1, pageSize: 5 }) {
                     items {
                         id

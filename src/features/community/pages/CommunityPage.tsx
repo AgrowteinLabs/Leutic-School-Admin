@@ -51,7 +51,7 @@ const GET_COMMUNITY_POSTS = `
 `;
 
 const GET_SCHOOL_USERS = `
-  query GetSchoolUsers($schoolId: String) {
+  query GetSchoolUsers($schoolId: ID) {
     users(filter: { schoolId: $schoolId, page: 1, pageSize: 500 }) {
       items {
         id

@@ -12,6 +12,12 @@ export const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Forgot Password flow states
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotMessage, setForgotMessage] = useState<string | null>(null);
+  const [isForgotLoading, setIsForgotLoading] = useState(false);
+
   // Determine where to redirect after successful login
   const from = location.state?.from?.pathname || "/";
 
@@ -74,6 +80,37 @@ export const LoginPage = () => {
     }
   };
 
+  const handleRequestReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsForgotLoading(true);
+    setError(null);
+    setForgotMessage(null);
+
+    const requestResetMutation = `
+      mutation RequestPasswordReset($dto: RequestPasswordResetDto!) {
+        requestPasswordReset(requestPasswordResetInput: $dto) {
+          message
+        }
+      }
+    `;
+
+    try {
+      const data = await graphqlRequest<{ requestPasswordReset: { message: string } }>(
+        requestResetMutation,
+        {
+          dto: { email: forgotEmail }
+        }
+      );
+      setForgotMessage(data.requestPasswordReset.message || "Password reset instructions have been sent successfully.");
+    } catch (err: unknown) {
+      console.error("Password reset request failed:", err);
+      const errMsg = err instanceof Error ? err.message : "Failed to send reset instructions. Please try again.";
+      setError(errMsg);
+    } finally {
+      setIsForgotLoading(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center bg-[#F7F8F4] overflow-hidden font-sans">
       {/* Decorative premium gradients / backdrop blobs */}
@@ -97,10 +134,10 @@ export const LoginPage = () => {
               }}
             />
             <h2 className="text-2xl font-bold text-[#152328] tracking-tight">
-              Welcome Back
+              {showForgot ? "Reset Password" : "Welcome Back"}
             </h2>
             <p className="text-xs text-[#B0AFA8] font-bold uppercase tracking-[0.1em] mt-1">
-              Letuic School Management
+              {showForgot ? "Request credentials reset" : "Letuic School Management"}
             </p>
           </div>
 
@@ -112,90 +149,161 @@ export const LoginPage = () => {
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-6">
-            
-            {/* Email Field */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block">
-                Email Address
-              </label>
-              <div className="relative group">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-[#152328] transition-colors">
-                  <Mail size={16} strokeWidth={2.2} />
-                </div>
-                <input
-                  type="email"
-                  required
-                  placeholder="admin@test.com"
-                  className="w-full h-11 bg-white/50 border border-[#F1F1EF] rounded-xl pl-10 pr-4 text-xs font-semibold text-[#152328] placeholder-[#B0AFA8]/60 focus:bg-white focus:border-[#D9EA85] focus:ring-4 focus:ring-[#D9EA85]/10 outline-none transition-all"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                />
+          {/* Forgot Password Success Message */}
+          {forgotMessage && (
+            <div className="mb-6 p-4 rounded-2xl bg-[#EAF2D7] border border-[#D9EA85] text-[#2E7D32] text-xs font-semibold flex flex-col gap-2 animate-in fade-in duration-300">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                <p className="flex-1 font-bold">{forgotMessage}</p>
               </div>
+              <p className="text-[10px] text-slate-500 leading-normal pl-7">
+                Please check your email/SMS inbox for the 6-digit OTP code to verify and reset your account credentials.
+              </p>
             </div>
+          )}
 
-            {/* Password Field */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
+          {showForgot ? (
+            <form onSubmit={handleRequestReset} className="space-y-6">
+              {/* Email Field */}
+              <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block">
-                  Password
+                  Email Address
                 </label>
-                <a
-                  href="#forgot"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert("Please contact SuperAdmin to reset credentials.");
-                  }}
-                  className="text-[10px] font-bold text-[#152328] hover:underline"
-                >
-                  Forgot?
-                </a>
-              </div>
-              <div className="relative group">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-[#152328] transition-colors">
-                  <Lock size={16} strokeWidth={2.2} />
+                <div className="relative group">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-[#152328] transition-colors">
+                    <Mail size={16} strokeWidth={2.2} />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    placeholder="your-email@example.com"
+                    className="w-full h-11 bg-white/50 border border-[#F1F1EF] rounded-xl pl-10 pr-4 text-xs font-semibold text-[#152328] placeholder-[#B0AFA8]/60 focus:bg-white focus:border-[#D9EA85] focus:ring-4 focus:ring-[#D9EA85]/10 outline-none transition-all"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    disabled={isForgotLoading}
+                  />
                 </div>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  placeholder="••••••••"
-                  className="w-full h-11 bg-white/50 border border-[#F1F1EF] rounded-xl pl-10 pr-10 text-xs font-semibold text-[#152328] placeholder-[#B0AFA8]/60 focus:bg-white focus:border-[#D9EA85] focus:ring-4 focus:ring-[#D9EA85]/10 outline-none transition-all"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isForgotLoading}
+                className="w-full h-11 bg-[#152328] hover:bg-[#2a4f62] disabled:bg-[#152328]/80 text-[#D9EA85] disabled:text-[#D9EA85]/60 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#152328]/10 hover:shadow-xl hover:shadow-[#152328]/15 hover:-translate-y-0.5 active:translate-y-0 active:scale-98 transition-all duration-300"
+              >
+                {isForgotLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Requesting OTP...
+                  </>
+                ) : (
+                  <>
+                    Send OTP Reset Code
+                    <ArrowRight size={14} strokeWidth={2.5} />
+                  </>
+                )}
+              </button>
+
+              <div className="text-center pt-2">
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B0AFA8] hover:text-[#152328] transition-colors"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={isLoading}
+                  onClick={() => {
+                    setShowForgot(false);
+                    setError(null);
+                    setForgotMessage(null);
+                  }}
+                  className="text-[11px] font-bold text-[#152328] hover:underline"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  Back to Login
                 </button>
               </div>
-            </div>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin} className="space-y-6">
+              
+              {/* Email Field */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block">
+                  Email Address
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-[#152328] transition-colors">
+                    <Mail size={16} strokeWidth={2.2} />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    placeholder="admin@test.com"
+                    className="w-full h-11 bg-white/50 border border-[#F1F1EF] rounded-xl pl-10 pr-4 text-xs font-semibold text-[#152328] placeholder-[#B0AFA8]/60 focus:bg-white focus:border-[#D9EA85] focus:ring-4 focus:ring-[#D9EA85]/10 outline-none transition-all"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-11 bg-[#152328] hover:bg-[#2a4f62] disabled:bg-[#152328]/80 text-[#D9EA85] disabled:text-[#D9EA85]/60 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#152328]/10 hover:shadow-xl hover:shadow-[#152328]/15 hover:-translate-y-0.5 active:translate-y-0 active:scale-98 transition-all duration-300"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Logging in...
-                </>
-              ) : (
-                <>
-                  Authenticate
-                  <ArrowRight size={14} strokeWidth={2.5} />
-                </>
-              )}
-            </button>
-          </form>
+              {/* Password Field */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgot(true);
+                      setError(null);
+                      setForgotMessage(null);
+                    }}
+                    className="text-[10px] font-bold text-[#152328] hover:underline"
+                  >
+                    Forgot?
+                  </button>
+                </div>
+                <div className="relative group">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-[#152328] transition-colors">
+                    <Lock size={16} strokeWidth={2.2} />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="••••••••"
+                    className="w-full h-11 bg-white/50 border border-[#F1F1EF] rounded-xl pl-10 pr-10 text-xs font-semibold text-[#152328] placeholder-[#B0AFA8]/60 focus:bg-white focus:border-[#D9EA85] focus:ring-4 focus:ring-[#D9EA85]/10 outline-none transition-all"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B0AFA8] hover:text-[#152328] transition-colors"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-11 bg-[#152328] hover:bg-[#2a4f62] disabled:bg-[#152328]/80 text-[#D9EA85] disabled:text-[#D9EA85]/60 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#152328]/10 hover:shadow-xl hover:shadow-[#152328]/15 hover:-translate-y-0.5 active:translate-y-0 active:scale-98 transition-all duration-300"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  <>
+                    Authenticate
+                    <ArrowRight size={14} strokeWidth={2.5} />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
           {/* Footer details */}
           <div className="mt-8 text-center">

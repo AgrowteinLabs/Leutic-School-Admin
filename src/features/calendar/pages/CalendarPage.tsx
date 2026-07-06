@@ -80,7 +80,7 @@ export const CalendarPage = () => {
     try {
       // 1. Get Teachers
       const teachersRes = await graphqlRequest<any>(`
-        query GetTeachers($schoolId: String) {
+        query GetTeachers($schoolId: ID) {
           users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 500 }) {
             items {
               id

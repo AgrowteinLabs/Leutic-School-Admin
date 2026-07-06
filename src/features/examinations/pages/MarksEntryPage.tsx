@@ -42,7 +42,7 @@ const GET_CLASSES = `
 `;
 
 const GET_STUDENTS = `
-  query GetClassStudents($classId: String, $schoolId: String) {
+  query GetClassStudents($classId: String, $schoolId: ID) {
     users(filter: { role: "STUDENT", classId: $classId, schoolId: $schoolId, page: 1, pageSize: 200 }) {
       items {
         id

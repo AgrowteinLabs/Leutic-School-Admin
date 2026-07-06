@@ -71,7 +71,7 @@ export const CreateClassPage = () => {
             const schoolId = localStorage.getItem("school_id") || "";
             
             const teachersQuery = `
-                query GetTeachers($schoolId: String) {
+                query GetTeachers($schoolId: ID) {
                   users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 200 }) {
                     items {
                       id
@@ -82,7 +82,7 @@ export const CreateClassPage = () => {
             `;
             
             const studentsQuery = `
-                query GetStudents($schoolId: String) {
+                query GetStudents($schoolId: ID) {
                   users(filter: { role: "STUDENT", schoolId: $schoolId, page: 1, pageSize: 2000 }) {
                     items {
                       id

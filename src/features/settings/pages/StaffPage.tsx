@@ -205,7 +205,7 @@ export const StaffPage = ({
     const schoolId = localStorage.getItem("school_id") || "";
 
     const query = `
-      query GetTeachers($schoolId: String, $search: String, $department: String, $staffStatus: String) {
+      query GetTeachers($schoolId: ID, $search: String, $department: String, $staffStatus: String) {
         users(filter: {
           schoolId: $schoolId
           directoryTab: "STAFF"

@@ -24,15 +24,15 @@ import { useApp } from "../../../lib/AppContext";
 
 // GraphQL Definitions
 const GET_CURRICULUM_DATA = `
-  query GetCurriculumData($schoolId: String) {
-    classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
+  query GetCurriculumData($schoolIdForClasses: String, $schoolIdForUsers: ID) {
+    classes(filter: { schoolId: $schoolIdForClasses }, page: 1, pageSize: 100) {
       items {
         id
         grade
         section
       }
     }
-    users(filter: { role: "TEACHER", schoolId: $schoolId, page: 1, pageSize: 200 }) {
+    users(filter: { role: "TEACHER", schoolId: $schoolIdForUsers, page: 1, pageSize: 200 }) {
       items {
         id
         name
@@ -1741,7 +1741,10 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 isAdditional?: boolean;
               }>;
             };
-          }>(GET_CURRICULUM_DATA, { schoolId }),
+          }>(GET_CURRICULUM_DATA, { 
+            schoolIdForClasses: schoolId,
+            schoolIdForUsers: schoolId 
+          }),
           graphqlRequest<{
             timetableConfig: {
               schoolStart: string;

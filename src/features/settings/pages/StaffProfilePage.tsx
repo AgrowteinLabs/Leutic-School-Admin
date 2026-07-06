@@ -51,12 +51,12 @@ interface GraphQLUser {
   performance?: number;
   auraScore?: number;
   feedbackScore?: number;
-  scheduleSlots?: Array<{
+  timetableSlots?: Array<{
     id: string;
-    dayOfWeek: string;
-    slotIndex: number;
-    classLabel: string;
-    startTime: string;
+    classId: string;
+    day: string;
+    period: number;
+    subjectName: string;
   }>;
   achievements?: Array<{
     id: string;
@@ -105,12 +105,12 @@ export const StaffProfilePage = () => {
             performance
             auraScore
             feedbackScore
-            scheduleSlots {
+            timetableSlots {
               id
-              dayOfWeek
-              slotIndex
-              classLabel
-              startTime
+              classId
+              day
+              period
+              subjectName
             }
             achievements {
               id
@@ -175,6 +175,18 @@ export const StaffProfilePage = () => {
           .filter(c => assignedClassIds.includes(c.id))
           .map(c => `${c.grade}-${c.section}`);
 
+        const classMap = new Map(classes.map(c => [c.id, `${c.grade}-${c.section}`]));
+        const scheduleSlots = (user.timetableSlots || []).map((slot: any) => {
+          const classLabel = classMap.get(slot.classId) || "Class Section";
+          return {
+            id: slot.id,
+            dayOfWeek: slot.day,
+            slotIndex: slot.period,
+            classLabel: `${classLabel} (${slot.subjectName})`,
+            startTime: `Period ${slot.period}`,
+          };
+        });
+
         const formattedDate = new Date(user.createdAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
         const pCode = user.name.codePointAt(0) || 0;
 
@@ -193,7 +205,7 @@ export const StaffProfilePage = () => {
           address: cleanAddress || "Not Provided",
           joinDate: formattedDate,
           assignedClasses: assignedClassNames,
-          scheduleSlots: user.scheduleSlots || [],
+          scheduleSlots: scheduleSlots,
           achievements: user.achievements || [],
           facultyInsights: user.facultyInsights || []
         });
@@ -337,9 +349,9 @@ export const StaffProfilePage = () => {
                         <span className="text-[9px] font-black text-muted-gray uppercase tracking-[0.2em]">{day}</span>
                       </div>
                       <div className="space-y-2">
-                        {[1, 2].map(slot => {
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map(slot => {
                           const slotData = staffDetails.scheduleSlots.find(
-                            s => s.dayOfWeek.toLowerCase() === day.toLowerCase() && s.slotIndex === slot
+                            s => s.dayOfWeek.toLowerCase().startsWith(day.toLowerCase()) && s.slotIndex === slot
                           );
                           return (
                             <div key={slot} className={cn(

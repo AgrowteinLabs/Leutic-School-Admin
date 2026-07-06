@@ -18,6 +18,7 @@ export const AddStaffPage = () => {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(1);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
 
   // Step 1 State
   const [fullName, setFullName] = useState("");
@@ -141,15 +142,13 @@ export const AddStaffPage = () => {
                 isActive
                 createdAt
                 updatedAt
+                tempPassword
               }
             }
         `;
 
     try {
-      const finalPassword =
-        password ||
-        "Faculty" + Math.random().toString(36).substring(2, 8) + Math.floor(Math.random() * 10) + "!";
-      await graphqlRequest<{ createUser: { id: string } }>(
+      const response = await graphqlRequest<{ createUser: { id: string; tempPassword?: string } }>(
         createUserMutation,
         {
           input: {
@@ -160,7 +159,7 @@ export const AddStaffPage = () => {
               personalEmail ||
               `${fullName.toLowerCase().replace(/\s+/g, ".")}@letuic.edu`,
             mobileNo: mobile,
-            password: finalPassword,
+            password: password || undefined,
             schoolId,
             classIds: mappedClassIds,
             address: serializedAddress,
@@ -179,7 +178,11 @@ export const AddStaffPage = () => {
         },
       );
 
-      // Class updates are no longer needed
+      if (response.createUser.tempPassword) {
+        setTempPassword(response.createUser.tempPassword);
+      } else {
+        setTempPassword(null);
+      }
       setShowSuccess(true);
     } catch (err: any) {
       console.error("Failed to onboard staff member:", err);
@@ -658,7 +661,11 @@ export const AddStaffPage = () => {
       <PDSSuccessModal
         show={showSuccess}
         title="Staff Onboarded!"
-        description="The new staff member has been registered and credentials have been generated."
+        description={
+          tempPassword
+            ? `The new staff member has been registered.\n\nTemporary Password:\n${tempPassword}`
+            : "The new staff member has been registered and credentials have been generated."
+        }
         buttonText="Go to Directory"
         onClose={() => navigate("/directory/staff")}
       />
