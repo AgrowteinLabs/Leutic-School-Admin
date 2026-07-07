@@ -54,6 +54,7 @@ interface StudentProfile {
   phone: string;
   status: string;
   img: string;
+  profileImageUrl?: string;
   parents: Array<{ role: string; name: string; ph: string; occupation: string }>;
   participationIntelligence: {
     attendanceConsistency: number;
@@ -94,6 +95,33 @@ interface StudentProfile {
     dateString: string;
     summaryText: string;
   }>;
+  quizSummary?: {
+    attemptedCount: number;
+    totalCount: number;
+    percentage: number;
+  };
+  assignmentSummary?: {
+    submittedCount: number;
+    totalCount: number;
+    percentage: number;
+  };
+  recentActivities: Array<{
+    id: string;
+    type: string;
+    title: string;
+    questionsCount?: number;
+    points?: number;
+    durationMinutes?: number;
+    submittedOn: string;
+    status: string;
+  }>;
+  examinations: Array<{
+    id: string;
+    title: string;
+    subjectCount: number;
+    updatedAt: string;
+    status: string;
+  }>;
 }
 
 export const StudentProfilePage = () => {
@@ -105,6 +133,54 @@ export const StudentProfilePage = () => {
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size exceeds the 5MB limit.");
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const token = localStorage.getItem("jwt_token");
+      const identityUrl = import.meta.env.VITE_IDENTITY_SERVICE_URL || "";
+      const uploadUrl = identityUrl 
+        ? `${identityUrl}/users/${id}/profile-image` 
+        : `/users/${id}/profile-image`;
+
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed with status ${response.status}`);
+      }
+
+      const resJson = await response.json();
+      if (resJson.success) {
+        setRefreshTrigger(prev => prev + 1);
+      } else {
+        alert("Failed to upload image. Please try again.");
+      }
+    } catch (err) {
+      console.error("Profile image upload error:", err);
+      alert("An error occurred while uploading the image.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -123,6 +199,7 @@ export const StudentProfilePage = () => {
               classId
               bloodGroup
               studentStatus
+              profileImageUrl
               guardians {
                 id
                 relationship
@@ -183,6 +260,33 @@ export const StudentProfilePage = () => {
             studentAttendanceSummary(studentId: $studentIdStr) {
               percentage
             }
+            studentQuizSummary(studentId: $studentIdStr) {
+              attemptedCount
+              totalCount
+              percentage
+            }
+            studentAssignmentSummary(studentId: $studentIdStr) {
+              submittedCount
+              totalCount
+              percentage
+            }
+            studentRecentActivities(studentId: $studentIdStr, limit: 5) {
+              id
+              type
+              title
+              questionsCount
+              points
+              durationMinutes
+              submittedOn
+              status
+            }
+            studentExaminations(studentId: $studentIdStr) {
+              id
+              title
+              subjectCount
+              updatedAt
+              status
+            }
           }
         `;
 
@@ -209,6 +313,10 @@ export const StudentProfilePage = () => {
         const classDetail = classRes?.class;
         const attendanceDetail = res?.studentAttendanceSummary;
         const progressDetail = res?.studentProgress;
+        const quizSummary = res?.studentQuizSummary;
+        const assignmentSummary = res?.studentAssignmentSummary;
+        const recentActivities = res?.studentRecentActivities || [];
+        const examinations = res?.studentExaminations || [];
 
         const parentsWithNames = (profileObj.guardians || []).map((g: any, idx: number) => ({
           role: g.relationship || (idx === 0 ? "Father" : idx === 1 ? "Mother" : "Guardian"),
@@ -232,6 +340,7 @@ export const StudentProfilePage = () => {
           phone: parentsWithNames[0]?.ph || "+91 99999-99999",
           status: profileObj.studentStatus || "Active",
           img: "/Avatar/Male Avatar Age16.png",
+          profileImageUrl: profileObj.profileImageUrl,
           parents: parentsWithNames.length > 0 ? parentsWithNames : [
             { role: "Guardian", name: "Guardian of " + profileObj.name, ph: "+91 99999-99999", occupation: "Not Specified" }
           ],
@@ -246,7 +355,11 @@ export const StudentProfilePage = () => {
           subjectMasteries: profileObj.academicHistory?.subjectMasteries || [],
           behavioralRecords: profileObj.behavioralRecords || [],
           behavioralAuditLog: profileObj.behavioralAuditLog || null,
-          parentMeetings: profileObj.parentMeetings || []
+          parentMeetings: profileObj.parentMeetings || [],
+          quizSummary: quizSummary || { attemptedCount: 0, totalCount: 0, percentage: 0 },
+          assignmentSummary: assignmentSummary || { submittedCount: 0, totalCount: 0, percentage: 0 },
+          recentActivities: recentActivities,
+          examinations: examinations
         });
 
       } catch (err: unknown) {
@@ -259,7 +372,7 @@ export const StudentProfilePage = () => {
     };
 
     fetchProfile();
-  }, [id]);
+  }, [id, refreshTrigger]);
 
   const renderTabContent = () => {
     if (!student) return null;
@@ -322,6 +435,38 @@ export const StudentProfilePage = () => {
             </div>
 
             <div className={cn("md:col-span-4", colSpacing)}>
+                {/* Term Examinations Card */}
+                <div className={cn("bg-white rounded-2xl border border-slate-100 shadow-sm", cardPadding)}>
+                    <h3 className="text-foreground font-semibold text-base mb-6 flex items-center gap-2">
+                        <ArrowUpRight size={18} className="text-primary animate-pulse" />
+                        Term Examinations
+                    </h3>
+                    <div className="space-y-4">
+                        {student.examinations && student.examinations.length > 0 ? (
+                          student.examinations.map((exam, i) => (
+                            <div key={exam.id || i} className="p-4 bg-[#F7F8F4] border border-slate-100 rounded-xl flex items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-[13px] font-bold text-foreground leading-none">{exam.title}</p>
+                                    <p className="text-[10px] text-[#B0AFA8] font-medium leading-none mt-1">
+                                        {exam.subjectCount} Subjects • Updated {new Date(exam.updatedAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}
+                                    </p>
+                                </div>
+                                <span className={cn(
+                                    "px-2.5 py-1 rounded-full text-[9px] font-bold border uppercase tracking-wider",
+                                    exam.status?.toLowerCase() === "published" || exam.status?.toLowerCase() === "completed" 
+                                        ? "bg-[#EAF2D7] text-[#2E7D32] border-[#D9EA85]" 
+                                        : "bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]"
+                                )}>
+                                    {exam.status}
+                                </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-4 text-[12px] text-[#B0AFA8] italic">No term examinations recorded.</div>
+                        )}
+                    </div>
+                </div>
+
                 <div className={cn("bg-white rounded-2xl border border-slate-100 shadow-sm text-center md:text-left", cardPadding)}>
                     <h3 className="text-foreground font-semibold text-base mb-4">Verification</h3>
                     <p className="text-[12px] text-[#B0AFA8] font-medium leading-relaxed mb-6">Institutional transcript is digitally verified for current semester status.</p>
@@ -447,10 +592,10 @@ export const StudentProfilePage = () => {
             {/* Left Main Content */}
             <div className={cn("md:col-span-8", colSpacing)}>
                 {/* Master Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                     <div className="bg-white border border-primary/20 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow text-center sm:text-left">
                         <div className="flex justify-between items-start mb-4">
-                            <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest">Aura Score</p>
+                            <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest leading-none">Aura Score</p>
                             <Trophy size={16} className="text-primary hidden sm:block" />
                         </div>
                         <div className="flex items-baseline justify-center sm:justify-start gap-2">
@@ -461,23 +606,55 @@ export const StudentProfilePage = () => {
                             <div className="h-full bg-primary" style={{ width: `${student.auraScore}%` }} />
                         </div>
                     </div>
-                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left">
-                        <div className="flex justify-between items-start mb-4">
-                            <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest">Attendance</p>
-                            <Calendar size={16} className="text-[#B0AFA8] hidden sm:block" />
+                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between items-start mb-4">
+                                <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest leading-none">Attendance</p>
+                                <Calendar size={16} className="text-[#B0AFA8] hidden sm:block" />
+                            </div>
+                            <span className="text-3xl font-bold text-foreground tracking-tight">{student.attendanceRate}%</span>
                         </div>
-                        <span className="text-3xl font-bold text-foreground tracking-tight">{student.attendanceRate}%</span>
                         <p className="text-[10px] text-[#2E7D32] font-bold mt-2 uppercase tracking-widest leading-none">Consistent High</p>
                     </div>
-                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left">
-                  <div className="flex justify-between items-start mb-4">
-                    <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest">GPA Index</p>
-                    <GraduationCap size={16} className="text-[#B0AFA8] hidden sm:block" />
-                  </div>
-                  <span className="text-3xl font-bold text-foreground tracking-tight">{student.gpa}</span>
-                  <p className="text-[10px] text-[#B0AFA8] font-bold mt-2 uppercase tracking-widest italic">Rank: 08/120</p>
+                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between items-start mb-4">
+                                <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest leading-none">GPA Index</p>
+                                <GraduationCap size={16} className="text-[#B0AFA8] hidden sm:block" />
+                            </div>
+                            <span className="text-3xl font-bold text-foreground tracking-tight">{student.gpa}</span>
+                        </div>
+                        <p className="text-[10px] text-[#B0AFA8] font-bold mt-2 uppercase tracking-widest italic leading-none">Rank: 08/120</p>
+                    </div>
+                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between items-start mb-4">
+                                <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest leading-none">Quizzes</p>
+                                <Trophy size={16} className="text-indigo-500 hidden sm:block" />
+                            </div>
+                            <span className="text-3xl font-bold text-foreground tracking-tight">
+                                {student.quizSummary ? `${student.quizSummary.percentage}%` : "0%"}
+                            </span>
+                        </div>
+                        <p className="text-[10px] text-[#B0AFA8] font-bold mt-2 uppercase tracking-widest italic leading-none">
+                            {student.quizSummary ? `${student.quizSummary.attemptedCount}/${student.quizSummary.totalCount} Attempted` : "0 Attempted"}
+                        </p>
+                    </div>
+                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left flex flex-col justify-between">
+                        <div>
+                            <div className="flex justify-between items-start mb-4">
+                                <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest leading-none">Assignments</p>
+                                <Calendar size={16} className="text-emerald-500 hidden sm:block" />
+                            </div>
+                            <span className="text-3xl font-bold text-foreground tracking-tight">
+                                {student.assignmentSummary ? `${student.assignmentSummary.percentage}%` : "0%"}
+                            </span>
+                        </div>
+                        <p className="text-[10px] text-[#B0AFA8] font-bold mt-2 uppercase tracking-widest italic leading-none">
+                            {student.assignmentSummary ? `${student.assignmentSummary.submittedCount}/${student.assignmentSummary.totalCount} Submitted` : "0 Submitted"}
+                        </p>
+                    </div>
                 </div>
-              </div>
 
               {/* Participation Intelligence Breakdown */}
               <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm space-y-8">
@@ -550,6 +727,53 @@ export const StudentProfilePage = () => {
                           ))
                         ) : (
                           <div className="text-center py-8 text-[13px] text-[#B0AFA8] italic">No highlights recorded yet.</div>
+                        )}
+                </div>
+            </div>
+
+                {/* Recent Activities Log */}
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mt-8">
+                    <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-[#F7F8F4]/50">
+                        <h3 className="text-foreground font-semibold text-base flex items-center gap-2">
+                             <Activity size={18} className="text-primary" />
+                             Recent Academic Activities
+                        </h3>
+                    </div>
+                    <div className="divide-y divide-slate-50 pb-2">
+                        {student.recentActivities && student.recentActivities.length > 0 ? (
+                          student.recentActivities.map((act, i) => (
+                            <div key={act.id || i} className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-6 hover:bg-[#F7F8F4] transition-all group">
+                                <div className={cn(
+                                    "size-10 rounded-xl flex items-center justify-center shrink-0",
+                                    act.type?.toLowerCase() === "quiz" ? "bg-indigo-50 text-indigo-600" : "bg-emerald-50 text-emerald-600"
+                                )}>
+                                    <span className="material-symbols-outlined text-xl">
+                                        {act.type?.toLowerCase() === "quiz" ? "quiz" : "assignment"}
+                                    </span>
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-[14px] font-bold text-foreground leading-none mb-1.5">{act.title}</h4>
+                                    <p className="text-[11px] text-[#B0AFA8] font-medium leading-none">
+                                        {act.questionsCount ? `${act.questionsCount} Questions • ` : ""}
+                                        {act.points ? `${act.points} Points • ` : ""}
+                                        {act.durationMinutes ? `${act.durationMinutes} mins • ` : ""}
+                                        {new Date(act.submittedOn).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                                    </p>
+                                </div>
+                                <div className="flex items-center justify-between sm:justify-end gap-5">
+                                    <span className={cn(
+                                        "px-3 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap uppercase tracking-wider",
+                                        act.status === "COMPLETED" || act.status === "SUBMITTED" 
+                                            ? "bg-[#EAF2D7] text-[#2E7D32] border-[#D9EA85]" 
+                                            : "bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]"
+                                    )}>
+                                        {act.status}
+                                    </span>
+                                </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-[13px] text-[#B0AFA8] italic">No recent activities found.</div>
                         )}
                     </div>
                 </div>
@@ -661,11 +885,25 @@ export const StudentProfilePage = () => {
           {/* Profile Identity Card */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-10 border-b border-slate-200 pb-12 pt-6 px-6 lg:px-10">
             <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="relative group">
+              <div className="relative group cursor-pointer">
                   <div
                       className="size-24 sm:size-28 rounded-[32px] bg-cover bg-center border-4 border-white shadow-2xl grayscale hover:grayscale-0 transition-all duration-1000 transform group-hover:rotate-1 group-hover:scale-105"
-                      style={{ backgroundImage: `url("${student.img}")` }}
+                      style={{ backgroundImage: `url("${student.profileImageUrl || student.img}")` }}
                   />
+                  <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-[32px] border-4 border-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
+                      <span className="material-symbols-outlined text-white text-2xl">photo_camera</span>
+                      <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageUpload}
+                      />
+                  </label>
+                  {isUploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-[32px] border-4 border-white z-20">
+                          <span className="material-symbols-outlined text-white text-2xl animate-spin">sync</span>
+                      </div>
+                  )}
                   <div className={cn(
                       "absolute -bottom-1 -right-1 size-5 rounded-full border-4 border-[#F9FAFB]",
                       student.status === "Active" ? "bg-[#EAF2D7]0" : "bg-[#FEF3C7]0"

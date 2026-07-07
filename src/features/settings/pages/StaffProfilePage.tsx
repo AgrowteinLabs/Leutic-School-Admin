@@ -57,6 +57,8 @@ interface GraphQLUser {
     day: string;
     period: number;
     subjectName: string;
+    startTime?: string;
+    endTime?: string;
   }>;
   achievements?: Array<{
     id: string;
@@ -111,6 +113,8 @@ export const StaffProfilePage = () => {
               day
               period
               subjectName
+              startTime
+              endTime
             }
             achievements {
               id
@@ -123,43 +127,37 @@ export const StaffProfilePage = () => {
       `;
 
       const classesQuery = `
-        query GetClasses($schoolId: String) {
-          classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 500) {
+        query GetClassesForStaff($schoolId: String!) {
+          classes(filter: { schoolId: $schoolId }, page: 1, pageSize: 100) {
             items {
               id
               grade
               section
-              displayLabel
             }
           }
         }
       `;
 
       try {
-        const results = await Promise.allSettled([
+        const [userRes, classesRes] = await Promise.all([
           graphqlRequest<{ user: GraphQLUser }>(userQuery, { id }),
-          graphqlRequest<{ classes: { items: ClassItem[] } }>(classesQuery, { schoolId: schoolId || undefined })
+          graphqlRequest<{ classes: { items: ClassItem[] } }>(classesQuery, { schoolId })
         ]);
 
-        let user: GraphQLUser | null = null;
-        let classes: ClassItem[] = [];
+        const user = userRes.user;
+        const classes = classesRes.classes.items;
 
-        if (results[0].status === "fulfilled") {
-          user = results[0].value.user;
-          if (!user) throw new Error("Staff member not found");
-        } else {
-          throw new Error("Failed to load staff details");
+        if (!user) {
+          setError("User not found");
+          setIsLoading(false);
+          return;
         }
 
-        if (results[1].status === "fulfilled") {
-          classes = results[1].value.classes?.items || [];
-        }
+        let cleanAddress = "";
+        let department = "";
 
-        const addressVal = user.address || "";
-        let department = "Mathematics";
-        let cleanAddress = addressVal;
-        if (addressVal.includes("Dept:")) {
-          const parts = addressVal.split(" | ");
+        if (user.address) {
+          const parts = user.address.split("|");
           const deptPart = parts.find((p) => p.startsWith("Dept:"));
           if (deptPart) {
             department = deptPart.replace("Dept:", "").trim();
@@ -183,7 +181,7 @@ export const StaffProfilePage = () => {
             dayOfWeek: slot.day,
             slotIndex: slot.period,
             classLabel: `${classLabel} (${slot.subjectName})`,
-            startTime: `Period ${slot.period}`,
+            startTime: slot.startTime && slot.endTime ? `${slot.startTime} - ${slot.endTime}` : `Period ${slot.period}`,
           };
         });
 

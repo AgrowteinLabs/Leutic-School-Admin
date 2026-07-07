@@ -314,22 +314,7 @@ export const DashboardPage = () => {
                 console.error(e);
             }
         }
-
-        // Fallback profile
-        setSelectedStudent({
-            name: "Manoj P.",
-            id: "OA-2024-112",
-            grade: gradeCode,
-            section: "C",
-            participation: 62,
-            auraScore: 68.2,
-            attendanceRate: 72,
-            gpa: 2.8,
-            status: "At Risk",
-            img: "/Avatar/Male Avatar Age16.png",
-            phone: "+91 91234-56789"
-        });
-        setIsDrawerOpen(true);
+        alert(`No student records are currently registered under class section "${gradeCode}".`);
     };
 
     return (
