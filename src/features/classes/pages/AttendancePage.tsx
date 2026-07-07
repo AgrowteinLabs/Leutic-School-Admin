@@ -524,6 +524,133 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const attendanceTakenBy = batchStatus ? (batchStatus.takenByRole === "SCHOOL_ADMIN" ? "School Admin" : "Class Teacher") : "";
   const isEditingDisabled = isLoading || (activeTab === "students" && batchStatus?.canOverride === false);
 
+  const handleExportCSV = () => {
+    const dataToExport = activeTab === 'students' ? students : staff;
+    if (dataToExport.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
+    let csvContent = "";
+    if (activeTab === 'students') {
+      csvContent += "Roll No,ID,Name,Status,Remarks\n";
+      students.forEach((s: StudentItem) => {
+        const rollNo = s.rollNo || "";
+        const id = s.id || "";
+        const name = `"${s.name.replace(/"/g, '""')}"`;
+        const status = s.status || "Unmarked";
+        const remarks = `"${(s.remarks || "").replace(/"/g, '""')}"`;
+        csvContent += `${rollNo},${id},${name},${status},${remarks}\n`;
+      });
+    } else {
+      csvContent += "ID,Name,Role,Status,Remarks,Substitution,Reason\n";
+      staff.forEach((s: StaffItem) => {
+        const id = s.id || "";
+        const name = `"${s.name.replace(/"/g, '""')}"`;
+        const role = `"${(s.role || "").replace(/"/g, '""')}"`;
+        const status = s.status || "Unmarked";
+        const remarks = `"${(s.remarks || "").replace(/"/g, '""')}"`;
+        const sub = `"${(s.substitution || "").replace(/"/g, '""')}"`;
+        const reason = `"${(s.reason || "").replace(/"/g, '""')}"`;
+        csvContent += `${id},${name},${role},${status},${remarks},${sub},${reason}\n`;
+      });
+    }
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    const filename = `${activeTab === 'students' ? 'Student' : 'Staff'}_Attendance_${new Date(attendanceDate).toISOString().split('T')[0]}.csv`;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    const title = `${activeTab === 'students' ? 'Student' : 'Staff'} Attendance Report`;
+    const dateStr = new Date(attendanceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const classDetail = activeTab === 'students' && selectedClass ? `Class: ${selectedClass}` : '';
+
+    let tableRows = "";
+    if (activeTab === 'students') {
+      tableRows = students.map((s: StudentItem) => `
+        <tr>
+          <td>${s.rollNo || '-'}</td>
+          <td>${s.id}</td>
+          <td>${s.name}</td>
+          <td class="status-${(s.status || 'unmarked').toLowerCase()}">${s.status || 'Unmarked'}</td>
+          <td>${s.remarks || '-'}</td>
+        </tr>
+      `).join('');
+    } else {
+      tableRows = staff.map((s: StaffItem) => `
+        <tr>
+          <td>${s.id}</td>
+          <td>${s.name}</td>
+          <td>${s.role || '-'}</td>
+          <td class="status-${(s.status || 'unmarked').toLowerCase()}">${s.status || 'Unmarked'}</td>
+          <td>${s.substitution ? `${s.substitution} (${s.reason || ''})` : 'Full Coverage'}</td>
+        </tr>
+      `).join('');
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow pop-ups to download the PDF report.");
+      return;
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: 'Inter', system-ui, sans-serif; color: #1e293b; padding: 40px; }
+            h1 { margin-bottom: 5px; font-size: 24px; color: #0f172a; }
+            .meta { font-size: 13px; color: #64748b; margin-bottom: 30px; font-weight: 500; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th { background: #f8fafc; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; padding: 12px 16px; border-bottom: 2px solid #e2e8f0; text-align: left; letter-spacing: 0.05em; }
+            td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; font-weight: 500; }
+            tr:hover { background: #f8fafc; }
+            .status-present { color: #16a34a; font-weight: 700; }
+            .status-absent { color: #dc2626; font-weight: 700; }
+            .status-late { color: #4f46e5; font-weight: 700; }
+            .status-leave { color: #ea580c; font-weight: 700; }
+            @media print {
+              body { padding: 0; }
+              @page { size: A4; margin: 20mm; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <div class="meta">${dateStr} &nbsp;•&nbsp; ${classDetail}</div>
+          <table>
+            <thead>
+              <tr>
+                ${activeTab === 'students' 
+                  ? '<th>Roll No</th><th>Student ID</th><th>Name</th><th>Status</th><th>Notes</th>'
+                  : '<th>Staff ID</th><th>Name</th><th>Role</th><th>Status</th><th>Substitution</th>'
+                }
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
     <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#FDFCFB] relative", !isHubChild && "h-screen")}>
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#444 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }} />
@@ -670,11 +797,11 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                     {/* Hover Content */}
                     <div className="absolute top-[calc(100%+8px)] right-0 w-[180px] bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/40 opacity-0 invisible translate-y-2 group-hover/export-menu:opacity-100 group-hover/export-menu:visible group-hover/export-menu:translate-y-0 transition-all duration-200 z-[100] overflow-hidden p-1.5">
-                      <button className="w-full px-4 py-2.5 text-[11px] font-bold text-secondary hover:bg-[#F7F8F4] rounded-xl flex items-center gap-2 transition-colors whitespace-nowrap">
+                      <button onClick={handleExportCSV} className="w-full px-4 py-2.5 text-[11px] font-bold text-secondary hover:bg-[#F7F8F4] rounded-xl flex items-center gap-2 transition-colors whitespace-nowrap">
                         <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">description</span>
                         Download as CSV
                       </button>
-                      <button className="w-full px-4 py-2.5 text-[11px] font-bold text-secondary hover:bg-[#F7F8F4] rounded-xl flex items-center gap-2 transition-colors whitespace-nowrap">
+                      <button onClick={handleExportPDF} className="w-full px-4 py-2.5 text-[11px] font-bold text-secondary hover:bg-[#F7F8F4] rounded-xl flex items-center gap-2 transition-colors whitespace-nowrap">
                         <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">picture_as_pdf</span>
                         Download as PDF
                       </button>
