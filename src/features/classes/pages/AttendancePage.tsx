@@ -522,6 +522,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
   const isAttendanceAlreadyTaken = !!batchStatus && batchStatus.recordCount > 0;
   const attendanceTakenBy = batchStatus ? (batchStatus.takenByRole === "SCHOOL_ADMIN" ? "School Admin" : "Class Teacher") : "";
+  const isEditingDisabled = isLoading || (activeTab === "students" && batchStatus?.canOverride === false);
 
   return (
     <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#FDFCFB] relative", !isHubChild && "h-screen")}>
@@ -682,10 +683,10 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                   <button
                     onClick={handleSubmit}
-                    disabled={isLoading || (activeTab === "students" && batchStatus?.canOverride === false)}
+                    disabled={isEditingDisabled}
                     className={cn(
                       "btn-primary h-10 px-6 rounded-xl flex items-center gap-2 group/save shadow-sm shadow-slate-100/30 transition-all active:scale-95 whitespace-nowrap",
-                      (isLoading || (activeTab === "students" && batchStatus?.canOverride === false)) && "opacity-50 pointer-events-none"
+                      isEditingDisabled && "opacity-50 pointer-events-none"
                     )}
                   >
                     <span className={cn("material-symbols-outlined text-[18px] transition-transform", isLoading ? "animate-spin" : "group-hover/save:rotate-12")}>
@@ -766,18 +767,22 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               />
                               <button
                                 onClick={() => markAllStudents("Present")}
+                                disabled={isEditingDisabled}
                                 className={cn(
                                   "flex-1 z-10 text-[10px] font-black transition-all flex items-center justify-center gap-1 tracking-normal",
-                                  allFilteredArePresent ? "text-white" : "text-[#B0AFA8] hover:text-emerald-600"
+                                  allFilteredArePresent ? "text-white" : "text-[#B0AFA8] hover:text-emerald-600",
+                                  isEditingDisabled && "opacity-40 cursor-not-allowed pointer-events-none"
                                 )}
                               >
                                 All Present
                               </button>
                               <button
                                 onClick={() => markAllStudents("Absent")}
+                                disabled={isEditingDisabled}
                                 className={cn(
                                   "flex-1 z-10 text-[10px] font-black transition-all flex items-center justify-center gap-1 tracking-normal",
-                                  allFilteredAreAbsent ? "text-white" : "text-[#B0AFA8] hover:text-rose-600"
+                                  allFilteredAreAbsent ? "text-white" : "text-[#B0AFA8] hover:text-rose-600",
+                                  isEditingDisabled && "opacity-40 cursor-not-allowed pointer-events-none"
                                 )}
                               >
                                 All Absent
@@ -827,9 +832,11 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
                                 <button
                                   onClick={() => updateStudentStatus(item.id, "Present")}
+                                  disabled={isEditingDisabled}
                                   className={cn(
                                     "flex-1 z-10 text-[10px] font-bold transition-all flex items-center justify-center gap-1.5",
-                                    item.status === "Present" ? "text-white" : "text-[#B0AFA8] hover:text-foreground"
+                                    item.status === "Present" ? "text-white" : "text-[#B0AFA8] hover:text-foreground",
+                                    isEditingDisabled && "pointer-events-none opacity-50"
                                   )}
                                 >
                                   <span className={cn("material-symbols-outlined text-[16px]", item.status === "Present" ? "" : "opacity-40")}>check_circle</span>
@@ -837,9 +844,11 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 </button>
                                 <button
                                   onClick={() => updateStudentStatus(item.id, "Absent")}
+                                  disabled={isEditingDisabled}
                                   className={cn(
                                     "flex-1 z-10 text-[10px] font-bold transition-all flex items-center justify-center gap-1.5",
-                                    item.status === "Absent" ? "text-white" : "text-[#B0AFA8] hover:text-foreground"
+                                    item.status === "Absent" ? "text-white" : "text-[#B0AFA8] hover:text-foreground",
+                                    isEditingDisabled && "pointer-events-none opacity-50"
                                   )}
                                 >
                                   <span className={cn("material-symbols-outlined text-[16px]", item.status === "Absent" ? "" : "opacity-40")}>cancel</span>
@@ -859,11 +868,13 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                     <button
                                       key={st.label}
                                       onClick={() => updateStaffStatus(item.id, st.label)}
+                                      disabled={isEditingDisabled}
                                       className={cn(
                                         "flex-1 z-10 h-7 rounded-[10px] text-[10px] font-bold transition-all relative overflow-hidden flex items-center justify-center",
                                         isActive
                                           ? "text-white"
-                                          : "text-[#B0AFA8] hover:text-foreground"
+                                          : "text-[#B0AFA8] hover:text-foreground",
+                                        isEditingDisabled && "pointer-events-none opacity-50"
                                       )}
                                     >
                                       {st.label}
@@ -887,8 +898,12 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               type="text"
                               placeholder="Add note..."
                               value={item.remarks}
+                              disabled={isEditingDisabled}
                               onChange={(e) => updateStudentRemarks(item.id, e.target.value)}
-                              className="bg-transparent border-none text-right text-[12px] font-medium text-[#B0AFA8] outline-none focus:text-foreground transition-colors w-full"
+                              className={cn(
+                                "bg-transparent border-none text-right text-[12px] font-medium text-[#B0AFA8] outline-none focus:text-foreground transition-colors w-full",
+                                isEditingDisabled && "cursor-not-allowed opacity-50"
+                              )}
                             />
                           ) : (
                             <div className="flex flex-col items-end leading-tight">
