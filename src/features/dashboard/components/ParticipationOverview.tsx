@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
 export const ParticipationOverview = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState<any>(null);
 
     useEffect(() => {
@@ -51,7 +53,10 @@ export const ParticipationOverview = () => {
                     <h3 className="text-foreground text-[15px] font-semibold">Today's Attendance</h3>
                     <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">{total.toLocaleString()} total students</p>
                 </div>
-                <button className="text-[11px] font-medium text-[#3D6B2C] hover:underline underline-offset-2">
+                <button 
+                    onClick={() => navigate("/attendance")}
+                    className="text-[11px] font-medium text-[#3D6B2C] hover:underline underline-offset-2"
+                >
                     Full Report
                 </button>
             </div>

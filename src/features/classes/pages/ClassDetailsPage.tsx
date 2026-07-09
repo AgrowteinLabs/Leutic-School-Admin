@@ -743,6 +743,27 @@ interface GraphQLClassDetails {
   roomNumber?: string;
   shift?: string;
   capacity?: number;
+  attendanceRate?: number;
+  activeProgramsCount?: number;
+}
+
+interface GraphQLClassStudent {
+  id: string;
+  name: string;
+  admissionNumber?: string;
+  classId?: string;
+  email?: string;
+  participationRate?: number;
+  standingStatus?: "GOOD_STANDING" | "BEHAVIOR_FLAG" | "HIGH_RISK";
+}
+
+interface GraphQLClassActivity {
+  id: string;
+  classId: string;
+  activityType: "CURRICULUM" | "PROGRAMS" | "ALERT" | "STAFF_NOTE";
+  title: string;
+  description: string;
+  createdAt: string;
 }
 
 export const ClassDetailsPage = () => {
@@ -785,6 +806,8 @@ export const ClassDetailsPage = () => {
           roomNumber
           shift
           capacity
+          attendanceRate
+          activeProgramsCount
         }
       }
     `;
@@ -823,7 +846,24 @@ export const ClassDetailsPage = () => {
             admissionNumber
             classId
             email
+            participationRate
+            standingStatus
           }
+        }
+      }
+    `;
+
+    const classActivitiesQuery = `
+      query GetClassTimeline($classId: ID!) {
+        classActivities(classId: $classId, page: 1, pageSize: 10) {
+          items {
+            id
+            activityType
+            title
+            description
+            createdAt
+          }
+          total
         }
       }
     `;
@@ -833,13 +873,15 @@ export const ClassDetailsPage = () => {
         graphqlRequest<{ class: GraphQLClassDetails }>(classQuery, { id }),
         graphqlRequest<{ users: { items: TeacherOption[] } }>(teachersQuery, { schoolId: schoolId || undefined }),
         graphqlRequest<{ users: { items: StudentOption[] } }>(studentsQuery, { schoolId: schoolId || undefined }),
-        graphqlRequest<{ studentsByClass: { items: StudentOption[] } }>(classStudentsQuery, { classId: id })
+        graphqlRequest<{ studentsByClass: { items: GraphQLClassStudent[] } }>(classStudentsQuery, { classId: id }),
+        graphqlRequest<{ classActivities: { items: GraphQLClassActivity[] } }>(classActivitiesQuery, { classId: id })
       ]);
 
       let cls: GraphQLClassDetails | null = null;
       let teachers: TeacherOption[] = [];
       let students: StudentOption[] = [];
-      let classStudents: StudentOption[] = [];
+      let classStudents: GraphQLClassStudent[] = [];
+      let rawActivities: GraphQLClassActivity[] = [];
 
       if (results[0].status === "fulfilled") {
         cls = results[0].value.class;
@@ -858,6 +900,10 @@ export const ClassDetailsPage = () => {
 
       if (results[3].status === "fulfilled") {
         classStudents = results[3].value.studentsByClass?.items || [];
+      }
+
+      if (results[4].status === "fulfilled") {
+        rawActivities = results[4].value.classActivities?.items || [];
       }
 
       setTeachersList(teachers);
@@ -893,72 +939,70 @@ export const ClassDetailsPage = () => {
       );
       const auraMap = new Map(auraScores.map(x => [x.id, x.points]));
 
-      interface NotificationItem {
-        id: string;
-        title: string;
-        content: string;
-        targetRoles: string[];
-        createdAt: string;
-      }
-
-      // Fetch live notifications for timeline
-      const notificationsQuery = `
-        query GetNotifications {
-          notifications(page: 1, pageSize: 5) {
-            items {
-              id
-              title
-              content
-              targetRoles
-              createdAt
-            }
-          }
-        }
-      `;
-      let loadedNotifications: NotificationItem[] = [];
-      try {
-        const notRes = await graphqlRequest<{ notifications: { items: NotificationItem[] } }>(notificationsQuery);
-        loadedNotifications = notRes?.notifications?.items || [];
-      } catch (e) {
-        console.error("Failed to load notifications for timeline:", e);
-      }
-
-      const timelineActivities = loadedNotifications.map((not, idx) => {
-        const typeLabel = not.targetRoles?.join(", ") || "Announcement";
-        const icons = ["inventory", "groups", "notification_important", "forum", "campaign"];
-        const colors = [
-          "bg-emerald-50 text-emerald-600 border-emerald-100",
-          "bg-blue-50 text-blue-600 border-blue-100",
-          "bg-red-50 text-red-600 border-red-100",
-          "bg-amber-50 text-amber-600 border-amber-100",
-          "bg-purple-50 text-purple-600 border-purple-100"
-        ];
-        const dateObj = new Date(not.createdAt);
+      // Map activity logs to the timeline UI state
+      const timelineActivities = rawActivities.map((act) => {
+        const dateObj = new Date(act.createdAt);
         const timeAgo = Number.isNaN(dateObj.getTime()) ? "Recently" : dateObj.toLocaleDateString();
+
+        let typeLabel = "Announcement";
+        let icon = "campaign";
+        let color = "bg-purple-50 text-purple-600 border-purple-100";
+
+        if (act.activityType === "CURRICULUM") {
+          typeLabel = "Curriculum";
+          icon = "inventory";
+          color = "bg-emerald-50 text-emerald-600 border-emerald-100";
+        } else if (act.activityType === "PROGRAMS") {
+          typeLabel = "Programs";
+          icon = "groups";
+          color = "bg-blue-50 text-blue-600 border-blue-100";
+        } else if (act.activityType === "ALERT") {
+          typeLabel = "Alert";
+          icon = "notification_important";
+          color = "bg-red-50 text-red-600 border-red-100";
+        } else if (act.activityType === "STAFF_NOTE") {
+          typeLabel = "Staff Note";
+          icon = "forum";
+          color = "bg-amber-50 text-amber-600 border-amber-100";
+        }
 
         return {
           type: typeLabel,
-          title: not.title,
-          msg: not.content,
+          title: act.title,
+          msg: act.description,
           time: timeAgo,
-          icon: icons[idx % icons.length],
-          color: colors[idx % colors.length]
+          icon,
+          color
         };
       });
 
-      if (timelineActivities.length === 0) {
-        setActivities([
-          { type: "Curriculum", title: "Assignment Published", msg: "Unit 4: Modern History essays assigned.", time: "1h ago", icon: "inventory", color: "bg-emerald-50 text-emerald-600 border-emerald-100" },
-          { type: "Programs", title: "Science Fair Entries", msg: `Registered students from ${cls.grade}-${cls.section || "A"}.`, time: "4h ago", icon: "groups", color: "bg-blue-50 text-blue-600 border-blue-100" },
-        ]);
-      } else {
-        setActivities(timelineActivities);
-      }
+      setActivities(timelineActivities);
 
       const mappedClassStudents = classStudents.map((s) => {
-        const participation = 80 + ((s.name.codePointAt(0) || 0) % 20);
+        const participation = s.participationRate !== undefined && s.participationRate !== null 
+          ? Math.round(s.participationRate) 
+          : (80 + ((s.name.codePointAt(0) || 0) % 20));
+
         const auraScore = auraMap.get(s.id) ?? 80;
-        const isRisk = participation < 85;
+
+        let status = "Good Standing";
+        let statusType: "normal" | "risk" = "normal";
+
+        if (s.standingStatus === "GOOD_STANDING") {
+          status = "Good Standing";
+          statusType = "normal";
+        } else if (s.standingStatus === "BEHAVIOR_FLAG") {
+          status = "Behavior Flag";
+          statusType = "risk";
+        } else if (s.standingStatus === "HIGH_RISK") {
+          status = "High Risk";
+          statusType = "risk";
+        } else {
+          const isRisk = participation < 85;
+          status = isRisk ? "Behavior Flag" : "Good Standing";
+          statusType = isRisk ? "risk" : "normal";
+        }
+
         return {
           uid: s.id,
           name: s.name,
@@ -966,8 +1010,8 @@ export const ClassDetailsPage = () => {
           initials: s.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2),
           participation,
           auraScore,
-          status: isRisk ? "Behavior Flag" : "Good Standing",
-          statusType: (isRisk ? "risk" : "normal") as "risk" | "normal"
+          status,
+          statusType
         };
       });
 
@@ -979,9 +1023,9 @@ export const ClassDetailsPage = () => {
         shift: parsedShift,
         teacher: teacherName,
         teacherId: cls.classTeacherId,
-        avgParticipation: classStudents.length > 0 ? Math.round(mappedClassStudents.reduce((sum, s) => sum + s.participation, 0) / classStudents.length) : 85,
-        attendanceRate: 98.2,
-        activePrograms: 3,
+        avgParticipation: classStudents.length > 0 ? Math.round(mappedClassStudents.reduce((sum, s) => sum + s.participation, 0) / classStudents.length) : 0,
+        attendanceRate: cls.attendanceRate !== undefined && cls.attendanceRate !== null ? cls.attendanceRate : 0,
+        activePrograms: cls.activeProgramsCount !== undefined && cls.activeProgramsCount !== null ? cls.activeProgramsCount : 0,
         behaviorFlags: mappedClassStudents.filter(s => s.statusType === "risk").length,
         students: mappedClassStudents
       });
@@ -1551,22 +1595,30 @@ export const ClassDetailsPage = () => {
               Class Activity
             </h2>
             <div className="relative pl-3 space-y-6">
-              <div className="absolute left-[23px] top-2 bottom-2 w-[1.5px] bg-slate-50" />
-              {activities.map((activity, i) => (
-                <div key={i} className="relative flex items-start gap-5 group cursor-pointer">
-                  <div className={cn("size-6 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-sm transition-transform group-hover:scale-110", activity.color)}>
-                    <span className="material-symbols-outlined text-[13px]">{activity.icon}</span>
-                  </div>
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-[#B0AFA8]">{activity.type}</span>
-                      <span className="text-[10px] font-medium text-[#B0AFA8]">{activity.time}</span>
-                    </div>
-                    <p className="text-[13px] font-bold text-foreground mb-0.5 group-hover:text-primary transition-colors">{activity.title}</p>
-                    <p className="text-[12px] text-[#444441] leading-snug opacity-70 mb-2">{activity.msg}</p>
-                  </div>
+              {activities.length === 0 ? (
+                <div className="p-4 text-center text-[#B0AFA8] text-[12px] font-semibold bg-[#F7F8F4]/30 rounded-[16px] border border-dashed border-slate-100">
+                  No activities recorded for this class section yet.
                 </div>
-              ))}
+              ) : (
+                <>
+                  <div className="absolute left-[23px] top-2 bottom-2 w-[1.5px] bg-slate-50" />
+                  {activities.map((activity, i) => (
+                    <div key={i} className="relative flex items-start gap-5 group cursor-pointer">
+                      <div className={cn("size-6 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white shadow-sm transition-transform group-hover:scale-110", activity.color)}>
+                        <span className="material-symbols-outlined text-[13px]">{activity.icon}</span>
+                      </div>
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <div className="flex justify-between items-center mb-0.5">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#B0AFA8]">{activity.type}</span>
+                          <span className="text-[10px] font-medium text-[#B0AFA8]">{activity.time}</span>
+                        </div>
+                        <p className="text-[13px] font-bold text-foreground mb-0.5 group-hover:text-primary transition-colors">{activity.title}</p>
+                        <p className="text-[12px] text-[#444441] leading-snug opacity-70 mb-2">{activity.msg}</p>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </aside>
         </div>

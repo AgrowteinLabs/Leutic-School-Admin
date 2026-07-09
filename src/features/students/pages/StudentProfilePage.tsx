@@ -199,7 +199,6 @@ export const StudentProfilePage = () => {
               classId
               bloodGroup
               studentStatus
-              profileImageUrl
               guardians {
                 id
                 relationship
@@ -667,11 +666,13 @@ export const StudentProfilePage = () => {
                     <p className="text-[12px] text-[#B0AFA8] font-medium">Weighted analysis of holistic student engagement</p>
                   </div>
                   <div className="px-4 py-2 bg-[#F7F8F4] rounded-xl border border-slate-100">
-                    <span className="text-xl font-black text-foreground">{student.participation}%</span>
+                    <span className="text-xl font-black text-foreground">
+                      {typeof student.participation === "number" ? student.participation.toFixed(2) : student.participation}%
+                    </span>
                     <span className="text-[10px] font-bold text-[#B0AFA8] ml-2 uppercase">Composite</span>
                   </div>
                 </div>
-
+ 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
                   {[
                     { label: "Attendance Consistency", val: student.participationIntelligence.attendanceConsistency, color: "bg-primary" },
@@ -682,12 +683,14 @@ export const StudentProfilePage = () => {
                     <div key={i} className="space-y-3">
                       <div className="flex justify-between items-end">
                         <p className="text-[11px] font-bold text-[#444441] uppercase tracking-tight">{p.label}</p>
-                        <p className="text-[13px] font-black text-foreground">{p.val}%</p>
+                        <p className="text-[13px] font-black text-foreground">
+                          {typeof p.val === "number" ? p.val.toFixed(2) : p.val}%
+                        </p>
                       </div>
                       <div className="h-1.5 bg-[#F7F8F4] rounded-full overflow-hidden">
                         <div 
-                          className={cn("h-full transition-all duration-1000 delay-300", p.color)} 
-                          style={{ width: `${p.val}%` }} 
+                           className={cn("h-full transition-all duration-1000 delay-300", p.color)} 
+                           style={{ width: `${p.val}%` }} 
                         />
                       </div>
                     </div>

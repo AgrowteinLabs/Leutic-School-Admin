@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "../../../lib/utils";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
@@ -16,7 +17,7 @@ const AlertItem = ({
   return (
     <div className="flex gap-3 py-3 border-b border-slate-50 last:border-0 group cursor-pointer hover:bg-[#F7F8F4] -mx-1 px-1 rounded-[10px] transition-colors">
       <div className={cn(
-        "w-1.5 rounded-full shrink-0 mt-1 flex-shrink-0",
+        "w-1.5 rounded-full shrink-0 mt-1",
         type === "urgent" && "bg-[#E63535]",
         type === "notice" && "bg-[#EF9800]",
         type === "info" && "bg-[#2E77F4]"
@@ -63,6 +64,7 @@ const getAlertType = (title: string, content: string): "urgent" | "notice" | "in
 };
 
 export const AlertsSection = ({ className }: { className?: string }) => {
+  const navigate = useNavigate();
   const [alerts, setAlerts] = useState<DBNotification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -102,7 +104,10 @@ export const AlertsSection = ({ className }: { className?: string }) => {
       <div className="p-7 pb-0 shrink-0">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-foreground text-[17px] font-semibold tracking-tight">Notifications</h3>
-          <button className="text-[12px] text-[#3D6B2C] font-semibold hover:underline underline-offset-2 transition-colors">
+          <button 
+            onClick={() => navigate("/communications")}
+            className="text-[12px] text-[#3D6B2C] font-semibold hover:underline underline-offset-2 transition-colors"
+          >
             View All
           </button>
         </div>

@@ -22,16 +22,7 @@ interface DBCalendar {
   events: DBEvent[];
 }
 
-interface TimetableEntry {
-  section: string;
-  day: string;
-  period: number;
-  subjectId: string;
-  subjectName: string;
-  teacherId: string;
-  teacherName: string;
-  spanPeriods?: number;
-}
+
 
 export const CalendarPage = () => {
   const [activeView, setActiveView] = useState<CalendarView>("teacher");
@@ -45,6 +36,7 @@ export const CalendarPage = () => {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [classesList, setClassesList] = useState<any[]>([]);
   const [calendars, setCalendars] = useState<DBCalendar[]>([]);
+  const [timetableSlots, setTimetableSlots] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const [selectedClass, setSelectedClass] = useState("");
@@ -92,7 +84,7 @@ export const CalendarPage = () => {
       const loadedTeachers = teachersRes.users?.items || [];
       setTeachers(loadedTeachers);
       if (loadedTeachers.length > 0 && !selectedTeacher) {
-        setSelectedTeacher(loadedTeachers[0].name);
+        setSelectedTeacher(loadedTeachers[0].id);
       }
 
       // 2. Get Classes
@@ -110,13 +102,13 @@ export const CalendarPage = () => {
       const loadedClasses = classesRes.classes?.items || [];
       setClassesList(loadedClasses);
       if (loadedClasses.length > 0 && !selectedClass) {
-        setSelectedClass(loadedClasses[0].section ? `${loadedClasses[0].grade}-${loadedClasses[0].section}` : loadedClasses[0].grade);
+        setSelectedClass(loadedClasses[0].id);
       }
 
       // 3. Get Calendars & Events
       const calendarsRes = await graphqlRequest<any>(`
-        query GetCalendars {
-          calendars(page: 1, pageSize: 100) {
+        query GetCalendars($schoolId: String) {
+          calendars(schoolId: $schoolId, page: 1, pageSize: 100) {
             items {
               id
               name
@@ -132,7 +124,7 @@ export const CalendarPage = () => {
             }
           }
         }
-      `);
+      `, { schoolId });
       setCalendars(calendarsRes.calendars?.items || []);
     } catch (err) {
       console.error("Failed to fetch calendar metadata:", err);
@@ -199,33 +191,66 @@ export const CalendarPage = () => {
     });
   }, [allEvents, currentYear, currentMonth, selectedDayNum]);
 
-  // Load Timetable Slots from local storage
+  useEffect(() => {
+    const fetchTimetable = async () => {
+      if (activeView === "parent") return;
+      setTimetableSlots([]);
+      try {
+        if (activeView === "class" && selectedClass) {
+          const res = await graphqlRequest<any>(`
+            query GetClassTimetable($classId: String!) {
+              classTimetable(classId: $classId) {
+                id
+                classId
+                day
+                period
+                subjectId
+                subjectName
+                teacherId
+                teacherName
+                spanPeriods
+                startTime
+                endTime
+              }
+            }
+          `, { classId: selectedClass });
+          setTimetableSlots(res.classTimetable || []);
+        } else if (activeView === "teacher" && selectedTeacher) {
+          const res = await graphqlRequest<any>(`
+            query GetTeacherTimetable($teacherId: String!) {
+              teacherTimetable(teacherId: $teacherId) {
+                id
+                classId
+                day
+                period
+                subjectId
+                subjectName
+                teacherId
+                teacherName
+                spanPeriods
+                startTime
+                endTime
+              }
+            }
+          `, { teacherId: selectedTeacher });
+          setTimetableSlots(res.teacherTimetable || []);
+        }
+      } catch (err) {
+        console.error("Failed to load timetable from backend:", err);
+      }
+    };
+    fetchTimetable();
+  }, [activeView, selectedClass, selectedTeacher]);
+
   const timetableSlotsForDay = useMemo(() => {
     const dateObj = new Date(currentYear, currentMonth, selectedDayNum);
     const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const selectedWeekday = weekdays[dateObj.getDay()];
 
-    const cached = localStorage.getItem(`curriculum_timetable_${schoolId}`);
-    if (!cached) return [];
-
-    try {
-      const allSlots: TimetableEntry[] = JSON.parse(cached);
-      return allSlots
-        .filter(slot => {
-          if (slot.day !== selectedWeekday) return false;
-          if (activeView === "teacher") {
-            return slot.teacherName === selectedTeacher || slot.teacherId === selectedTeacher;
-          } else if (activeView === "class") {
-            return slot.section === selectedClass;
-          }
-          return false;
-        })
-        .sort((a, b) => a.period - b.period);
-    } catch (e) {
-      console.error("Failed to parse timetable entries from local storage", e);
-      return [];
-    }
-  }, [currentYear, currentMonth, selectedDayNum, activeView, selectedClass, selectedTeacher, schoolId]);
+    return timetableSlots
+      .filter(slot => slot.day === selectedWeekday)
+      .sort((a, b) => a.period - b.period);
+  }, [currentYear, currentMonth, selectedDayNum, timetableSlots]);
 
   // Format period numbers into times (starts 8:30 AM, 60m duration)
   const getPeriodTimeStr = (periodNum: number) => {
@@ -447,13 +472,13 @@ export const CalendarPage = () => {
                   >
                     {activeView === "class" ? (
                       classesList.map((c) => (
-                        <option key={c.id} value={c.section ? `${c.grade}-${c.section}` : c.grade}>
+                        <option key={c.id} value={c.id}>
                           {c.section ? `${c.grade}-${c.section}` : c.grade}
                         </option>
                       ))
                     ) : (
                       teachers.map((t) => (
-                        <option key={t.id} value={t.name}>
+                        <option key={t.id} value={t.id}>
                           {t.name}
                         </option>
                       ))
@@ -607,12 +632,22 @@ export const CalendarPage = () => {
                   <span className="material-symbols-outlined">
                     timer
                   </span>
-                  Schedule for {activeView === "class" ? selectedClass : selectedTeacher}
+                  Schedule for {
+                    activeView === "class"
+                      ? (() => {
+                          const cls = classesList.find(c => c.id === selectedClass);
+                          return cls ? (cls.section ? `${cls.grade}-${cls.section}` : cls.grade) : "Class";
+                        })()
+                      : (() => {
+                          const t = teachers.find(teach => teach.id === selectedTeacher);
+                          return t ? t.name : "Teacher";
+                        })()
+                  }
                 </h3>
                 <div className="space-y-5 relative z-10">
                   {timetableSlotsForDay.length > 0 ? (
                     timetableSlotsForDay.map((item, i) => (
-                      <div key={`${item.day}-${item.period}-${item.section}`} className="flex gap-4 group">
+                      <div key={item.id} className="flex gap-4 group">
                         <div className="flex flex-col items-center shrink-0">
                           <div className="size-2 bg-[#D9EA85] rounded-full ring-4 ring-[#D9EA85]/20" />
                           {i !== timetableSlotsForDay.length - 1 && (
@@ -627,7 +662,13 @@ export const CalendarPage = () => {
                             {item.subjectName}
                           </p>
                           <p className="text-[10px] text-white/50 font-bold mt-1 uppercase tracking-wider">
-                            {activeView === "class" ? `Teacher: ${item.teacherName}` : `Class: ${item.section}`}
+                            {activeView === "class"
+                              ? `Teacher: ${item.teacherName}`
+                              : (() => {
+                                  const cls = classesList.find(c => c.id === item.classId);
+                                  return cls ? `Class: ${cls.section ? `${cls.grade}-${cls.section}` : cls.grade}` : "Class";
+                                })()
+                            }
                           </p>
                         </div>
                       </div>

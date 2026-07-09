@@ -49,6 +49,8 @@ export const DashboardPage = () => {
     const [selectedStudent, setSelectedStudent] = useState<DashboardStudent | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
 
     const [studentsCount, setStudentsCount] = useState<number | null>(null);
     const [teachersCount, setTeachersCount] = useState<number | null>(null);
@@ -133,6 +135,92 @@ export const DashboardPage = () => {
         fetchDashboardData();
     }, []);
 
+    useEffect(() => {
+        if (searchQuery.trim().length < 2) {
+            setSuggestions([]);
+            return;
+        }
+
+        const fetchSuggestions = async () => {
+            const schoolId = localStorage.getItem("school_id") || undefined;
+            const query = `
+                query SearchDashboardStudent($schoolId: ID, $name: String!) {
+                    users(filter: { role: "STUDENT", schoolId: $schoolId, name: $name, page: 1, pageSize: 5 }) {
+                        items {
+                            id
+                            name
+                            admissionNumber
+                            classId
+                            isActive
+                            mobileNo
+                        }
+                    }
+                }
+            `;
+            try {
+                const res = await graphqlRequest<any>(query, { schoolId, name: searchQuery });
+                setSuggestions(res.users?.items || []);
+            } catch (err) {
+                console.error("Error fetching suggestions:", err);
+            }
+        };
+
+        const timer = setTimeout(fetchSuggestions, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    const handleSelectStudent = async (foundUser: any) => {
+        const classMap = new Map(classesList.map(c => [c.id, c]));
+        const matchedClass = foundUser.classId ? classMap.get(foundUser.classId) : null;
+        
+        let overviewData = {
+            participationRate: 75,
+            attendanceRate: 92,
+            gpa: 3.5,
+            statusAlert: foundUser.isActive ? "Active" : "Inactive"
+        };
+        try {
+            interface OverviewResponse {
+                studentOverview: {
+                    participationRate: number;
+                    attendanceRate: number;
+                    gpa: number;
+                    statusAlert: string;
+                };
+            }
+            const overviewRes = await graphqlRequest<OverviewResponse>(`
+                query GetStudentOverview($id: ID!) {
+                    studentOverview(id: $id) {
+                        participationRate
+                        attendanceRate
+                        gpa
+                        statusAlert
+                    }
+                }
+            `, { id: foundUser.id });
+            if (overviewRes.studentOverview) {
+                overviewData = overviewRes.studentOverview;
+            }
+        } catch (e: unknown) {
+            console.error("Failed to fetch student overview in search:", e);
+        }
+
+        setSelectedStudent({
+            name: foundUser.name,
+            id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
+            grade: matchedClass ? matchedClass.grade : "Unassigned",
+            section: matchedClass ? (matchedClass.section || "") : "",
+            participation: overviewData.participationRate,
+            auraScore: overviewData.participationRate,
+            attendanceRate: overviewData.attendanceRate,
+            gpa: overviewData.gpa,
+            status: overviewData.statusAlert,
+            img: "/Avatar/Male Avatar Age16.png",
+            phone: foundUser.mobileNo || "+91 99999-99999"
+        });
+        setIsDrawerOpen(true);
+    };
+
     const handleSearch = async (term: string) => {
         if (!term.trim()) return;
         const schoolId = localStorage.getItem("school_id") || undefined;
@@ -170,55 +258,7 @@ export const DashboardPage = () => {
             const res = await graphqlRequest<SearchStudentResponse>(query, { schoolId, name: term });
             const foundUser = res.users?.items?.[0];
             if (foundUser) {
-                const classMap = new Map(classesList.map(c => [c.id, c]));
-                const matchedClass = foundUser.classId ? classMap.get(foundUser.classId) : null;
-                
-                let overviewData = {
-                    participationRate: 75,
-                    attendanceRate: 92,
-                    gpa: 3.5,
-                    statusAlert: foundUser.isActive ? "Active" : "Inactive"
-                };
-                try {
-                    interface OverviewResponse {
-                        studentOverview: {
-                            participationRate: number;
-                            attendanceRate: number;
-                            gpa: number;
-                            statusAlert: string;
-                        };
-                    }
-                    const overviewRes = await graphqlRequest<OverviewResponse>(`
-                        query GetStudentOverview($id: ID!) {
-                            studentOverview(id: $id) {
-                                participationRate
-                                attendanceRate
-                                gpa
-                                statusAlert
-                            }
-                        }
-                    `, { id: foundUser.id });
-                    if (overviewRes.studentOverview) {
-                        overviewData = overviewRes.studentOverview;
-                    }
-                } catch (e: unknown) {
-                    console.error("Failed to fetch student overview in search:", e);
-                }
-
-                setSelectedStudent({
-                    name: foundUser.name,
-                    id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
-                    grade: matchedClass ? matchedClass.grade : "Unassigned",
-                    section: matchedClass ? (matchedClass.section || "") : "",
-                    participation: overviewData.participationRate,
-                    auraScore: overviewData.participationRate,
-                    attendanceRate: overviewData.attendanceRate,
-                    gpa: overviewData.gpa,
-                    status: overviewData.statusAlert,
-                    img: "/Avatar/Male Avatar Age16.png",
-                    phone: foundUser.mobileNo || "+91 99999-99999"
-                });
-                setIsDrawerOpen(true);
+                handleSelectStudent(foundUser);
             } else {
                 alert("No student found with that name.");
             }
@@ -383,6 +423,8 @@ export const DashboardPage = () => {
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchQuery)}
+                                                    onFocus={() => setShowSuggestions(true)}
+                                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                                 />
                                                 <button
                                                     onClick={() => handleSearch(searchQuery)}
@@ -392,6 +434,37 @@ export const DashboardPage = () => {
                                                 </button>
                                             </div>
                                         </div>
+
+                                        {showSuggestions && suggestions.length > 0 && (
+                                            <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden divide-y divide-slate-50 max-h-64 overflow-y-auto custom-scrollbar">
+                                                {suggestions.map((student) => {
+                                                    const matchedClass = classesList.find(c => c.id === student.classId);
+                                                    return (
+                                                        <button
+                                                            key={student.id}
+                                                            onClick={() => {
+                                                                handleSelectStudent(student);
+                                                                setShowSuggestions(false);
+                                                                setSearchQuery("");
+                                                            }}
+                                                            className="w-full px-5 py-3 hover:bg-[#F7F8F4] transition-all flex items-center justify-between text-left group"
+                                                        >
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[13px] font-bold text-foreground group-hover:text-primary transition-colors">
+                                                                    {student.name}
+                                                                </span>
+                                                                <span className="text-[10.5px] font-bold text-[#B0AFA8] uppercase tracking-wider">
+                                                                    {matchedClass ? `${matchedClass.grade}${matchedClass.section ? `-${matchedClass.section}` : ""}` : "Unassigned"} • {student.admissionNumber || student.id.slice(0, 8)}
+                                                                </span>
+                                                            </div>
+                                                            <span className="material-symbols-outlined text-[18px] text-[#B0AFA8] group-hover:text-primary transition-colors">
+                                                                arrow_forward_ios
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Action Icons */}
@@ -490,7 +563,10 @@ export const DashboardPage = () => {
                                 <div className="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col">
                                     <div className="flex items-center justify-between mb-5">
                                         <h3 className="text-foreground text-[15px] font-semibold">Upcoming This Week</h3>
-                                        <button className="text-[11px] font-medium text-[#3D6B2C] hover:underline underline-offset-2">
+                                        <button 
+                                            onClick={() => navigate("/calendar")}
+                                            className="text-[11px] font-medium text-[#3D6B2C] hover:underline underline-offset-2"
+                                        >
                                             Full Calendar
                                         </button>
                                     </div>
