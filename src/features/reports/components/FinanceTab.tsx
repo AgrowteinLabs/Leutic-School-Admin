@@ -21,18 +21,18 @@ export const FinanceTab = () => (
     {/* Summary Stats */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {[
-        { label: "Total Fees", value: `₹${(feeCollectionSummary.totalFees / 100000).toFixed(1)}L`, icon: "account_balance", color: "text-secondary" },
-        { label: "Collected", value: `₹${(feeCollectionSummary.collected / 100000).toFixed(1)}L`, icon: "check_circle", color: "text-emerald-600" },
-        { label: "Pending", value: `₹${(feeCollectionSummary.pending / 100000).toFixed(1)}L`, icon: "schedule", color: "text-amber-500" },
-        { label: "Overdue", value: `₹${(feeCollectionSummary.overdue / 100000).toFixed(1)}L`, icon: "error", color: "text-rose-500" },
+        { label: "Total Fees", value: `₹${(feeCollectionSummary.totalFees / 100000).toFixed(1)}L`, icon: "account_balance", color: "text-foreground" },
+        { label: "Collected", value: `₹${(feeCollectionSummary.collected / 100000).toFixed(1)}L`, icon: "check_circle", color: "text-[#2E7D32]" },
+        { label: "Pending", value: `₹${(feeCollectionSummary.pending / 100000).toFixed(1)}L`, icon: "schedule", color: "text-[#B45309]" },
+        { label: "Overdue", value: `₹${(feeCollectionSummary.overdue / 100000).toFixed(1)}L`, icon: "error", color: "text-[#B91C1C]" },
       ].map((s, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm">
+        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 ">
           <div className="size-10 rounded-xl flex items-center justify-center bg-accent shrink-0">
             <span className={cn("material-symbols-outlined text-[20px]", s.color)}>{s.icon}</span>
           </div>
           <div>
-            <p className="text-slate-400 text-[11px] font-medium">{s.label}</p>
-            <p className="text-secondary text-xl font-semibold leading-tight">{s.value}</p>
+            <p className="text-[#B0AFA8] text-[11px] font-medium">{s.label}</p>
+            <p className="text-foreground text-xl font-semibold leading-tight">{s.value}</p>
           </div>
         </div>
       ))}
@@ -40,9 +40,9 @@ export const FinanceTab = () => (
 
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       {/* Fee Collection Donut */}
-      <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-        <h3 className="text-secondary text-[15px] font-semibold mb-2">Collection Overview</h3>
-        <p className="text-slate-400 text-[11px] font-medium mb-4">Current academic year</p>
+      <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-6 ">
+        <h3 className="text-foreground text-[15px] font-semibold mb-2">Collection Overview</h3>
+        <p className="text-[#B0AFA8] text-[11px] font-medium mb-4">Current academic year</p>
         <div className="flex items-center justify-center">
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
@@ -71,26 +71,26 @@ export const FinanceTab = () => (
           {pieData.map((d, i) => (
             <div key={i} className="flex items-center gap-2">
               <div className="size-2.5 rounded-full" style={{ background: COLORS[i] }} />
-              <span className="text-[11px] font-medium text-slate-500">{d.name}</span>
+              <span className="text-[11px] font-medium text-[#444441]">{d.name}</span>
             </div>
           ))}
         </div>
         {/* Collection Rate */}
         <div className="mt-6 pt-4 border-t border-slate-50">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[12px] font-medium text-slate-500">Collection Rate</span>
-            <span className="text-[14px] font-bold text-secondary">{feeCollectionSummary.collectionRate}%</span>
+            <span className="text-[12px] font-medium text-[#444441]">Collection Rate</span>
+            <span className="text-[14px] font-bold text-foreground">{feeCollectionSummary.collectionRate}%</span>
           </div>
-          <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-500 rounded-full transition-all duration-700" style={{ width: `${feeCollectionSummary.collectionRate}%` }} />
+          <div className="h-3 bg-[#F0F0EC] rounded-full overflow-hidden">
+            <div className="h-full bg-[#2E7D32] rounded-full transition-all duration-700" style={{ width: `${feeCollectionSummary.collectionRate}%` }} />
           </div>
         </div>
       </div>
 
       {/* Class-wise Fee Bar */}
-      <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-        <h3 className="text-secondary text-[15px] font-semibold mb-2">Class-wise Collection Rate</h3>
-        <p className="text-slate-400 text-[11px] font-medium mb-4">Percentage collected per class</p>
+      <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-100 p-6 ">
+        <h3 className="text-foreground text-[15px] font-semibold mb-2">Class-wise Collection Rate</h3>
+        <p className="text-[#B0AFA8] text-[11px] font-medium mb-4">Percentage collected per class</p>
         <ResponsiveContainer width="100%" height={340}>
           <BarChart data={classWiseFeeData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -110,49 +110,72 @@ export const FinanceTab = () => (
       </div>
     </div>
 
-    {/* Fee Reminder Funnel */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-      <h3 className="text-secondary text-[15px] font-semibold mb-2">Fee Reminder Effectiveness</h3>
-      <p className="text-slate-400 text-[11px] font-medium mb-6">Conversion funnel from reminder to payment</p>
-      <div className="flex items-end justify-center gap-2 h-48">
-        {feeReminderFunnel.map((stage, i) => {
-          const maxCount = feeReminderFunnel[0].count;
-          const heightPct = (stage.count / maxCount) * 100;
-          const opacity = 1 - (i * 0.15);
-          return (
-            <div key={i} className="flex flex-col items-center gap-2 flex-1 max-w-[140px]">
-              <span className="text-[14px] font-bold text-secondary">{stage.count}</span>
-              <div className="w-full rounded-t-xl transition-all duration-500" style={{ height: `${heightPct}%`, background: `rgba(21,35,40,${opacity})` }} />
-              <span className="text-[10px] font-medium text-slate-400 text-center leading-tight">{stage.stage}</span>
-            </div>
-          );
-        })}
-      </div>
+    {/* Fee Reminder Effectiveness */}
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
+      <h3 className="text-foreground text-[15px] font-semibold mb-2">Fee Reminder Effectiveness</h3>
+      <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Conversion funnel from reminder to payment</p>
+      
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart
+          layout="vertical"
+          data={feeReminderFunnel}
+          margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={true} vertical={false} />
+          <XAxis type="number" hide />
+          <YAxis 
+            dataKey="stage" 
+            type="category" 
+            tick={{ fontSize: 11, fontWeight: "700", fill: "#444441" }}
+            width={100}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip
+            contentStyle={{ borderRadius: 12, border: "1px solid #f1f5f9", fontSize: 12 }}
+            cursor={{ fill: '#F7F8F4' }}
+          />
+          <Bar 
+            dataKey="count" 
+            radius={[0, 10, 10, 0]} 
+            barSize={32}
+          >
+            {feeReminderFunnel.map((_, i) => (
+              <Cell 
+                key={i} 
+                fill={i === 4 ? "#10b981" : i === 0 ? "#152328" : "#D9EA85"} 
+                fillOpacity={1 - (i * 0.12)}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+
       <div className="mt-4 pt-4 border-t border-slate-50 flex justify-center">
-        <span className="text-[12px] font-medium text-slate-400">
-          Conversion Rate: <span className="text-secondary font-bold">{((feeReminderFunnel[4].count / feeReminderFunnel[0].count) * 100).toFixed(1)}%</span> (Sent → Paid)
+        <span className="text-[12px] font-medium text-[#B0AFA8]">
+          Overall Conversion: <span className="text-foreground font-bold">{((feeReminderFunnel[4].count / feeReminderFunnel[0].count) * 100).toFixed(1)}%</span> (Sent → Paid)
         </span>
       </div>
     </div>
 
     {/* Defaulters Table */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-xl bg-rose-50 flex items-center justify-center">
-            <span className="material-symbols-outlined text-rose-500 text-[20px]">gpp_maybe</span>
+          <div className="size-9 rounded-xl bg-[#FEE2E2] flex items-center justify-center">
+            <span className="material-symbols-outlined text-[#B91C1C] text-[20px]">gpp_maybe</span>
           </div>
           <div>
-            <h3 className="text-secondary text-[15px] font-semibold">Fee Defaulters</h3>
-            <p className="text-slate-400 text-[11px] font-medium mt-0.5">Students with overdue fee payments</p>
+            <h3 className="text-foreground text-[15px] font-semibold">Fee Defaulters</h3>
+            <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Students with overdue fee payments</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-xl border border-amber-100 text-amber-600 text-[12px] font-bold hover:bg-amber-100 transition-colors">
+          <button className="flex items-center gap-2 px-3 py-1.5 bg-[#FEF3C7] rounded-xl border border-[#FDE68A] text-[#B45309] text-[12px] font-bold hover:bg-amber-100 transition-colors">
             <span className="material-symbols-outlined text-[16px]">send</span>
             Send Reminders
           </button>
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 text-slate-500 text-[12px] font-medium hover:bg-slate-100 transition-colors">
+          <button className="btn-outline px-4 py-2 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 transition-all">
             <span className="material-symbols-outlined text-[16px]">download</span>
             Export CSV
           </button>
@@ -163,30 +186,30 @@ export const FinanceTab = () => (
           <thead>
             <tr className="border-b border-slate-100">
               {["Student", "Class", "Amount Due", "Days Overdue", "Reminders Sent", "Action"].map((h) => (
-                <th key={h} className="pb-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">{h}</th>
+                <th key={h} className="pb-3 text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {feeDefaulters.map((d, i) => (
-              <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+              <tr key={i} className="border-b border-slate-50 hover:bg-[#F7F8F4]/50 transition-colors">
                 <td className="py-3.5">
                   <div className="flex items-center gap-3">
-                    <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center text-[11px] font-bold text-secondary">
+                    <div className="size-8 rounded-full bg-[#F0F0EC] flex items-center justify-center text-[11px] font-bold text-foreground">
                       {d.name.split(" ").map((n) => n[0]).join("")}
                     </div>
                     <div>
-                      <p className="text-[13px] font-semibold text-secondary">{d.name}</p>
-                      <p className="text-[10px] text-slate-400">{d.id}</p>
+                      <p className="text-[13px] font-semibold text-foreground">{d.name}</p>
+                      <p className="text-[10px] text-[#B0AFA8]">{d.id}</p>
                     </div>
                   </div>
                 </td>
-                <td className="py-3.5 text-[13px] text-slate-500 font-medium">{d.class}</td>
-                <td className="py-3.5 text-[13px] font-bold text-rose-600">₹{d.amount.toLocaleString()}</td>
+                <td className="py-3.5 text-[13px] text-[#444441] font-medium">{d.class}</td>
+                <td className="py-3.5 text-[13px] font-bold text-[#B91C1C]">₹{d.amount.toLocaleString()}</td>
                 <td className="py-3.5">
                   <span className={cn(
                     "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                    d.daysOverdue >= 30 ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"
+                    d.daysOverdue >= 30 ? "bg-[#FEE2E2] text-[#B91C1C]" : "bg-[#FEF3C7] text-[#B45309]"
                   )}>{d.daysOverdue} days</span>
                 </td>
                 <td className="py-3.5">
@@ -197,7 +220,7 @@ export const FinanceTab = () => (
                   </div>
                 </td>
                 <td className="py-3.5">
-                  <button className="text-[11px] font-medium text-secondary hover:text-primary transition-colors underline underline-offset-2">Send Notice</button>
+                  <button className="text-[11px] font-medium text-foreground hover:text-primary transition-colors underline underline-offset-2">Send Notice</button>
                 </td>
               </tr>
             ))}

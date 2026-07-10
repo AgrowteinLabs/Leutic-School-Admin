@@ -5,11 +5,11 @@ import {
 import { auraLeaderboard, auraEarningTrend, badgeDistribution } from "../data/sampleData";
 
 const rarityColors = {
-  common: { bg: "bg-slate-100", text: "text-slate-600", border: "border-slate-200" },
-  uncommon: { bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-200" },
-  rare: { bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-200" },
-  epic: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200" },
-  legendary: { bg: "bg-rose-50", text: "text-rose-600", border: "border-rose-200" },
+  common: { bg: "bg-[#F0F0EC]", text: "text-[#444441]", border: "border-slate-200" },
+  uncommon: { bg: "bg-[#DBEAFE]", text: "text-[#1565C0]", border: "border-blue-200" },
+  rare: { bg: "bg-[#EAF2D7]", text: "text-[#3D6B2C]", border: "border-green-200" },
+  epic: { bg: "bg-[#FEF3C7]", text: "text-[#B45309]", border: "border-amber-200" },
+  legendary: { bg: "bg-[#FEE2E2]", text: "text-[#B91C1C]", border: "border-red-200" },
 };
 
 export const AuraTab = () => (
@@ -17,33 +17,33 @@ export const AuraTab = () => (
     {/* Stats */}
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {[
-        { label: "Total Aura Awarded", value: "24,680", icon: "auto_awesome", color: "text-amber-500" },
-        { label: "Active Earners", value: "892", icon: "people", color: "text-secondary" },
-        { label: "Badges Awarded", value: "89", icon: "military_tech", color: "text-purple-600" },
-        { label: "Top Score", value: "1,250", icon: "emoji_events", color: "text-amber-600" },
+        { label: "Total Aura Awarded", value: "24,680", icon: "auto_awesome", color: "text-[#B45309]" },
+        { label: "Active Earners", value: "892", icon: "people", color: "text-foreground" },
+        { label: "Badges Awarded", value: "89", icon: "military_tech", color: "text-[#3D6B2C]" },
+        { label: "Top Score", value: "1,250", icon: "emoji_events", color: "text-[#B45309]" },
       ].map((s, i) => (
-        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm">
+        <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 ">
           <div className="size-10 rounded-xl flex items-center justify-center bg-accent shrink-0">
             <span className={cn("material-symbols-outlined text-[20px]", s.color)}>{s.icon}</span>
           </div>
           <div>
-            <p className="text-slate-400 text-[11px] font-medium">{s.label}</p>
-            <p className="text-secondary text-xl font-semibold leading-tight">{s.value}</p>
+            <p className="text-[#B0AFA8] text-[11px] font-medium">{s.label}</p>
+            <p className="text-foreground text-xl font-semibold leading-tight">{s.value}</p>
           </div>
         </div>
       ))}
     </div>
 
     {/* Leaderboard */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-xl bg-amber-50 flex items-center justify-center">
-            <span className="material-symbols-outlined text-amber-500 text-[20px]">leaderboard</span>
+          <div className="size-9 rounded-xl bg-[#FEF3C7] flex items-center justify-center">
+            <span className="material-symbols-outlined text-[#B45309] text-[20px]">leaderboard</span>
           </div>
           <div>
-            <h3 className="text-secondary text-[15px] font-semibold">Aura Leaderboard</h3>
-            <p className="text-slate-400 text-[11px] font-medium mt-0.5">Top performing students by Aura score</p>
+            <h3 className="text-foreground text-[15px] font-semibold">Aura Leaderboard</h3>
+            <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Top performing students by Aura score</p>
           </div>
         </div>
       </div>
@@ -51,53 +51,53 @@ export const AuraTab = () => (
         {auraLeaderboard.map((s, i) => (
           <div key={i} className={cn(
             "flex items-center gap-4 p-4 rounded-2xl border transition-all group",
-            i === 0 ? "border-amber-200 bg-amber-50/30" : i === 1 ? "border-slate-200 bg-slate-50/50" : i === 2 ? "border-orange-200 bg-orange-50/20" : "border-slate-100 hover:bg-slate-50/50"
+            i === 0 ? "border-amber-200 bg-[#FEF3C7]/30" : i === 1 ? "border-slate-200 bg-[#F7F8F4]" : i === 2 ? "border-orange-200 bg-orange-50/20" : "border-slate-100 hover:bg-[#F7F8F4]/50"
           )}>
             {/* Rank */}
             <div className={cn(
               "size-10 rounded-xl flex items-center justify-center font-black text-[14px] shrink-0",
-              i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 text-white" : i === 2 ? "bg-orange-400 text-white" : "bg-slate-100 text-slate-500"
+              i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 text-white" : i === 2 ? "bg-orange-400 text-white" : "bg-[#F0F0EC] text-[#444441]"
             )}>
               #{s.rank}
             </div>
 
             {/* Avatar */}
-            <div className="size-10 rounded-full bg-slate-200 bg-cover bg-center ring-2 ring-white shadow-sm shrink-0"
+            <div className="size-10 rounded-full bg-slate-200 bg-cover bg-center ring-2 ring-white  shrink-0"
               style={{ backgroundImage: `url('${s.avatar}')` }}
             />
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold text-secondary">{s.name}</p>
-              <p className="text-[10px] text-slate-400 font-medium">Class {s.class}</p>
+              <p className="text-[13px] font-bold text-foreground">{s.name}</p>
+              <p className="text-[10px] text-[#B0AFA8] font-medium">Class {s.class}</p>
             </div>
 
             {/* Score Breakdown */}
             <div className="hidden lg:flex items-center gap-3">
               <div className="text-center px-3">
-                <p className="text-[10px] text-slate-400 font-medium">Quiz</p>
-                <p className="text-[12px] font-bold text-indigo-600">{s.quizPoints}</p>
+                <p className="text-[10px] text-[#B0AFA8] font-medium">Quiz</p>
+                <p className="text-[12px] font-bold text-[#1565C0]">{s.quizPoints}</p>
               </div>
               <div className="text-center px-3">
-                <p className="text-[10px] text-slate-400 font-medium">Attendance</p>
-                <p className="text-[12px] font-bold text-emerald-600">{s.attendancePoints}</p>
+                <p className="text-[10px] text-[#B0AFA8] font-medium">Attendance</p>
+                <p className="text-[12px] font-bold text-[#2E7D32]">{s.attendancePoints}</p>
               </div>
               <div className="text-center px-3">
-                <p className="text-[10px] text-slate-400 font-medium">Community</p>
-                <p className="text-[12px] font-bold text-amber-600">{s.communityPoints}</p>
+                <p className="text-[10px] text-[#B0AFA8] font-medium">Community</p>
+                <p className="text-[12px] font-bold text-[#B45309]">{s.communityPoints}</p>
               </div>
             </div>
 
             {/* Badges */}
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="material-symbols-outlined text-amber-400 text-[18px]">military_tech</span>
-              <span className="text-[12px] font-bold text-secondary">{s.badges}</span>
+              <span className="material-symbols-outlined text-[#B45309] text-[18px]">military_tech</span>
+              <span className="text-[12px] font-bold text-foreground">{s.badges}</span>
             </div>
 
             {/* Total */}
             <div className="text-right shrink-0 w-20">
-              <p className="text-[16px] font-black text-secondary">{s.totalAura.toLocaleString()}</p>
-              <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">Aura</p>
+              <p className="text-[16px] font-black text-foreground">{s.totalAura.toLocaleString()}</p>
+              <p className="text-[9px] text-[#B0AFA8] font-medium uppercase tracking-wider">Aura</p>
             </div>
           </div>
         ))}
@@ -105,9 +105,9 @@ export const AuraTab = () => (
     </div>
 
     {/* Earning Trend */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-      <h3 className="text-secondary text-[15px] font-semibold mb-1">Aura Earning Sources Over Time</h3>
-      <p className="text-slate-400 text-[11px] font-medium mb-6">How students are earning points across categories</p>
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
+      <h3 className="text-foreground text-[15px] font-semibold mb-1">Aura Earning Sources Over Time</h3>
+      <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">How students are earning points across categories</p>
       <ResponsiveContainer width="100%" height={320}>
         <AreaChart data={auraEarningTrend}>
           <defs>
@@ -142,23 +142,23 @@ export const AuraTab = () => (
     </div>
 
     {/* Badge Gallery */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-      <h3 className="text-secondary text-[15px] font-semibold mb-1">Badge Distribution</h3>
-      <p className="text-slate-400 text-[11px] font-medium mb-6">Badges awarded across the school</p>
+    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
+      <h3 className="text-foreground text-[15px] font-semibold mb-1">Badge Distribution</h3>
+      <p className="text-[#B0AFA8] text-[11px] font-medium mb-6">Badges awarded across the school</p>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {badgeDistribution.map((b, i) => {
           const r = rarityColors[b.rarity];
           return (
             <div key={i} className={cn("rounded-2xl p-5 border text-center group hover:scale-[1.02] transition-all", r.bg, r.border)}>
-              <div className={cn("size-14 rounded-2xl mx-auto flex items-center justify-center mb-3 bg-white shadow-sm", r.border)}>
+              <div className={cn("size-14 rounded-2xl mx-auto flex items-center justify-center mb-3 bg-white ", r.border)}>
                 <span className={cn("material-symbols-outlined text-[28px]", r.text)}>{b.icon}</span>
               </div>
-              <p className="text-[13px] font-bold text-secondary mb-0.5">{b.badge}</p>
+              <p className="text-[13px] font-bold text-foreground mb-0.5">{b.badge}</p>
               <p className={cn("text-[10px] font-bold uppercase tracking-wider mb-2", r.text)}>{b.rarity}</p>
               <div className="flex items-center justify-center gap-1">
-                <span className="material-symbols-outlined text-[14px] text-slate-400">person</span>
-                <span className="text-[12px] font-bold text-secondary">{b.count}</span>
-                <span className="text-[10px] text-slate-400">awarded</span>
+                <span className="material-symbols-outlined text-[14px] text-[#B0AFA8]">person</span>
+                <span className="text-[12px] font-bold text-foreground">{b.count}</span>
+                <span className="text-[10px] text-[#B0AFA8]">awarded</span>
               </div>
             </div>
           );

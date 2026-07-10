@@ -10,4 +10,18 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      "/graphql": {
+        target: "http://3.7.222.252:4000",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/users": {
+        target: "http://3.7.222.252:4000",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });

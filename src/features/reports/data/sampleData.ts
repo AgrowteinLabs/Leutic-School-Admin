@@ -219,14 +219,14 @@ export const driverActivityData = [
 
 // ─── 8. Aura Points & Gamification ─────────────────────────
 export const auraLeaderboard = [
-  { rank: 1, name: "Anika Rajan", class: "10-A", totalAura: 1250, quizPoints: 480, attendancePoints: 320, communityPoints: 280, badges: 8, avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop" },
-  { rank: 2, name: "Rohan Kumar", class: "9-A", totalAura: 1180, quizPoints: 420, attendancePoints: 340, communityPoints: 250, badges: 7, avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" },
-  { rank: 3, name: "Sneha Pillai", class: "10-A", totalAura: 1120, quizPoints: 390, attendancePoints: 360, communityPoints: 220, badges: 6, avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" },
-  { rank: 4, name: "Arjun Thomas", class: "9-A", totalAura: 1050, quizPoints: 350, attendancePoints: 300, communityPoints: 260, badges: 6, avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop" },
-  { rank: 5, name: "Meera Sharma", class: "8-A", totalAura: 980, quizPoints: 340, attendancePoints: 280, communityPoints: 230, badges: 5, avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop" },
-  { rank: 6, name: "Vishnu Mohan", class: "9-B", totalAura: 920, quizPoints: 310, attendancePoints: 290, communityPoints: 190, badges: 5, avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop" },
-  { rank: 7, name: "Priya Nair", class: "8-A", totalAura: 870, quizPoints: 280, attendancePoints: 310, communityPoints: 160, badges: 4, avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" },
-  { rank: 8, name: "Kiran Dev", class: "7-A", totalAura: 820, quizPoints: 260, attendancePoints: 270, communityPoints: 180, badges: 4, avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop" },
+  { rank: 1, name: "Anika Rajan", class: "10-A", totalAura: 1250, quizPoints: 480, attendancePoints: 320, communityPoints: 280, badges: 8, avatar: "/Avatar/Female Avatar Age15.png" },
+  { rank: 2, name: "Rohan Kumar", class: "9-A", totalAura: 1180, quizPoints: 420, attendancePoints: 340, communityPoints: 250, badges: 7, avatar: "/Avatar/Male Avatar Age15.png" },
+  { rank: 3, name: "Sneha Pillai", class: "10-A", totalAura: 1120, quizPoints: 390, attendancePoints: 360, communityPoints: 220, badges: 6, avatar: "/Avatar/Female Avatar Age14.png" },
+  { rank: 4, name: "Arjun Thomas", class: "9-A", totalAura: 1050, quizPoints: 350, attendancePoints: 300, communityPoints: 260, badges: 6, avatar: "/Avatar/Male Avatar Age14.png" },
+  { rank: 5, name: "Meera Sharma", class: "8-A", totalAura: 980, quizPoints: 340, attendancePoints: 280, communityPoints: 230, badges: 5, avatar: "/Avatar/Female Avatar Age13.png" },
+  { rank: 6, name: "Vishnu Mohan", class: "9-B", totalAura: 920, quizPoints: 310, attendancePoints: 290, communityPoints: 190, badges: 5, avatar: "/Avatar/Male Avatar Age13.png" },
+  { rank: 7, name: "Priya Nair", class: "8-A", totalAura: 870, quizPoints: 280, attendancePoints: 310, communityPoints: 160, badges: 4, avatar: "/Avatar/Female Avatar Age12.png" },
+  { rank: 8, name: "Kiran Dev", class: "7-A", totalAura: 820, quizPoints: 260, attendancePoints: 270, communityPoints: 180, badges: 4, avatar: "/Avatar/Male Avatar Age12.png" },
 ];
 
 export const auraEarningTrend = [

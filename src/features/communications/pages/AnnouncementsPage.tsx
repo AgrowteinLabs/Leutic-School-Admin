@@ -1,315 +1,228 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { StatCard } from "../../../components/StatCard";
-import { Send, X, Globe, Eye, ShieldCheck, Mail } from "lucide-react";
+import { motion } from "framer-motion";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 
-export const AnnouncementsPage = ({ isHubChild, forceCompose }: { isHubChild?: boolean, forceCompose?: number }) => {
+interface AnnouncementRecord {
+  id: string;
+  title: string;
+  content: string;
+  targetRoles: string[];
+  schoolId?: string;
+  createdAt: string;
+}
+
+export const AnnouncementsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("all");
-  const [isComposing, setIsComposing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [announcements, setAnnouncements] = useState<AnnouncementRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (forceCompose && forceCompose > 0) {
-      setIsComposing(true);
+    const fetchAnnouncements = async () => {
+      setIsLoading(true);
+      try {
+        interface GetAnnouncementsResponse {
+          announcements: AnnouncementRecord[];
+        }
+        const res = await graphqlRequest<GetAnnouncementsResponse>(`
+          query GetAnnouncementsList {
+            announcements {
+              id
+              title
+              content
+              targetRoles
+              schoolId
+              createdAt
+            }
+          }
+        `);
+        setAnnouncements(res.announcements || []);
+      } catch (err) {
+        console.error("Failed to fetch announcements:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAnnouncements();
+  }, []);
+
+  const filteredAnnouncements = announcements.filter((ann) => {
+    const matchesSearch =
+      ann.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ann.content.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (activeFilter === "published") {
+      return matchesSearch;
     }
-  }, [forceCompose]);
-  const [newNotice, setNewNotice] = useState({
-    title: "",
-    content: "",
-    visibility: "Parents",
-    target: "All Grades"
+    if (activeFilter === "drafts" || activeFilter === "scheduled") {
+      return false;
+    }
+    return matchesSearch;
   });
 
-  const announcements = [
-    {
-      id: "ANN-2024-001",
-      title: "Quarterly Parent-Teacher Meeting",
-      content:
-        "The quarterly PTM is scheduled for next Friday. All parents are requested to attend to discuss terminal results.",
-      visibility: "Parents",
-      target: "All Grades",
-      date: "Oct 24, 2024",
-      status: "Delivered",
-      engagement: "84%",
-    },
-    {
-      id: "ANN-2024-002",
-      title: "New Science Lab Safety Protocols",
-      content:
-        "Important updates to lab safety procedures. Mandatory review for all science faculty and students.",
-      visibility: "Teachers, Students",
-      target: "Science Dept",
-      date: "Oct 22, 2024",
-      status: "Delivered",
-      engagement: "92%",
-    },
-    {
-      id: "ANN-2024-003",
-      title: "Annual Sports Day Volunteer Signup",
-      content:
-        "Students interested in volunteering for the Annual Sports Day can now register via the portal.",
-      visibility: "Students",
-      target: "High School",
-      date: "Oct 20, 2024",
-      status: "Draft",
-      engagement: "-",
-    },
-  ];
-
-  const handlePost = () => {
-    // Demonstrate success
-    setIsComposing(false);
-    setNewNotice({ title: "", content: "", visibility: "Parents", target: "All Grades" });
-  };
-
   return (
-    <div
-      className={cn(
-        "flex-1 flex flex-col overflow-hidden bg-[#F9FAFB]",
-        !isHubChild && "h-screen",
-      )}
-    >
+    <div className={cn("flex-1 flex flex-col overflow-hidden bg-white", !isHubChild && "h-screen")}>
       {!isHubChild && (
         <TopBar
-          title={isComposing ? "Draft Institutional Notice" : "School Notices"}
-          subtitle={isComposing ? "Compose a new school-wide broadcast" : "Official school broadcasts and engagement tracking"}
+          title="School Notices"
+          subtitle="Official school broadcasts and engagement tracking"
           actions={
-            !isComposing && (
-              <button 
-                onClick={() => setIsComposing(true)}
-                className="bg-primary text-secondary px-6 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2 hover:bg-secondary hover:text-white transition-all shadow-lg shadow-primary/10 active:scale-95"
-              >
-                <PlusIcon className="size-4" />
-                Post Announcement
-              </button>
-            )
+            <button
+              onClick={() => navigate("/communications/announcements/add")}
+              className="btn-primary h-10 px-6 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Post Announcement
+            </button>
           }
         />
       )}
 
-      <div className="flex-1 overflow-y-auto no-scrollbar mx-auto px-6 lg:px-10 py-10 max-w-[1400px] space-y-10">
-        
-        {!isComposing ? (
-          <>
+      <div className="flex-1 overflow-y-auto no-scrollbar py-8 px-6 lg:px-10">
+        <div className="max-w-[1400px] mx-auto space-y-10">
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-10"
+          >
             {/* Engagement Analytics Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard 
-                label="Avg. Engagement"
+              <StatCard
+                label="Engagement rate"
                 value="72%"
-                icon="visibility"
+                icon="analytics"
                 tooltip="Average percentage of users who clicked or interaction with the notification content."
               />
-              <StatCard 
-                label="Delivery Success"
+              <StatCard
+                label="Delivery success"
                 value="99.9%"
-                icon="check_circle"
-                iconBg="bg-emerald-50 text-emerald-500"
+                icon="task_alt"
+                iconBg="bg-green-50"
                 tooltip="Percentage of notifications successfully pushed via App Notification and SMS bridge."
               />
-              <StatCard 
-                label="Active Drafts"
-                value="04"
-                icon="edit_note"
+              <StatCard
+                label="Active drafts"
+                value="0"
+                icon="edit_document"
                 tooltip="Notices currently being composed or pending approval before institutional release."
               />
             </div>
 
-            {/* Announcements List Container */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/30 overflow-hidden">
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50 backdrop-blur-sm">
-                <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
-                  {["all", "published", "drafts", "scheduled"].map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => setActiveFilter(filter)}
-                      className={cn(
-                        "px-6 py-2 text-[12px] font-bold transition-all rounded-lg capitalize",
-                        activeFilter === filter
-                          ? "bg-white text-secondary shadow-sm border border-slate-100"
-                          : "text-slate-400 hover:text-secondary",
-                      )}
-                    >
-                      {filter}
-                    </button>
-                  ))}
+            {/* Filter & Table Container */}
+            <div className="bg-white rounded-[24px] border border-slate-100 overflow-hidden">
+              <div className="p-3 flex items-center gap-3 border-b border-slate-100/50 rounded-t-[24px] relative z-20">
+                <div className="flex-1">
+                  <div className="relative group">
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#B0AFA8] group-focus-within:text-primary transition-colors text-lg z-20">
+                      search
+                    </span>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search notices..."
+                      className="input-base w-full pl-11 pr-4 placeholder:text-[#B0AFA8] placeholder:font-medium transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {["all", "published", "drafts", "scheduled"].map((filter) => {
+                    const isActive = activeFilter === filter;
+                    return (
+                      <button
+                        key={filter}
+                        onClick={() => setActiveFilter(filter)}
+                        className={cn(
+                          "px-5 py-2 text-[12px] font-bold transition-all rounded-xl capitalize border",
+                          isActive
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-white border-slate-100 text-[#B0AFA8] hover:text-foreground/70 hover:bg-slate-50",
+                        )}
+                      >
+                        {filter}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <div className="overflow-x-auto px-2 pb-2">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-white border-b border-slate-50">
-                      <th className="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Notice Subject</th>
-                      <th className="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Audience</th>
-                      <th className="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Scope</th>
-                      <th className="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Engagement</th>
-                      <th className="px-6 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="border-b border-slate-100 bg-[#F7F8F4]/30">
+                    <tr>
+                      <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Notice Detail</th>
+                      <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Audience Scope</th>
+                      <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-5 text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {announcements.map((ann) => (
-                      <tr key={ann.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-6 py-6 max-w-sm">
-                          <p className="text-[14px] font-bold text-secondary mb-1.5">{ann.title}</p>
-                          <p className="text-xs text-slate-500 line-clamp-1 leading-relaxed">{ann.content}</p>
-                          <div className="flex items-center gap-2 mt-3 text-[10px] font-bold text-slate-300 italic tracking-tight">
-                            <span className="material-symbols-outlined text-[12px]">schedule</span>
-                            {ann.date} • {ann.id}
-                          </div>
-                        </td>
-                        <td className="px-6 py-6">
-                          <div className="flex flex-wrap gap-2">
-                            {ann.visibility.split(", ").map((v, i) => (
-                              <span key={i} className="text-[10px] font-bold px-3 py-1 rounded-lg bg-secondary/5 text-secondary/60 border border-secondary/10 uppercase tracking-tighter">
-                                {v}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-6 py-6 text-xs font-bold text-slate-500 italic uppercase tracking-tighter">
-                          {ann.target}
-                        </td>
-                        <td className="px-6 py-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-primary shadow-sm" style={{ width: ann.engagement === "-" ? "0%" : ann.engagement }} />
-                            </div>
-                            <span className="text-[11px] font-black text-secondary">{ann.engagement}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-6 text-right">
-                          <button className="size-9 rounded-xl border border-slate-100 bg-white flex items-center justify-center text-slate-300 hover:text-primary hover:border-primary/20 transition-all shadow-sm">
-                            <ArrowRightIcon className="size-4" />
-                          </button>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-10 text-center text-[12px] text-[#B0AFA8] font-bold">
+                          Loading announcements...
                         </td>
                       </tr>
-                    ))}
+                    ) : filteredAnnouncements.length > 0 ? (
+                      filteredAnnouncements.map((ann) => (
+                        <tr key={ann.id} className="hover:bg-[#F7F8F4]/50 transition-colors group">
+                          <td className="px-6 py-4 min-w-[320px]">
+                            <div className="space-y-1">
+                              <p className="text-[13px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{ann.title}</p>
+                              <p className="text-[11px] text-slate-500 line-clamp-1 font-medium">{ann.content}</p>
+                              <div className="flex items-center gap-3 pt-0.5">
+                                <span className="text-[10px] font-bold text-slate-400 tracking-tight">{ann.id.slice(0, 8)}</span>
+                                <div className="size-1 rounded-full bg-slate-200" />
+                                <span className="text-[10px] font-bold text-slate-400 tracking-tight">
+                                  {new Date(ann.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" })}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              {ann.targetRoles.map((v, i) => (
+                                <span key={i} className="px-2.5 py-1 rounded-full bg-slate-50 text-[10px] font-bold text-slate-500 border border-slate-100 transition-all group-hover:bg-white group-hover:border-slate-200 uppercase">
+                                  {v}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="size-1.5 rounded-full bg-green-500" />
+                              <span className="text-[12px] font-bold text-slate-600">Published</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button className="size-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary/30 transition-all shadow-sm hover:shadow-md">
+                              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-10 text-center text-[12px] text-[#B0AFA8] font-bold">
+                          No announcements found
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
-          </>
-        ) : (
-          /* Compose Mode: New Notice Form */
-          <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-5 fade-in duration-500">
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-[#F9FAFB]/50">
-                 <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                        <Globe size={20} />
-                    </div>
-                    <div>
-                        <h3 className="text-secondary font-bold text-base">New Announcement</h3>
-                        <p className="text-[11px] font-medium text-slate-400">Drafting institutional broadcast</p>
-                    </div>
-                 </div>
-                 <button 
-                  onClick={() => setIsComposing(false)}
-                  className="size-10 rounded-2xl bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors"
-                 >
-                    <X size={18} />
-                 </button>
-              </div>
+          </motion.div>
 
-              <div className="p-8 space-y-8">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Notice Title / Subject</label>
-                    <input 
-                        type="text"
-                        placeholder="e.g. Science Lab Maintenance Updates..."
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-semibold text-secondary placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                        value={newNotice.title}
-                        onChange={(e) => setNewNotice({...newNotice, title: e.target.value})}
-                    />
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Primary Audience</label>
-                        <select 
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-semibold text-secondary appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20"
-                            value={newNotice.visibility}
-                            onChange={(e) => setNewNotice({...newNotice, visibility: e.target.value})}
-                        >
-                            <option>Parents</option>
-                            <option>Students</option>
-                            <option>Staff & Faculty</option>
-                            <option>All Institutional</option>
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Scope / Grade</label>
-                        <select 
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-semibold text-secondary appearance-none cursor-pointer focus:ring-2 focus:ring-primary/20"
-                            value={newNotice.target}
-                            onChange={(e) => setNewNotice({...newNotice, target: e.target.value})}
-                        >
-                            <option>All Grades</option>
-                            <option>High School Only</option>
-                            <option>Grade 10 & 11</option>
-                            <option>Specific Dept Only</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Content / Message Body</label>
-                    <textarea 
-                        rows={6}
-                        placeholder="Detail the announcement here. Parents will receive this via the mobile app portal..."
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 text-sm font-medium text-slate-600 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none leading-relaxed"
-                        value={newNotice.content}
-                        onChange={(e) => setNewNotice({...newNotice, content: e.target.value})}
-                    ></textarea>
-                </div>
-
-                <div className="bg-amber-50/50 p-5 rounded-2xl border border-amber-100 flex items-start gap-4">
-                    <ShieldCheck size={20} className="text-amber-500 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-amber-600 uppercase tracking-widest">Post Verification Notice</p>
-                        <p className="text-[12px] text-amber-600/70 font-medium leading-relaxed italic">This notice will be logged under your digital signature (Principal) and distributed instantly to {newNotice.visibility}.</p>
-                    </div>
-                </div>
-              </div>
-
-              <div className="p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-slate-400">
-                        <Mail size={16} />
-                        <span className="text-[11px] font-bold">Email Copy</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-primary">
-                        <Eye size={16} />
-                        <span className="text-[11px] font-bold">Visibility Check Active</span>
-                    </div>
-                </div>
-                <button 
-                  onClick={handlePost}
-                  className="bg-secondary text-white px-8 py-4 rounded-2xl text-[14px] font-bold flex items-center gap-3 hover:bg-primary hover:text-secondary transition-all shadow-xl shadow-secondary/10 active:scale-[0.98]"
-                >
-                    <Send size={18} fill="currentColor" strokeWidth={0} />
-                    Finalize & Post
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
+        </div>
       </div>
     </div>
   );
 };
-
-// Internal Icons for clean UI
-const PlusIcon = (props: any) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <line x1="12" y1="5" x2="12" y2="19"></line>
-    <line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-);
-
-const ArrowRightIcon = (props: any) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M5 12h14"></path>
-    <path d="m12 5 7 7-7 7"></path>
-  </svg>
-);

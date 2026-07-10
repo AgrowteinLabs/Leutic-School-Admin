@@ -93,13 +93,13 @@ export const FeesPage = () => {
     const getStatusStyles = (status: string) => {
         switch (status.toLowerCase()) {
             case "paid":
-                return "bg-emerald-50 text-emerald-600 border-emerald-100";
+                return "bg-[#EAF2D7] text-[#2E7D32] border-[#D9EA85]";
             case "pending":
-                return "bg-amber-50 text-amber-600 border-amber-100";
+                return "bg-[#FEF3C7] text-[#B45309] border-[#FDE68A]";
             case "overdue":
-                return "bg-rose-50 text-rose-600 border-rose-100";
+                return "bg-[#FEE2E2] text-[#B91C1C] border-[#FECACA]";
             default:
-                return "bg-slate-50 text-slate-600 border-slate-100";
+                return "bg-[#F7F8F4] text-[#444441] border-slate-100";
         }
     };
 
@@ -110,11 +110,11 @@ export const FeesPage = () => {
                 subtitle="Track and manage school fee collections"
                 actions={
                     <div className="flex gap-3">
-                        <button className="bg-white border border-slate-100 text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:bg-slate-50 transition-all">
+                        <button className="bg-white border border-slate-100 text-foreground px-6 h-10 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 hover:bg-[#F7F8F4] transition-all">
                             <span className="material-symbols-outlined text-lg">payments</span>
                             Bulk Reminder
                         </button>
-                        <button className="bg-primary text-secondary px-4 py-2 rounded-xl text-[13px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all shadow-sm shadow-slate-100/30">
+                        <button className="btn-primary px-6 h-10 rounded-[10px] text-[13px] font-semibold flex items-center gap-2  transition-all shadow-sm shadow-slate-100/30">
                             <span className="material-symbols-outlined text-lg font-bold">add</span>
                             Set New Fee
                         </button>
@@ -134,7 +134,7 @@ export const FeesPage = () => {
                     {/* Main Content Card */}
                     <div className="bg-white border border-slate-100 rounded-2xl shadow-sm shadow-slate-100/30 overflow-hidden">
                         <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="flex gap-1 bg-slate-50 p-1 rounded-xl w-fit">
+                            <div className="flex gap-1 bg-[#F7F8F4] p-1 rounded-[10px] w-fit">
                                 {["all", "pending", "paid"].map((tab) => (
                                     <button
                                         key={tab}
@@ -142,8 +142,8 @@ export const FeesPage = () => {
                                         className={cn(
                                             "px-4 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all",
                                             activeTab === tab
-                                                ? "bg-white text-secondary shadow-sm"
-                                                : "text-slate-400 hover:text-secondary"
+                                                ? "bg-white text-foreground shadow-sm"
+                                                : "text-[#B0AFA8] hover:text-foreground"
                                         )}
                                     >
                                         {tab} Receipts
@@ -152,14 +152,14 @@ export const FeesPage = () => {
                             </div>
                             <div className="flex gap-3">
                                 <div className="relative">
-                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#B0AFA8] text-[18px]">search</span>
                                     <input
                                         type="text"
                                         placeholder="Search by student name..."
-                                        className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-primary/20 w-64 transition-all"
+                                        className="pl-10 pr-4 py-2 bg-[#F7F8F4] border border-slate-100 rounded-[10px] text-[13px] font-medium placeholder:font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 w-64 transition-all"
                                     />
                                 </div>
-                                <button className="size-10 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-secondary hover:bg-slate-100 transition-all">
+                                <button className="size-10 bg-[#F7F8F4] border border-slate-100 rounded-[10px] flex items-center justify-center text-[#B0AFA8] hover:text-foreground hover:bg-[#F7F8F4] transition-all">
                                     <span className="material-symbols-outlined text-[20px]">filter_list</span>
                                 </button>
                             </div>
@@ -168,33 +168,33 @@ export const FeesPage = () => {
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="bg-slate-50/50 border-b border-slate-100">
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500">Student & Grade</th>
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500">Fee Category</th>
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500">Amount</th>
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500">Due Date</th>
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500">Status</th>
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500">Payment Method</th>
-                                        <th className="px-6 py-4 text-[11px] font-bold text-slate-500 text-right">Action</th>
+                                    <tr className="bg-[#F7F8F4] border-b border-slate-100">
+                                        <th className="px-6 py-4 text-[11px] font-bold text-[#444441]">Student & Grade</th>
+                                        <th className="px-6 py-4 text-[11px] font-bold text-[#444441]">Fee Category</th>
+                                        <th className="px-6 py-4 text-[11px] font-bold text-[#444441]">Amount</th>
+                                        <th className="px-6 py-4 text-[11px] font-bold text-[#444441]">Due Date</th>
+                                        <th className="px-6 py-4 text-[11px] font-bold text-[#444441]">Status</th>
+                                        <th className="px-6 py-4 text-[11px] font-bold text-[#444441]">Payment Method</th>
+                                        <th className="px-6 py-4 text-[11px] font-bold text-[#444441] text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {feeRecords.map((record) => (
-                                        <tr key={record.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
+                                        <tr key={record.id} className="hover:bg-[#F7F8F4] transition-colors group cursor-pointer">
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col">
-                                                    <span className="text-[13px] font-semibold text-secondary group-hover:underline decoration-primary underline-offset-4">{record.student}</span>
-                                                    <span className="text-[11px] font-medium text-slate-400">{record.grade}</span>
+                                                    <span className="text-[13px] font-semibold text-foreground group-hover:underline decoration-primary underline-offset-4">{record.student}</span>
+                                                    <span className="text-[11px] font-medium text-[#B0AFA8]">{record.grade}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="text-[12px] font-medium text-slate-600">{record.category}</span>
+                                                <span className="text-[12px] font-medium text-[#444441]">{record.category}</span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="text-[13px] font-black text-secondary">₹{record.amount.toLocaleString()}</span>
+                                                <span className="text-[13px] font-black text-foreground">₹{record.amount.toLocaleString()}</span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="text-[12px] font-medium text-slate-500">{record.dueDate}</span>
+                                                <span className="text-[12px] font-medium text-[#444441]">{record.dueDate}</span>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={cn(
@@ -205,10 +205,10 @@ export const FeesPage = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className="text-[11px] font-medium text-slate-400 italic">{record.method}</span>
+                                                <span className="text-[11px] font-medium text-[#B0AFA8] italic">{record.method}</span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button className="size-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-secondary transition-all">
+                                                <button className="size-8 rounded-lg bg-[#F7F8F4] flex items-center justify-center text-[#B0AFA8] hover:bg-primary hover:text-foreground transition-all">
                                                     <span className="material-symbols-outlined text-[18px]">receipt_long</span>
                                                 </button>
                                             </td>
@@ -219,13 +219,13 @@ export const FeesPage = () => {
                         </div>
 
                         {/* Pagination Placeholder */}
-                        <div className="p-4 bg-slate-50/30 flex items-center justify-between border-t border-slate-100">
-                            <p className="text-[11px] text-slate-400 font-medium tracking-tight">Showing 1-5 of 1,240 records</p>
+                        <div className="p-4 bg-[#F7F8F4]/30 flex items-center justify-between border-t border-slate-100">
+                            <p className="text-[11px] text-[#B0AFA8] font-medium tracking-tight">Showing 1-5 of 1,240 records</p>
                             <div className="flex gap-2">
-                                <button className="size-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:border-primary hover:text-secondary transition-all disabled:opacity-50" disabled>
+                                <button className="size-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-[#B0AFA8] hover:border-primary hover:text-foreground transition-all disabled:opacity-50" disabled>
                                     <span className="material-symbols-outlined text-[18px]">chevron_left</span>
                                 </button>
-                                <button className="size-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:border-primary hover:text-secondary transition-all">
+                                <button className="size-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-[#B0AFA8] hover:border-primary hover:text-foreground transition-all">
                                     <span className="material-symbols-outlined text-[18px]">chevron_right</span>
                                 </button>
                             </div>
@@ -239,7 +239,7 @@ export const FeesPage = () => {
                                 <span className="material-symbols-outlined text-9xl">insights</span>
                             </div>
                             <div className="relative z-10 flex flex-col h-full gap-4">
-                                <div className="bg-primary text-secondary size-12 rounded-2xl flex items-center justify-center shadow-lg">
+                                <div className="btn-primary size-12 rounded-2xl flex items-center justify-center shadow-lg">
                                     <span className="material-symbols-outlined font-black">currency_rupee</span>
                                 </div>
                                 <div>
@@ -249,7 +249,7 @@ export const FeesPage = () => {
                                         High-delinquency cases are concentrated in Grade 12-B. Recommend triggering "Fee-2" sms reminders next Monday.
                                     </p>
                                 </div>
-                                <button className="mt-auto w-fit px-5 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-[12px] font-bold tracking-tight transition-all border border-white/10">
+                                <button className="mt-auto w-fit px-5 py-2 bg-white/10 hover:bg-white/20 rounded-[10px] text-[12px] font-bold tracking-tight transition-all border border-white/10">
                                     Detailed Collection Report →
                                 </button>
                             </div>
@@ -257,8 +257,8 @@ export const FeesPage = () => {
 
                         <div className="bg-white border border-slate-100 p-8 rounded-2xl shadow-sm shadow-slate-100/30 flex flex-col justify-between">
                             <div>
-                                <h3 className="text-secondary text-[15px] font-bold mb-1">Collection by Category</h3>
-                                <p className="text-slate-400 text-[11px] font-medium italic">Breakdown of total revenue</p>
+                                <h3 className="text-foreground text-[15px] font-bold mb-1">Collection by Category</h3>
+                                <p className="text-[#B0AFA8] text-[11px] font-medium italic">Breakdown of total revenue</p>
                             </div>
                             <div className="space-y-4 my-6">
                                 {[
@@ -267,11 +267,11 @@ export const FeesPage = () => {
                                     { label: "Activity & Clubs", percent: 10, color: "bg-slate-200" },
                                 ].map((item, idx) => (
                                     <div key={idx} className="space-y-1.5">
-                                        <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                                        <div className="flex justify-between text-[11px] font-bold text-[#444441]">
                                             <span>{item.label}</span>
-                                            <span className="text-secondary">{item.percent}%</span>
+                                            <span className="text-foreground">{item.percent}%</span>
                                         </div>
-                                        <div className="h-2.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100/50">
+                                        <div className="h-2.5 bg-[#F7F8F4] rounded-full overflow-hidden border border-slate-100/50">
                                             <div
                                                 className={`h-full ${item.color} rounded-full transition-all duration-1000`}
                                                 style={{ width: `${item.percent}%` }}
@@ -280,7 +280,7 @@ export const FeesPage = () => {
                                     </div>
                                 ))}
                             </div>
-                            <button className="text-[12px] font-bold text-slate-400 hover:text-secondary hover:underline underline-offset-4 self-end transition-all">
+                            <button className="text-[12px] font-bold text-[#B0AFA8] hover:text-foreground hover:underline underline-offset-4 self-end transition-all">
                                 Adjust Fee Structure
                             </button>
                         </div>
