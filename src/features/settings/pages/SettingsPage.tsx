@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
@@ -26,6 +26,9 @@ export const SettingsPage = () => {
     const navigate = useNavigate();
     const { schoolProfile, refetchSchoolProfile } = useApp();
     const [fontSize, setFontSize] = useState(localStorage.getItem('pds-font-size') || 'theme-small');
+    const [darkMode, setDarkMode] = useState(localStorage.getItem('pds-dark-mode') === 'true');
+    const [highContrast, setHighContrast] = useState(localStorage.getItem('pds-high-contrast') === 'true');
+    const [reducedMotion, setReducedMotion] = useState(localStorage.getItem('pds-reduced-motion') === 'true');
 
     // Edit School Profile States
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -80,6 +83,28 @@ export const SettingsPage = () => {
         }
     };
 
+    // Apply accessibility preferences to the document
+    const applyAccessibilityPrefs = (prefs: { dark?: boolean; contrast?: boolean; motion?: boolean }) => {
+        if (prefs.dark !== undefined) {
+            document.documentElement.classList.toggle('dark', prefs.dark);
+        }
+        if (prefs.contrast !== undefined) {
+            document.documentElement.classList.toggle('high-contrast', prefs.contrast);
+        }
+        if (prefs.motion !== undefined) {
+            document.documentElement.classList.toggle('reduce-motion', prefs.motion);
+        }
+    };
+
+    // Initialize all accessibility preferences on mount
+    useEffect(() => {
+        applyAccessibilityPrefs({
+            dark: darkMode,
+            contrast: highContrast,
+            motion: reducedMotion
+        });
+    }, []);
+
     const handleFontSizeChange = (size: string) => {
         setFontSize(size);
         localStorage.setItem('pds-font-size', size);
@@ -90,6 +115,27 @@ export const SettingsPage = () => {
         
         // Add selected theme
         document.documentElement.classList.add(size);
+    };
+
+    const handleDarkModeToggle = () => {
+        const newVal = !darkMode;
+        setDarkMode(newVal);
+        localStorage.setItem('pds-dark-mode', String(newVal));
+        document.documentElement.classList.toggle('dark', newVal);
+    };
+
+    const handleHighContrastToggle = () => {
+        const newVal = !highContrast;
+        setHighContrast(newVal);
+        localStorage.setItem('pds-high-contrast', String(newVal));
+        document.documentElement.classList.toggle('high-contrast', newVal);
+    };
+
+    const handleReducedMotionToggle = () => {
+        const newVal = !reducedMotion;
+        setReducedMotion(newVal);
+        localStorage.setItem('pds-reduced-motion', String(newVal));
+        document.documentElement.classList.toggle('reduce-motion', newVal);
     };
 
     const sizeOptions = [
@@ -180,63 +226,180 @@ export const SettingsPage = () => {
                         </div>
 
                         {/* Section 2: Display & Accessibility */}
-                        <div className="pt-12 border-t border-slate-100 space-y-6">
+                        <div className="pt-12 border-t border-slate-100 space-y-8">
                             <div className="flex flex-col gap-1">
                                 <h2 className="text-[20px] font-bold text-foreground tracking-tight">Display & Accessibility</h2>
-                                <p className="text-[13px] font-medium text-[#B0AFA8]">Adjust the interface font size for your visual comfort</p>
+                                <p className="text-[13px] font-medium text-[#B0AFA8]">Customise the interface to match your visual comfort and accessibility needs</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl">
-                                {sizeOptions.map((opt) => (
-                                    <button 
-                                        key={opt.id}
-                                        onClick={() => handleFontSizeChange(opt.id)}
-                                        className={cn(
-                                            "group relative flex flex-col items-start p-5 bg-white border rounded-[22px] transition-all duration-300 hover:shadow-md",
-                                            fontSize === opt.id 
-                                                ? "border-[#152328] bg-[#F7F8F4] ring-4 ring-[#152328]/5 shadow-sm" 
-                                                : "border-slate-100 hover:border-slate-200"
-                                        )}
-                                    >
-                                        <div className="flex items-center justify-between w-full mb-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className={cn(
-                                                    "size-4 rounded-full border flex items-center justify-center shrink-0 transition-colors",
-                                                    fontSize === opt.id ? "border-[#152328] bg-[#152328] text-white" : "border-slate-300 bg-white"
-                                                )}>
-                                                    {fontSize === opt.id && (
-                                                        <div className="size-1.5 rounded-full bg-white" />
-                                                    )}
+                            {/* Font Size Selector */}
+                            <div className="space-y-4 max-w-4xl">
+                                <div className="flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">text_fields</span>
+                                    <span className="text-[12px] font-bold text-[#B0AFA8] uppercase tracking-wider">Font Size</span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    {sizeOptions.map((opt) => (
+                                        <button 
+                                            key={opt.id}
+                                            onClick={() => handleFontSizeChange(opt.id)}
+                                            className={cn(
+                                                "group relative flex flex-col items-start p-4 bg-white border rounded-[18px] transition-all duration-300 hover:shadow-md hover:border-slate-200",
+                                                fontSize === opt.id 
+                                                    ? "border-[#152328] bg-[#F7F8F4] ring-4 ring-[#152328]/5 shadow-sm" 
+                                                    : "border-slate-100"
+                                            )}
+                                        >
+                                            <div className="flex items-center justify-between w-full mb-2">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className={cn(
+                                                        "size-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors",
+                                                        fontSize === opt.id ? "border-[#152328] bg-[#152328]" : "border-slate-300 bg-white"
+                                                    )}>
+                                                        {fontSize === opt.id && (
+                                                            <div className="size-1.5 rounded-full bg-white" />
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[13px] font-bold text-foreground">{opt.label}</span>
                                                 </div>
-                                                <span className="text-[14px] font-bold text-foreground">{opt.label}</span>
+                                                <span className={cn(
+                                                    "font-extrabold text-slate-400 group-hover:text-primary transition-colors select-none",
+                                                    opt.id === 'theme-small' && "text-[11px]",
+                                                    opt.id === 'theme-medium' && "text-[13px]",
+                                                    opt.id === 'theme-large' && "text-[15px]",
+                                                    opt.id === 'theme-xl' && "text-[17px]",
+                                                )}>
+                                                    Aa
+                                                </span>
                                             </div>
-                                            <span className={cn(
-                                                "font-black text-slate-400 group-hover:text-primary transition-colors select-none",
-                                                opt.id === 'theme-small' && "text-[12px]",
-                                                opt.id === 'theme-medium' && "text-[14px]",
-                                                opt.id === 'theme-large' && "text-[16px]",
-                                                opt.id === 'theme-xl' && "text-[18px]",
+                                            
+                                            <p className="text-[10px] font-medium text-[#B0AFA8] text-left">{opt.desc}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Accessibility Toggles */}
+                            <div className="space-y-4 max-w-4xl">
+                                <div className="flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-[18px] text-[#B0AFA8]">accessibility_new</span>
+                                    <span className="text-[12px] font-bold text-[#B0AFA8] uppercase tracking-wider">Accessibility Preferences</span>
+                                </div>
+
+                                <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100">
+                                    {/* Dark Mode */}
+                                    <div className="p-5 flex items-center justify-between group hover:bg-[#F7F8F4]/30 transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <div className={cn(
+                                                "size-10 rounded-xl flex items-center justify-center transition-all duration-300",
+                                                darkMode 
+                                                    ? "bg-[#152328] text-[#D9EA85]" 
+                                                    : "bg-slate-50 text-[#B0AFA8] group-hover:bg-[#152328]/5 group-hover:text-[#152328]"
                                             )}>
-                                                Aa
-                                            </span>
+                                                <span className="material-symbols-outlined text-[20px]">
+                                                    {darkMode ? "dark_mode" : "light_mode"}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <p className="text-[13px] font-bold text-foreground">Dark Mode</p>
+                                                <p className="text-[11px] text-[#B0AFA8] font-medium mt-0.5">
+                                                    {darkMode ? "Reduced glare in low-light environments" : "Switch to a darker colour palette"}
+                                                </p>
+                                            </div>
                                         </div>
-                                        
-                                        <p className="text-[11px] font-medium text-[#B0AFA8] text-left mb-4">{opt.desc}</p>
-                                        
-                                        <div className="mt-auto pt-3 border-t border-slate-100 w-full text-left">
-                                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#B0AFA8] block mb-1">Preview</span>
-                                            <p className={cn(
-                                                "font-semibold text-foreground leading-snug",
-                                                opt.id === 'theme-small' && "text-[12px]",
-                                                opt.id === 'theme-medium' && "text-[14px]",
-                                                opt.id === 'theme-large' && "text-[16px]",
-                                                opt.id === 'theme-xl' && "text-[18px]",
+                                        <button
+                                            onClick={handleDarkModeToggle}
+                                            className={cn(
+                                                "relative inline-flex h-7 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-primary/20",
+                                                darkMode ? "bg-[#152328]" : "bg-slate-200"
+                                            )}
+                                            role="switch"
+                                            aria-checked={darkMode}
+                                            type="button"
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "pointer-events-none inline-block size-6 rounded-full bg-white shadow-sm ring-0 transition-transform duration-300 ease-in-out",
+                                                    darkMode ? "translate-x-4" : "translate-x-0"
+                                                )}
+                                            />
+                                        </button>
+                                    </div>
+
+                                    {/* High Contrast */}
+                                    <div className="p-5 flex items-center justify-between group hover:bg-[#F7F8F4]/30 transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <div className={cn(
+                                                "size-10 rounded-xl flex items-center justify-center transition-all duration-300",
+                                                highContrast 
+                                                    ? "bg-[#152328] text-[#D9EA85]" 
+                                                    : "bg-slate-50 text-[#B0AFA8] group-hover:bg-[#152328]/5 group-hover:text-[#152328]"
                                             )}>
-                                                This is sample text.
-                                            </p>
+                                                <span className="material-symbols-outlined text-[20px]">contrast</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-[13px] font-bold text-foreground">High Contrast</p>
+                                                <p className="text-[11px] text-[#B0AFA8] font-medium mt-0.5">
+                                                    {highContrast ? "Enhanced text and element visibility" : "Increase colour contrast for better readability"}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </button>
-                                ))}
+                                        <button
+                                            onClick={handleHighContrastToggle}
+                                            className={cn(
+                                                "relative inline-flex h-7 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-primary/20",
+                                                highContrast ? "bg-[#152328]" : "bg-slate-200"
+                                            )}
+                                            role="switch"
+                                            aria-checked={highContrast}
+                                            type="button"
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "pointer-events-none inline-block size-6 rounded-full bg-white shadow-sm ring-0 transition-transform duration-300 ease-in-out",
+                                                    highContrast ? "translate-x-4" : "translate-x-0"
+                                                )}
+                                            />
+                                        </button>
+                                    </div>
+
+                                    {/* Reduced Motion */}
+                                    <div className="p-5 flex items-center justify-between group hover:bg-[#F7F8F4]/30 transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <div className={cn(
+                                                "size-10 rounded-xl flex items-center justify-center transition-all duration-300",
+                                                reducedMotion 
+                                                    ? "bg-[#152328] text-[#D9EA85]" 
+                                                    : "bg-slate-50 text-[#B0AFA8] group-hover:bg-[#152328]/5 group-hover:text-[#152328]"
+                                            )}>
+                                                <span className="material-symbols-outlined text-[20px]">animation</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-[13px] font-bold text-foreground">Reduced Motion</p>
+                                                <p className="text-[11px] text-[#B0AFA8] font-medium mt-0.5">
+                                                    {reducedMotion ? "Animations and transitions are minimised" : "Minimise interface animations and transitions"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleReducedMotionToggle}
+                                            className={cn(
+                                                "relative inline-flex h-7 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-primary/20",
+                                                reducedMotion ? "bg-[#152328]" : "bg-slate-200"
+                                            )}
+                                            role="switch"
+                                            aria-checked={reducedMotion}
+                                            type="button"
+                                        >
+                                            <span
+                                                className={cn(
+                                                    "pointer-events-none inline-block size-6 rounded-full bg-white shadow-sm ring-0 transition-transform duration-300 ease-in-out",
+                                                    reducedMotion ? "translate-x-4" : "translate-x-0"
+                                                )}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

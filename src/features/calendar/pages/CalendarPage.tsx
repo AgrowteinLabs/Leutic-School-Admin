@@ -3,6 +3,7 @@ import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 import { motion, AnimatePresence } from "framer-motion";
+import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 
 type CalendarView = "teacher" | "class" | "parent";
 
@@ -49,6 +50,20 @@ export const CalendarPage = () => {
   const [eventDate, setEventDate] = useState("");
   const [eventType, setEventType] = useState("ACTIVITY");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Edit/Delete State
+  const [editingEvent, setEditingEvent] = useState<DBEvent | null>(null);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+
+  // Holiday Quick Action State
+  const [showHolidayModal, setShowHolidayModal] = useState(false);
+  const [holidayName, setHolidayName] = useState("");
+  const [holidayDateStr, setHolidayDateStr] = useState("");
+
+  // Success Feedback State
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successTitle, setSuccessTitle] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const schoolId = localStorage.getItem("school_id") || "";
 
@@ -106,11 +121,14 @@ export const CalendarPage = () => {
       }
 
       // 3. Get Calendars & Events
+      // Note: Backend calendars() query doesn't support schoolId filtering.
+      // We filter client-side using the schoolId field returned on each item.
       const calendarsRes = await graphqlRequest<any>(`
-        query GetCalendars($schoolId: String) {
-          calendars(schoolId: $schoolId, page: 1, pageSize: 100) {
+        query GetCalendars($page: Int, $pageSize: Int) {
+          calendars(page: $page, pageSize: $pageSize) {
             items {
               id
+              schoolId
               name
               classId
               events {
@@ -124,8 +142,10 @@ export const CalendarPage = () => {
             }
           }
         }
-      `, { schoolId });
-      setCalendars(calendarsRes.calendars?.items || []);
+      `, { page: 1, pageSize: 100 });
+      const allCals = calendarsRes.calendars?.items || [];
+      // Filter to only this school's calendars (backend doesn't support schoolId param)
+      setCalendars(allCals.filter((c: any) => c.schoolId === schoolId));
     } catch (err) {
       console.error("Failed to fetch calendar metadata:", err);
     } finally {
@@ -252,19 +272,43 @@ export const CalendarPage = () => {
       .sort((a, b) => a.period - b.period);
   }, [currentYear, currentMonth, selectedDayNum, timetableSlots]);
 
-  // Format period numbers into times (starts 8:30 AM, 60m duration)
-  const getPeriodTimeStr = (periodNum: number) => {
+  // Format period numbers into times using backend startTime when available,
+  // falling back to computed time (8:30 AM + (period-1) * 60 min).
+  const formatTimeStr = (timeStr: string) => {
+    const [h, m] = timeStr.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return timeStr;
+    const amPm = h >= 12 ? "PM" : "AM";
+    const displayH = h % 12 || 12;
+    return `${displayH.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")} ${amPm}`;
+  };
+
+  const getPeriodTimeStr = (periodNum: number, slot?: { startTime?: string; endTime?: string }) => {
+    if (slot?.startTime) {
+      const start = formatTimeStr(slot.startTime);
+      if (slot?.endTime) {
+        const end = formatTimeStr(slot.endTime);
+        return `${start} – ${end}`;
+      }
+      return start;
+    }
+    // Fallback: compute from 8:30 AM base, assume 60 min periods
     const startHour = 8;
     const startMin = 30;
     const totalMinutesStart = startHour * 60 + startMin + (periodNum - 1) * 60;
-
-    let h = Math.floor(totalMinutesStart / 60);
-    const m = totalMinutesStart % 60;
-    const amPm = h >= 12 ? "PM" : "AM";
-    h = h % 12;
-    if (h === 0) h = 12;
-
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")} ${amPm}`;
+    const totalMinutesEnd = totalMinutesStart + 60;
+    let h1 = Math.floor(totalMinutesStart / 60);
+    const m1 = totalMinutesStart % 60;
+    let h2 = Math.floor(totalMinutesEnd / 60);
+    const m2 = totalMinutesEnd % 60;
+    const amPm1 = h1 >= 12 ? "PM" : "AM";
+    const amPm2 = h2 >= 12 ? "PM" : "AM";
+    h1 = h1 % 12;
+    if (h1 === 0) h1 = 12;
+    h2 = h2 % 12;
+    if (h2 === 0) h2 = 12;
+    const start = `${h1.toString().padStart(2, "0")}:${m1.toString().padStart(2, "0")} ${amPm1}`;
+    const end = `${h2.toString().padStart(2, "0")}:${m2.toString().padStart(2, "0")} ${amPm2}`;
+    return `${start} – ${end}`;
   };
 
   // Handle Event Creation
@@ -318,6 +362,7 @@ export const CalendarPage = () => {
       setEventTitle("");
       setEventDesc("");
       setShowNewEventModal(false);
+      setEditingEvent(null);
       fetchData();
     } catch (e) {
       console.error("Failed to save calendar event:", e);
@@ -327,18 +372,109 @@ export const CalendarPage = () => {
     }
   };
 
+  // Open edit modal with pre-filled event data
+  const handleOpenEditModal = (event: DBEvent) => {
+    setEditingEvent(event);
+    setEventTitle(event.title);
+    setEventDesc(event.description || "");
+    setEventDate(event.date.split("T")[0]);
+    setEventType(event.type);
+    setShowNewEventModal(true);
+  };
+
+  // Update an existing event via backend mutation
+  const handleUpdateEvent = async () => {
+    if (!eventTitle || !eventDate || isSaving || !editingEvent) return;
+    setIsSaving(true);
+    try {
+      await graphqlRequest(`
+        mutation UpdateEvent($id: ID!, $input: UpdateEventDto!) {
+          updateEvent(id: $id, updateEventInput: $input) {
+            id
+            title
+          }
+        }
+      `, {
+        id: editingEvent.id,
+        input: {
+          title: eventTitle,
+          description: eventDesc || "Institutional Event",
+          date: new Date(eventDate).toISOString(),
+          type: eventType
+        }
+      });
+
+      setEditingEvent(null);
+      setEventTitle("");
+      setEventDesc("");
+      setShowNewEventModal(false);
+      fetchData();
+    } catch (e) {
+      console.error("Failed to update event:", e);
+      alert("Failed to update event. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Delete an event via backend mutation
+  const handleDeleteEvent = async (eventId: string) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setDeletingEventId(null);
+    try {
+      await graphqlRequest(`
+        mutation RemoveEvent($id: ID!) {
+          removeEvent(id: $id) {
+            id
+          }
+        }
+      `, { id: eventId });
+      fetchData();
+    } catch (e) {
+      console.error("Failed to delete event:", e);
+      alert("Failed to delete event. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Unified save: create or update depending on whether we're editing
+  const handleSaveEvent = () => {
+    if (editingEvent) {
+      handleUpdateEvent();
+    } else {
+      handleCreateEvent();
+    }
+  };
+
+  // Close modal and reset state
+  const handleCloseModal = () => {
+    setShowNewEventModal(false);
+    setEditingEvent(null);
+    setEventTitle("");
+    setEventDesc("");
+    setEventDate("");
+    setEventType("ACTIVITY");
+  };
+
   const handleOpenAddModal = () => {
     const clickedDate = new Date(currentYear, currentMonth, selectedDayNum + 1); // fix offset
     setEventDate(clickedDate.toISOString().split("T")[0]);
     setShowNewEventModal(true);
   };
 
+  // Open holiday confirmation modal
+  const handleOpenHolidayModal = () => {
+    const dateStr = new Date(currentYear, currentMonth, selectedDayNum).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+    setHolidayDateStr(dateStr);
+    setHolidayName("Public Holiday");
+    setShowHolidayModal(true);
+  };
+
   // Create Quick Holiday
   const handleMarkHoliday = async () => {
-    if (isSaving) return;
-    const holidayDateStr = new Date(currentYear, currentMonth, selectedDayNum).toLocaleDateString("en-IN", { day: "numeric", month: "long" });
-    const title = confirm(`Mark ${holidayDateStr} as an institutional holiday?`);
-    if (!title) return;
+    if (isSaving || !holidayName.trim()) return;
     setIsSaving(true);
     try {
       const defaultCal = calendars.find(c => !c.classId);
@@ -370,14 +506,20 @@ export const CalendarPage = () => {
       `, {
         input: {
           calendarId,
-          title: "Public Holiday",
+          title: holidayName || "Public Holiday",
           description: "Marked from Calendar Quick Actions",
           date: new Date(currentYear, currentMonth, selectedDayNum, 12, 0).toISOString(),
           type: "HOLIDAY"
         }
       });
 
+      setShowHolidayModal(false);
       fetchData();
+
+      // Show success feedback
+      setSuccessTitle("Holiday Declared");
+      setSuccessMessage(`${holidayDateStr} has been marked as "${holidayName || "Public Holiday"}".`);
+      setShowSuccess(true);
     } catch (e) {
       console.error(e);
       alert("Failed to mark holiday.");
@@ -596,16 +738,21 @@ export const CalendarPage = () => {
                             evClass = "bg-amber-50 text-amber-700 border-amber-100";
                           }
                           return (
-                            <div
+                            <button
                               key={ev.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditModal(ev);
+                              }}
                               className={cn(
-                                "text-[8px] font-black px-1.5 py-0.5 rounded truncate leading-none tracking-tight border",
+                                "text-[8px] font-black px-1.5 py-0.5 rounded truncate leading-none tracking-tight border text-left cursor-pointer transition-all hover:opacity-80",
                                 evClass
                               )}
-                              title={ev.title}
+                              title={`${ev.title} (click to edit/delete)`}
                             >
                               {ev.title}
-                            </div>
+                            </button>
                           );
                         })}
                         {dayEvents.length > 2 && (
@@ -656,7 +803,9 @@ export const CalendarPage = () => {
                         </div>
                         <div className="pb-3 min-w-0">
                           <p className="text-[11px] font-bold text-[#D9EA85] leading-none mb-1">
-                            {getPeriodTimeStr(item.period)}
+                            <span className="text-white/40 font-normal">Period {item.period}</span>
+                            <span className="text-white/30 mx-1.5">·</span>
+                            {getPeriodTimeStr(item.period, item)}
                           </p>
                           <p className="text-[13px] font-bold truncate pr-2">
                             {item.subjectName}
@@ -693,7 +842,7 @@ export const CalendarPage = () => {
                     selectedDayEvents.map((event) => (
                       <div
                         key={event.id}
-                        className="p-4 rounded-2xl bg-[#F7F8F4] border border-slate-50 hover:border-slate-100 transition-all flex flex-col gap-2"
+                        className="p-4 rounded-2xl bg-[#F7F8F4] border border-slate-50 hover:border-slate-100 transition-all flex flex-col gap-2 group relative"
                       >
                         <div className="flex justify-between items-start">
                           <span
@@ -708,7 +857,7 @@ export const CalendarPage = () => {
                             {new Date(event.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                           </span>
                         </div>
-                        <p className="text-[13px] font-black text-brand-navy">
+                        <p className="text-[13px] font-black text-brand-navy pr-6">
                           {event.title}
                         </p>
                         {event.description && (
@@ -716,6 +865,24 @@ export const CalendarPage = () => {
                             {event.description}
                           </p>
                         )}
+
+                        {/* Hover Actions: Edit & Delete */}
+                        <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleOpenEditModal(event); }}
+                            className="size-7 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all shadow-sm"
+                            title="Edit event"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">edit</span>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeletingEventId(event.id); }}
+                            className="size-7 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
+                            title="Delete event"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">delete</span>
+                          </button>
+                        </div>
                       </div>
                     ))
                   ) : (
@@ -737,7 +904,7 @@ export const CalendarPage = () => {
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={handleMarkHoliday}
+                  onClick={handleOpenHolidayModal}
                   className="w-full bg-[#0F2328] text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#0F2328]/10 hover:bg-[#0F2328]/95 transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">event_busy</span>{" "}Declare Holiday
@@ -748,20 +915,22 @@ export const CalendarPage = () => {
         </div>
       </div>
 
-      {/* Event Creation Modal */}
+      {/* Event Creation/Edit Modal */}
       <AnimatePresence>
         {showNewEventModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <button
               type="button"
               className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm w-full h-full border-0 p-0 block cursor-default"
-              onClick={() => setShowNewEventModal(false)}
+              onClick={handleCloseModal}
               aria-label="Close modal backdrop"
             />
             <div className="relative bg-white p-8 rounded-[32px] max-w-md w-full border border-slate-100 shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-brand-navy tracking-tight">Create Institutional Event</h3>
-                <button onClick={() => setShowNewEventModal(false)} className="size-8 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400">
+                <h3 className="text-xl font-bold text-brand-navy tracking-tight">
+                  {editingEvent ? "Edit Event" : "Create Institutional Event"}
+                </h3>
+                <button onClick={handleCloseModal} className="size-8 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400">
                   <span className="material-symbols-outlined text-lg">close</span>
                 </button>
               </div>
@@ -818,22 +987,143 @@ export const CalendarPage = () => {
 
               <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => setShowNewEventModal(false)}
+                  onClick={handleCloseModal}
                   className="flex-1 h-12 rounded-2xl text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleCreateEvent}
+                  onClick={handleSaveEvent}
                   disabled={!eventTitle || !eventDate || isSaving}
                   className="flex-1 h-12 bg-primary text-foreground text-[14px] font-bold rounded-2xl hover:bg-primary/95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                 >
                   {isSaving ? (
                     <div className="w-5 h-5 border-2 border-foreground border-t-transparent rounded-full animate-spin" />
-                  ) : "Create Event"}
+                  ) : editingEvent ? "Update Event" : "Create Event"}
                 </button>
               </div>
             </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Holiday Confirmation Modal */}
+      <AnimatePresence>
+        {showHolidayModal && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm w-full h-full border-0 p-0 block cursor-default"
+              onClick={() => setShowHolidayModal(false)}
+              aria-label="Close holiday backdrop"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white p-8 rounded-[32px] max-w-sm w-full border border-slate-100 shadow-2xl space-y-6"
+            >
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className="size-14 rounded-full bg-amber-50 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-amber-500 text-3xl">event_busy</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-brand-navy tracking-tight">Declare Holiday</h3>
+                  <p className="text-[13px] text-[#B0AFA8] font-medium mt-1 leading-relaxed">
+                    Mark <span className="font-bold text-foreground">{holidayDateStr}</span> as an institutional holiday
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Holiday Name</span>
+                <input
+                  type="text"
+                  value={holidayName}
+                  onChange={(e) => setHolidayName(e.target.value)}
+                  placeholder="e.g. Public Holiday"
+                  className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-2.5 text-[13px] font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-foreground"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowHolidayModal(false)}
+                  className="flex-1 h-12 rounded-2xl text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors border border-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleMarkHoliday}
+                  disabled={!holidayName.trim() || isSaving}
+                  className="flex-1 h-12 rounded-2xl text-[14px] font-bold text-white bg-[#0F2328] hover:bg-[#0F2328]/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  {isSaving ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : "Confirm Holiday"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Feedback Modal */}
+      <PDSSuccessModal
+        show={showSuccess}
+        title={successTitle}
+        description={successMessage}
+        buttonText="Done"
+        onClose={() => setShowSuccess(false)}
+        onAction={() => setShowSuccess(false)}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deletingEventId && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm w-full h-full border-0 p-0 block cursor-default"
+              onClick={() => setDeletingEventId(null)}
+              aria-label="Close delete backdrop"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white p-8 rounded-[32px] max-w-sm w-full border border-slate-100 shadow-2xl space-y-6"
+            >
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className="size-14 rounded-full bg-red-50 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-red-500 text-3xl">delete_forever</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-brand-navy tracking-tight">Delete Event?</h3>
+                  <p className="text-[13px] text-[#B0AFA8] font-medium mt-1 leading-relaxed">
+                    This action cannot be undone. The event will be permanently removed from the calendar.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeletingEventId(null)}
+                  className="flex-1 h-12 rounded-2xl text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors border border-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteEvent(deletingEventId)}
+                  disabled={isSaving}
+                  className="flex-1 h-12 rounded-2xl text-[14px] font-bold text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  {isSaving ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : "Delete"}
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

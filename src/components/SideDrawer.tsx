@@ -30,7 +30,7 @@ export const SideDrawer = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-[#152328]/30 backdrop-blur-md"
+            className="absolute inset-0 bg-secondary/30 backdrop-blur-md"
           />
           <motion.div
             initial={{ x: "100%" }}
@@ -38,15 +38,15 @@ export const SideDrawer = ({
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
             className={cn(
-              "relative w-full bg-[#FBFBFA] h-full flex flex-col overflow-hidden border-l border-white/20",
+              "relative w-full bg-background h-full flex flex-col overflow-hidden border-l border-border",
               maxWidth
             )}
           >
             {/* Header */}
-            <div className="p-8 pb-8 border-b border-slate-100 relative shrink-0 bg-[#FBFBFA]/80 backdrop-blur-md z-10">
+            <div className="p-8 pb-8 border-b border-border relative shrink-0 bg-background/80 backdrop-blur-md z-10">
               <button
                 onClick={onClose}
-                className="absolute top-8 right-8 size-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[#B0AFA8] hover:text-foreground transition-all group"
+                className="absolute top-8 right-8 size-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-all group"
               >
                 <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
               </button>
@@ -66,7 +66,7 @@ export const SideDrawer = ({
 
             {/* Optional Footer */}
             {footer && (
-              <div className="shrink-0 p-8 bg-white/80 backdrop-blur-xl border-t border-slate-100 relative z-20">
+              <div className="shrink-0 p-8 bg-card/80 backdrop-blur-xl border-t border-border relative z-20">
                 {footer}
               </div>
             )}

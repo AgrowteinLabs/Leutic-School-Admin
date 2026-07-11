@@ -24,22 +24,22 @@ export const TablePagination = ({
   const entriesOptions = [10, 25, 50, 100];
 
   return (
-    <div className="px-8 py-4 border-t border-slate-100 bg-white flex items-center justify-between gap-6 rounded-b-[24px]">
+    <div className="px-8 py-4 border-t border-border bg-card flex items-center justify-between gap-6 rounded-b-[24px]">
 
       {/* Records Info */}
       <div className="flex items-center gap-6">
-        <p className="text-[13px] text-[#444441] font-medium tracking-tight">
+        <p className="text-[13px] text-muted-foreground font-medium tracking-tight">
           Showing <span className="text-foreground font-bold">{startItem}-{endItem}</span>
-          <span className="text-[#B0AFA8] mx-1.5 font-normal">of</span>
+          <span className="text-muted-foreground mx-1.5 font-normal">of</span>
           <span className="text-foreground font-bold">{totalItems}</span>
-          <span className="text-[#B0AFA8] ml-1.5 font-medium">{itemName}</span>
+          <span className="text-muted-foreground ml-1.5 font-medium">{itemName}</span>
         </p>
 
-        <div className="h-4 w-[1px] bg-slate-100" />
+        <div className="h-4 w-[1px] bg-border" />
 
         <div className="flex items-center gap-2.5">
-          <span className="text-[12px] text-[#B0AFA8] font-medium">per page</span>
-          <div className="flex items-center gap-1.5 bg-[#F7F8F4]/50 border border-slate-100 rounded-lg p-1 group focus-within:border-primary/40 focus-within:bg-white transition-all">
+          <span className="text-[12px] text-muted-foreground font-medium">per page</span>
+          <div className="flex items-center gap-1.5 bg-muted/50 border border-border rounded-lg p-1 group focus-within:border-primary/40 focus-within:bg-card transition-all">
             <input
               type="text"
               value={itemsPerPage}
@@ -55,7 +55,7 @@ export const TablePagination = ({
               side="top"
               width="w-24"
               trigger={
-                <button className="size-7 flex items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-primary transition-all">
+                <button className="size-7 flex items-center justify-center rounded-md hover:bg-card hover:shadow-sm text-primary transition-all">
                   <span className="material-symbols-outlined text-[18px]">expand_less</span>
                 </button>
               }
@@ -75,14 +75,14 @@ export const TablePagination = ({
           <button 
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="size-8 flex items-center justify-center rounded-lg text-[#B0AFA8] hover:text-primary hover:bg-[#F7F8F4] transition-all disabled:opacity-20 disabled:cursor-not-allowed group"
+            className="size-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-all disabled:opacity-20 disabled:cursor-not-allowed group"
             title="Previous page"
           >
             <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-0.5 transition-transform">chevron_left</span>
           </button>
 
           <div className="flex items-center gap-2 px-1">
-            <span className="text-[12px] text-[#B0AFA8] font-medium">page</span>
+            <span className="text-[12px] text-muted-foreground font-medium">page</span>
             <input
               type="text"
               value={currentPage}
@@ -92,15 +92,15 @@ export const TablePagination = ({
                   onPageChange(val);
                 }
               }}
-              className="w-8 h-7 bg-[#F7F8F4]/50 border border-slate-100 rounded-lg text-center text-[12px] font-bold text-foreground outline-none focus:bg-white focus:border-primary/40 transition-all tabular-nums"
+              className="w-8 h-7 bg-muted/50 border border-border rounded-lg text-center text-[12px] font-bold text-foreground outline-none focus:bg-card focus:border-primary/40 transition-all tabular-nums"
             />
-            <span className="text-[12px] text-[#B0AFA8] font-medium">of {totalPages || 1}</span>
+            <span className="text-[12px] text-muted-foreground font-medium">of {totalPages || 1}</span>
           </div>
 
           <button 
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages || totalPages === 0}
-            className="size-8 flex items-center justify-center rounded-lg text-[#B0AFA8] hover:text-primary hover:bg-[#F7F8F4] transition-all disabled:opacity-20 disabled:cursor-not-allowed group"
+            className="size-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-all disabled:opacity-20 disabled:cursor-not-allowed group"
             title="Next page"
           >
             <span className="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transition-transform">chevron_right</span>

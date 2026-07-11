@@ -78,15 +78,15 @@ export const TopBar = ({
 
     return (
         <>
-            <header className="border-b border-slate-100 bg-white shrink-0 sticky top-0 z-40">
+            <header className="border-b border-border bg-card shrink-0 sticky top-0 z-40">
                 <div className="max-w-[1400px] mx-auto w-full flex items-center justify-between px-6 lg:px-10 py-5">
                     <div className="flex items-center gap-4">
                         {onBack && (
                             <button
                                 onClick={onBack}
-                                className="p-2 hover:bg-[#F7F8F4] rounded-[10px] transition-colors"
+                                className="p-2 hover:bg-muted rounded-[10px] transition-colors"
                             >
-                                <span className="material-symbols-outlined text-[#B0AFA8] hover:text-foreground">
+                                <span className="material-symbols-outlined text-muted-foreground hover:text-foreground">
                                     arrow_back
                                 </span>
                             </button>
@@ -96,9 +96,9 @@ export const TopBar = ({
                                 {title}
                             </h2>
                             {subtitle ? (
-                                <p className="text-[#B0AFA8] text-[13px] font-medium">{subtitle}</p>
+                                <p className="text-muted-foreground text-[13px] font-medium">{subtitle}</p>
                             ) : (
-                                <p className="text-[#B0AFA8] text-[13px] font-medium">{greeting}, Principal</p>
+                                <p className="text-muted-foreground text-[13px] font-medium">{greeting}, Principal</p>
                             )}
                         </div>
                     </div>
@@ -120,9 +120,9 @@ export const TopBar = ({
 
                             {showQuickMenu && (
                                 <div className="absolute top-[90%] right-0 pt-3 w-[480px] z-50 animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="bg-white border border-slate-100 rounded-[24px] shadow-2xl p-2">
-                                        <div className="px-4 py-3 mb-1 border-b border-slate-50">
-                                            <p className="text-[12px] font-bold text-[#B0AFA8]">Principal Command Center</p>
+                                    <div className="bg-card border border-border rounded-[24px] shadow-2xl p-2">
+                                        <div className="px-4 py-3 mb-1 border-b border-border">
+                                            <p className="text-[12px] font-bold text-muted-foreground">Principal Command Center</p>
                                         </div>
                                         <div className="grid grid-cols-2 gap-1">
                                             {allActions.filter(a => selectedLabels.includes(a.label)).map((action) => (
@@ -132,25 +132,24 @@ export const TopBar = ({
                                                         navigate(action.path || "/");
                                                         setShowQuickMenu(false);
                                                     }}
-                                                    className="flex items-center gap-3 p-3 rounded-[14px] hover:bg-[#F7F8F4] transition-all group/item text-left"
+                                                    className="flex items-center gap-3 p-3 rounded-[14px] hover:bg-muted transition-all group/item text-left"
                                                 >
                                                     <div className={cn("size-9 rounded-xl flex items-center justify-center transition-colors shrink-0", action.bg, action.color)}>
                                                         <span className="material-symbols-outlined text-[20px]">{action.icon}</span>
                                                     </div>
                                                     <div className="flex flex-col min-w-0">
                                                         <span className="text-[13px] font-bold text-foreground truncate">{action.label}</span>
-                                                        <span className="text-[10px] text-[#B0AFA8] font-medium leading-none mt-0.5 truncate">{action.description}</span>
+                                                        <span className="text-[10px] text-muted-foreground font-medium leading-none mt-0.5 truncate">{action.description}</span>
                                                     </div>
                                                 </button>
-                                            ))}
-                                            <div className="col-span-2 mt-2 pt-2 border-t border-slate-50">
+                                            ))}                                                <div className="col-span-2 mt-2 pt-2 border-t border-border">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setShowQuickMenu(false);
                                                         setShowCustomizeModal(true);
                                                     }}
-                                                    className="w-full p-3 rounded-[14px] hover:bg-[#F7F8F4] transition-all flex items-center justify-center gap-3 text-[12px] font-bold text-[#B0AFA8] hover:text-primary"
+                                                    className="w-full p-3 rounded-[14px] hover:bg-muted transition-all flex items-center justify-center gap-3 text-[12px] font-bold text-muted-foreground hover:text-primary"
                                                 >
                                                     <span className="material-symbols-outlined text-[18px]">settings</span>
                                                     Customize Action Menu
@@ -162,9 +161,9 @@ export const TopBar = ({
                             )}
                         </div>
                         {actions}
-                        <button className="relative p-2 text-[#B0AFA8] hover:text-foreground transition-all duration-300 group">
+                        <button className="relative p-2 text-muted-foreground hover:text-foreground transition-all duration-300 group">
                             <span className="material-symbols-outlined text-[24px]">notifications</span>
-                            <span className="absolute top-1 right-1 size-4 bg-[#B91C1C] rounded-full text-[9px] text-white font-black flex items-center justify-center border-2 border-white shadow-sm">3</span>
+                            <span className="absolute top-1 right-1 size-4 bg-[#B91C1C] rounded-full text-[9px] text-white font-black flex items-center justify-center border-2 border-card shadow-sm">3</span>
                         </button>
                     </div>
                 </div>
@@ -176,17 +175,16 @@ export const TopBar = ({
                     <div
                         className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-500"
                         onClick={() => setShowCustomizeModal(false)}
-                    />
-                    <div className="relative w-full max-w-4xl bg-white rounded-[32px] border border-slate-100 shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 max-h-[90vh] flex flex-col">
+                    />                        <div className="relative w-full max-w-4xl bg-card rounded-[32px] border border-border shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 max-h-[90vh] flex flex-col">
                         {/* Header */}
-                        <div className="px-10 py-8 border-b border-slate-100 flex items-center justify-between bg-[#F7F8F4]/30 shrink-0">
+                        <div className="px-10 py-8 border-b border-border flex items-center justify-between bg-muted/30 shrink-0">
                             <div>
                                 <h3 className="text-[20px] font-bold text-foreground tracking-tight">Customize Command Center</h3>
-                                <p className="text-[13px] font-medium text-[#B0AFA8] mt-1">Configure your primary institutional shortcuts for maximum efficiency.</p>
+                                <p className="text-[13px] font-medium text-muted-foreground mt-1">Configure your primary institutional shortcuts for maximum efficiency.</p>
                             </div>
                             <button
                                 onClick={() => setShowCustomizeModal(false)}
-                                className="size-12 rounded-full hover:bg-slate-100 flex items-center justify-center text-[#B0AFA8] transition-colors"
+                                className="size-12 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground transition-colors"
                             >
                                 <span className="material-symbols-outlined text-[24px]">close</span>
                             </button>
@@ -214,25 +212,25 @@ export const TopBar = ({
                                                 className={cn(
                                                     "flex items-center gap-4 p-4 rounded-[18px] cursor-pointer border group relative will-change-transform",
                                                     isSelected
-                                                        ? "bg-white border-primary/50"
-                                                        : "bg-[#F7F8F4]/30 border-slate-200/60 hover:border-slate-300 opacity-60 hover:opacity-100",
-                                                    isDragging && "bg-[#F7F8F4] border-dashed border-primary/30 opacity-100 scale-[0.98]"
+                                                        ? "bg-card border-primary/50"
+                                                        : "bg-muted/30 border-border/60 hover:border-border/80 opacity-60 hover:opacity-100",
+                                                    isDragging && "bg-muted border-dashed border-primary/30 opacity-100 scale-[0.98]"
                                                 )}
                                             >
                                                 <div className={cn("flex items-center gap-3 shrink-0 transition-opacity duration-300", isDragging ? "opacity-0 pointer-events-none" : "opacity-100")}>
-                                                    <span className="material-symbols-outlined text-[#B0AFA8] text-[20px] cursor-grab active:cursor-grabbing">drag_indicator</span>
+                                                    <span className="material-symbols-outlined text-muted-foreground text-[20px] cursor-grab active:cursor-grabbing">drag_indicator</span>
                                                     <div className={cn("size-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105", action.bg, action.color)}>
                                                         <span className="material-symbols-outlined text-[20px]">{action.icon}</span>
                                                     </div>
                                                 </div>
                                                 <div className={cn("flex flex-col flex-1 min-w-0 transition-opacity duration-300", isDragging ? "opacity-0 pointer-events-none" : "opacity-100")}>
                                                     <span className="text-[13px] font-bold text-foreground truncate tracking-tight">{action.label}</span>
-                                                    <span className="text-[10px] text-[#B0AFA8] font-medium leading-none mt-0.5 truncate">{action.description}</span>
+                                                    <span className="text-[10px] text-muted-foreground font-medium leading-none mt-0.5 truncate">{action.description}</span>
                                                 </div>
                                                 <div className={cn(
                                                     "size-5 rounded-full flex items-center justify-center border transition-all shrink-0",
                                                     isDragging ? "opacity-0 pointer-events-none" : "opacity-100",
-                                                    isSelected ? "bg-primary border-primary text-white" : "bg-white border-slate-200"
+                                                    isSelected ? "bg-primary border-primary text-foreground" : "bg-card border-border"
                                                 )}>
                                                     {isSelected && <span className="material-symbols-outlined text-[10px] font-bold">check</span>}
                                                 </div>
@@ -244,14 +242,14 @@ export const TopBar = ({
                         </div>
 
                         {/* Footer */}
-                        <div className="px-10 py-8 bg-[#F7F8F4]/30 border-t border-slate-100 flex items-center justify-between shrink-0">
-                            <p className="text-[12px] font-semi-bold text-[#B0AFA8] hidden sm:block">
+                        <div className="px-10 py-8 bg-muted/30 border-t border-border flex items-center justify-between shrink-0">
+                            <p className="text-[12px] font-semi-bold text-muted-foreground hidden sm:block">
                                 <span className="text-primary font-bold">{selectedLabels.length} of {allActions.length}</span> Actions pinned to header
                             </p>
                             <div className="flex gap-4 w-full sm:w-auto">
                                 <button
                                     onClick={() => setShowCustomizeModal(false)}
-                                    className="flex-1 sm:flex-none px-8 h-12 rounded-[16px] text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
+                                    className="flex-1 sm:flex-none px-8 h-12 rounded-[16px] text-[14px] font-bold text-muted-foreground hover:text-foreground transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -285,7 +283,7 @@ export const Header = ({
                 <h1 className="text-foreground text-2xl font-semibold tracking-tight">
                     {title}
                 </h1>
-                <p className="text-[#B0AFA8] text-sm font-medium">
+                <p className="text-muted-foreground text-sm font-medium">
                     {subtitle}
                 </p>
             </div>

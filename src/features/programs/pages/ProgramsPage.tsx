@@ -114,14 +114,14 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     }
     return programsList.map((p) => ({
       name: p.name,
-      category: p.description || "Academic Enrichment",
+      category: p.description || "Program",
       participants: p.studentCount || 0,
-      status: p.status === "ACTIVE" ? ("Active" as const) : ("Completed" as const),
-      leadTeacher: `Credits: ${p.credits}`,
-      startDate: "Oct 15",
-      endDate: "Dec 10",
-      location: "Main Campus",
-      targetGrades: "Grades 9-12"
+      status: p.status === "ACTIVE" ? ("Active" as const) : p.status === "PLANNING" ? ("Planning" as const) : ("Completed" as const),
+      leadTeacher: "Not assigned",
+      startDate: "—",
+      endDate: "—",
+      location: "—",
+      targetGrades: "Students: " + (p.studentCount || 0)
     }));
   }, [programsList]);
 
