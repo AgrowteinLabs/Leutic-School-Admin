@@ -80,7 +80,7 @@ export const MenuDropdown = ({
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
               className={cn(
-                "fixed z-[9999] bg-white border border-slate-100 rounded-2xl shadow-2xl shadow-slate-900/15 overflow-hidden",
+                "fixed z-[9999] bg-card border border-border rounded-2xl shadow-2xl shadow-slate-900/15 overflow-hidden",
                 width
               )}
               style={{
@@ -109,10 +109,10 @@ export const MenuDropdown = ({
                       className={cn(
                         "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-bold transition-all text-left group",
                         isSelected 
-                          ? "bg-[#EAF2D7] text-foreground border border-[#D9EA85]/20" 
+                          ? "bg-accent text-foreground border border-primary/20" 
                           : item.variant === "danger"
                           ? "text-red-600 hover:bg-red-50"
-                          : "text-[#444441] hover:bg-[#F7F8F4] hover:text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-primary"
                       )}
                     >
                       {item.icon && (

@@ -18,6 +18,36 @@ const UPDATE_SCHOOL_GRADES = `
   }
 `;
 
+const GET_GRADING_SCALE = `
+  query GetGradingScale($schoolId: String!) {
+    gradingScale(schoolId: $schoolId) {
+      scaleType
+      rules {
+        grade
+        minPercent
+        maxPercent
+        points
+        description
+      }
+    }
+  }
+`;
+
+const SAVE_GRADING_SCALE = `
+  mutation SaveGradingScale($schoolId: String!, $input: GradingScaleInput!) {
+    saveGradingScale(schoolId: $schoolId, input: $input) {
+      scaleType
+      rules {
+        grade
+        minPercent
+        maxPercent
+        points
+        description
+      }
+    }
+  }
+`;
+
 const ALL_POSSIBLE_GRADES = [
     "LKG",
     "UKG",
@@ -222,15 +252,37 @@ export const GradeConfigurationPage = () => {
     const [gradingRules, setGradingRules] = useState<GradingBoundary[]>(CBSE_PRESET);
 
     useEffect(() => {
-        const savedScaleType = localStorage.getItem("leutic-scale-type") as any;
-        const savedScaleRules = localStorage.getItem("leutic-scale-rules");
-
-        if (savedScaleType) setGradingScaleType(savedScaleType);
-        if (savedScaleRules) {
-            setGradingRules(JSON.parse(savedScaleRules));
-        } else {
-            setGradingRules(CBSE_PRESET);
-        }
+        const fetchGradingScale = async () => {
+            const schoolId = localStorage.getItem("school_id") || "";
+            if (!schoolId) return loadFallback();
+            try {
+                const res = await graphqlRequest<{
+                    gradingScale: {
+                        scaleType: string;
+                        rules: GradingBoundary[];
+                    } | null;
+                }>(GET_GRADING_SCALE, { schoolId });
+                if (res?.gradingScale?.rules?.length) {
+                    setGradingScaleType(res.gradingScale.scaleType as any);
+                    setGradingRules(res.gradingScale.rules);
+                    return;
+                }
+            } catch (err) {
+                console.warn("Failed to fetch grading scale from backend, falling back to localStorage:", err);
+            }
+            loadFallback();
+        };
+        const loadFallback = () => {
+            const savedScaleType = localStorage.getItem("leutic-scale-type") as any;
+            const savedScaleRules = localStorage.getItem("leutic-scale-rules");
+            if (savedScaleType) setGradingScaleType(savedScaleType);
+            if (savedScaleRules) {
+                setGradingRules(JSON.parse(savedScaleRules));
+            } else {
+                setGradingRules(CBSE_PRESET);
+            }
+        };
+        fetchGradingScale();
     }, []);
 
     const handleScaleTypeChange = (type: string) => {
@@ -293,6 +345,28 @@ export const GradeConfigurationPage = () => {
                 setError(err instanceof Error ? err.message : "Failed to save active grades");
             }
         } else {
+            // Save to backend with localStorage fallback
+            const schoolId = localStorage.getItem("school_id") || "";
+            try {
+                if (schoolId) {
+                    await graphqlRequest(SAVE_GRADING_SCALE, {
+                        schoolId,
+                        input: {
+                            scaleType: gradingScaleType,
+                            rules: gradingRules.map(r => ({
+                                grade: r.grade,
+                                minPercent: r.minPercent,
+                                maxPercent: r.maxPercent,
+                                points: r.points,
+                                description: r.description
+                            }))
+                        }
+                    });
+                }
+            } catch (err) {
+                console.warn("Failed to save grading scale to backend, saving to localStorage instead:", err);
+            }
+            // Always persist to localStorage as fallback
             localStorage.setItem("leutic-scale-type", gradingScaleType);
             localStorage.setItem("leutic-scale-rules", JSON.stringify(gradingRules));
             setSuccessMessage(`Grading scale scheme boundaries saved successfully.`);

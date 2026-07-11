@@ -16,8 +16,8 @@ const NavItem = ({ icon, label, path, active }: NavItemProps) => (
         className={cn(
             "mx-3 flex items-center gap-4 px-5 py-3 transition-all duration-300 rounded-[14px] group text-left relative mb-1",
             active
-                ? "text-foreground font-bold bg-[#EAF2D7] shadow-sm shadow-[#D9EA85]/20"
-                : "text-[#71716A] hover:text-foreground hover:bg-[#F7F8F4] font-medium",
+                ? "text-foreground font-bold bg-accent shadow-sm shadow-primary/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted font-medium",
         )}
     >
         {active && (
@@ -29,7 +29,7 @@ const NavItem = ({ icon, label, path, active }: NavItemProps) => (
         <span
             className={cn(
                 "material-symbols-outlined text-[20px] transition-all duration-300",
-                active ? "fill-1 text-foreground" : "fill-0 text-[#B0AFA8] group-hover:text-foreground group-hover:scale-110"
+                active ? "fill-1 text-foreground" : "fill-0 text-muted-foreground group-hover:text-foreground group-hover:scale-110"
             )}
             style={active ? { fontVariationSettings: "'FILL' 1" } : {}}
         >
@@ -37,20 +37,19 @@ const NavItem = ({ icon, label, path, active }: NavItemProps) => (
         </span>
         <p className={cn(
             "text-[13.5px] tracking-tight transition-colors",
-            active ? "text-foreground" : "text-[#71716A]"
+            active ? "text-foreground" : "text-muted-foreground"
         )}>
             {label}
         </p>
     </Link>
 );
 
-const NavSectionHeader = ({ label }: { label: string }) => (
-    <div className="px-8 pt-6 pb-2">
-        <div className="flex items-center gap-3">
-            <span className="text-[9px] font-black text-[#B0AFA8]/60 uppercase tracking-[0.2em] whitespace-nowrap">{label}</span>
-            <div className="h-[1px] w-full bg-slate-100/60" />
+const NavSectionHeader = ({ label }: { label: string }) => (        <div className="px-8 pt-6 pb-2">
+            <div className="flex items-center gap-3">
+                <span className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] whitespace-nowrap">{label}</span>
+                <div className="h-[1px] w-full bg-border/60" />
+            </div>
         </div>
-    </div>
 );
 
 
@@ -91,7 +90,7 @@ export const Sidebar = () => {
 
 
     return (
-        <aside className="w-64 bg-white border-r border-slate-100 sticky top-0 h-screen flex flex-col shrink-0 z-50">
+        <aside className="w-64 bg-card border-r border-border sticky top-0 h-screen flex flex-col shrink-0 z-50">
             {/* Logo */}
             <div className="px-8 py-10">
                 <img
@@ -103,7 +102,7 @@ export const Sidebar = () => {
 
             {/* Nav Items — Scrollable */}
             <div className="flex-1 relative flex flex-col overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-white to-transparent pointer-events-none z-10" />
+                <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-card to-transparent dark:from-transparent pointer-events-none z-10" />
                 <div className="flex-1 overflow-y-auto no-scrollbar py-2">
                     <nav className="flex flex-col gap-0.5 pb-4">
                         <NavSectionHeader label="Overview" />
@@ -130,15 +129,15 @@ export const Sidebar = () => {
                         <NavItem icon="settings" label="Settings" path="/settings" active={isActive("/settings")} />
                     </nav>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none z-10" />
+                <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-card to-transparent dark:from-transparent pointer-events-none z-10" />
             </div>
 
             {/* Bottom — Fixed */}
-            <div className="p-6 pt-2 border-t border-slate-50 space-y-4">
+            <div className="p-6 pt-2 border-t border-border space-y-4">
                 {/* Date & Time Widget */}
-                <div className="bg-[#F7F8F4] rounded-2xl py-3 px-4 border border-slate-100 group/time transition-all hover:bg-[#EAF2D7]">
+                <div className="bg-muted rounded-2xl py-3 px-4 border border-border group/time transition-all hover:bg-accent">
                     <div className="flex items-center gap-4">
-                        <div className="flex flex-col items-center justify-center bg-white size-11 rounded-xl shadow-sm shrink-0 transition-all group-hover/time:shadow-md group-hover/time:-translate-y-0.5">
+                        <div className="flex flex-col items-center justify-center bg-card size-11 rounded-xl shadow-sm shrink-0 transition-all group-hover/time:shadow-md group-hover/time:-translate-y-0.5">
                             <span className="text-[8px] font-bold text-primary uppercase leading-none tracking-wider mb-1">
                                 {now.toLocaleDateString("en-IN", { month: "short" })}
                             </span>
@@ -156,11 +155,11 @@ export const Sidebar = () => {
                                 <span className="text-[16px] font-bold text-foreground tracking-tight">
                                     {timeStr.split(":")[1]}
                                 </span>
-                                <span className="text-[9px] font-bold text-[#B0AFA8] uppercase ml-1.5 tracking-wider">
+                                <span className="text-[9px] font-bold text-muted-foreground uppercase ml-1.5 tracking-wider">
                                     {amPm}
                                 </span>
                             </div>
-                            <p className="text-[10px] font-medium text-[#B0AFA8] capitalize -mt-0.5">
+                            <p className="text-[10px] font-medium text-muted-foreground capitalize -mt-0.5">
                                 {now.toLocaleDateString("en-IN", { weekday: "long" })}, {now.getFullYear()}
                             </p>
                         </div>
@@ -171,13 +170,13 @@ export const Sidebar = () => {
                 <div className="relative">
                     {/* User Menu Dropdown */}
                     {showUserMenu && (
-                        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-slate-100 rounded-2xl p-2 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
+                        <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-2xl p-2 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
                             <button
                                 onClick={() => {
                                     localStorage.clear();
                                     navigate("/login");
                                 }}
-                                className="w-full flex items-center gap-1.5 px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                className="w-full flex items-center gap-1.5 px-4 py-2.5 text-left text-xs font-bold text-destructive hover:bg-red-50 rounded-xl transition-all"
                             >
                                 <span className="material-symbols-outlined text-[18px]">logout</span>
                                 <span>Sign Out</span>
@@ -187,10 +186,10 @@ export const Sidebar = () => {
                     <button
                         type="button"
                         onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="w-full flex items-center gap-3 p-2 -mx-1 rounded-2xl hover:bg-[#F7F8F4] transition-colors cursor-pointer border border-transparent hover:border-slate-100 group text-left outline-none"
+                        className="w-full flex items-center gap-3 p-2 -mx-1 rounded-2xl hover:bg-muted transition-colors cursor-pointer border border-transparent hover:border-border group text-left outline-none"
                     >
                         <div
-                            className="size-10 rounded-full bg-slate-200 bg-cover bg-center ring-2 ring-white shadow-sm"
+                            className="size-10 rounded-full bg-muted bg-cover bg-center ring-2 ring-card shadow-sm"
                             style={{
                                 backgroundImage: `url("${userRole === "TEACHER" ? "/Avatar/Female Avatar Age35.png" : "/Avatar/Male Avatar Age40.png"}")`,
                             }}
@@ -199,11 +198,11 @@ export const Sidebar = () => {
                             <p className="text-[13px] font-bold text-foreground truncate">
                                 {userName}
                             </p>
-                            <p className="text-[10px] text-[#B0AFA8] mt-0.5 font-medium uppercase tracking-wider">
+                            <p className="text-[10px] text-muted-foreground mt-0.5 font-medium uppercase tracking-wider">
                                 {userRole ? userRole.replace("_", " ") : "Principal Account"}
                             </p>
                         </div>
-                        <span className="material-symbols-outlined text-[#B0AFA8] ml-auto text-[18px]">
+                        <span className="material-symbols-outlined text-muted-foreground ml-auto text-[18px]">
                             unfold_more
                         </span>
                     </button>

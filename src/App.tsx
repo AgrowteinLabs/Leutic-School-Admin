@@ -54,10 +54,26 @@ const DashboardLayout = () => {
 
 function App() {
   useEffect(() => {
+    // Initialize font size
     const savedFontSize = localStorage.getItem('pds-font-size') || 'theme-small';
     const themes = ['theme-small', 'theme-medium', 'theme-large', 'theme-xl'];
     themes.forEach(t => document.documentElement.classList.remove(t));
     document.documentElement.classList.add(savedFontSize);
+
+    // Initialize dark mode
+    if (localStorage.getItem('pds-dark-mode') === 'true') {
+      document.documentElement.classList.add('dark');
+    }
+
+    // Initialize high contrast
+    if (localStorage.getItem('pds-high-contrast') === 'true') {
+      document.documentElement.classList.add('high-contrast');
+    }
+
+    // Initialize reduced motion
+    if (localStorage.getItem('pds-reduced-motion') === 'true') {
+      document.documentElement.classList.add('reduce-motion');
+    }
   }, []);
 
   return (

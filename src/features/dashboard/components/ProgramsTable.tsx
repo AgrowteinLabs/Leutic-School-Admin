@@ -11,6 +11,7 @@ interface DBEvent {
 
 interface DBCalendar {
     id: string;
+    schoolId: string;
     name: string;
     events: DBEvent[];
 }
@@ -23,16 +24,18 @@ export const ProgramsTable = () => {
         const fetchEvents = async () => {
             setIsLoading(true);
             try {
+                const schoolId = localStorage.getItem("school_id") || "";
                 interface GetCalendarsResponse {
                     calendars: {
                         items: DBCalendar[];
                     };
                 }
                 const res = await graphqlRequest<GetCalendarsResponse>(`
-                    query GetCalendarsWithEvents {
-                        calendars(page: 1, pageSize: 10) {
+                    query GetCalendarsWithEvents($page: Int, $pageSize: Int) {
+                        calendars(page: $page, pageSize: $pageSize) {
                             items {
                                 id
+                                schoolId
                                 name
                                 events {
                                     id
@@ -44,11 +47,15 @@ export const ProgramsTable = () => {
                             }
                         }
                     }
-                `);
+                `, { page: 1, pageSize: 10 });
+
+                // Filter to only this school's calendars (backend doesn't support schoolId param)
+                const schoolCals = (res.calendars?.items || []).filter(cal => cal.schoolId === schoolId);
+
                 
-                // Flatten and gather events from all calendars
+                // Flatten and gather events from school calendars only
                 const allEvents: DBEvent[] = [];
-                res.calendars?.items?.forEach(cal => {
+                schoolCals.forEach(cal => {
                     if (cal.events) {
                         allEvents.push(...cal.events);
                     }
