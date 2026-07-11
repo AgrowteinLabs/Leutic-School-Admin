@@ -347,6 +347,7 @@ export const StaffPage = ({
           email
           mobileNo
           address
+          department
         }
       }
     `;
@@ -362,6 +363,7 @@ export const StaffPage = ({
           email: editEmail || undefined,
           mobileNo: editMobile || undefined,
           address: newAddress || undefined,
+          department: editDept || undefined,
         },
       });
       // Update local state

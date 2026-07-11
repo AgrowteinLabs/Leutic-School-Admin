@@ -50,7 +50,7 @@ const normalizeDepartment = (dept?: string): string | undefined => {
   const match = ALLOWED_DEPARTMENTS.find(d => d.toLowerCase() === clean);
   if (match) return match;
 
-  return "Mathematics";
+  return dept.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 };
 
 const normalizeGrade = (gradeVal?: string): string | undefined => {
@@ -346,7 +346,7 @@ export const DirectoryPage = () => {
             schoolId,
             employeeId: r.employeeid || undefined,
             designation: r.designation || undefined,
-            department: normalizeDepartment(r.department),
+            department: normalizeDepartment(r.department || r.dept),
             qualifications: r.qualifications || undefined,
             yearsExperience: r.yearsexperience || undefined,
             portalAccessRole: r.portalaccessrole || undefined,

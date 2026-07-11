@@ -163,6 +163,7 @@ export const AddStaffPage = () => {
             schoolId,
             classIds: mappedClassIds,
             address: serializedAddress,
+            department: dept || undefined,
             qualifiedGrades,
             subjectSpecializations: specializations.map((name) => {
               const found = subjectsList.find((s) => s.name.toLowerCase() === name.toLowerCase());
