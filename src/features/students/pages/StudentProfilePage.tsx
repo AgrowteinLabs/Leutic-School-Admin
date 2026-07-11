@@ -196,9 +196,10 @@ export const StudentProfilePage = () => {
               id
               name
               admissionNumber
-              classId
-              bloodGroup
-              studentStatus
+            classId
+            bloodGroup
+            studentStatus
+            createdAt
               guardians {
                 id
                 relationship
@@ -333,7 +334,7 @@ export const StudentProfilePage = () => {
           auraScore: profileObj.overview?.auraPoints || 0,
           attendanceRate: attendanceDetail?.percentage || 95,
           gpa: progressDetail?.overallAverage ? (progressDetail.overallAverage / 25).toFixed(1) : "3.5",
-          enrollmentDate: new Date(Date.now()).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }),
+          enrollmentDate: profileObj.createdAt ? new Date(profileObj.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }) : "",
           bloodGroup: profileObj.bloodGroup || "O+",
           guardianName: parentsWithNames[0]?.name || "Guardian of " + profileObj.name,
           phone: parentsWithNames[0]?.ph || "+91 99999-99999",

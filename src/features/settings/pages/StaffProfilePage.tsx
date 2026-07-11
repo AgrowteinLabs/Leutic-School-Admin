@@ -10,8 +10,8 @@ interface StaffDetails {
   id: string;
   role: string;
   department: string;
-  performance: number;
-  auraScore: number;
+  performance?: number;
+  auraScore?: number;
   status: string;
   img: string;
   email: string;
@@ -19,6 +19,10 @@ interface StaffDetails {
   address: string;
   joinDate: string;
   assignedClasses: string[];
+  assignedSubjects: Array<{
+    subjectName: string;
+    className: string;
+  }>;
   scheduleSlots: Array<{
     id: string;
     dayOfWeek: string;
@@ -66,6 +70,14 @@ interface GraphQLUser {
     badgeIcon?: string;
   }>;
   facultyInsights?: string[];
+}
+
+interface CurriculumMappingItem {
+  id: string;
+  grade: string;
+  section: string;
+  subjectId: string;
+  teacherId: string;
 }
 
 interface ClassItem {
@@ -138,10 +150,35 @@ export const StaffProfilePage = () => {
         }
       `;
 
+      const mappingsQuery = `
+        query GetCurriculumMappings($schoolId: String!) {
+          curriculumMappings(page: 1, pageSize: 1000) {
+            items {
+              id
+              grade
+              section
+              subjectId
+              teacherId
+            }
+          }
+        }
+      `;
+
+      const subjectsQuery = `
+        query GetSubjects($schoolId: String!) {
+          subjects(schoolId: $schoolId) {
+            id
+            name
+          }
+        }
+      `;
+
       try {
-        const [userRes, classesRes] = await Promise.all([
+        const [userRes, classesRes, mappingsRes, subjectsRes] = await Promise.all([
           graphqlRequest<{ user: GraphQLUser }>(userQuery, { id }),
-          graphqlRequest<{ classes: { items: ClassItem[] } }>(classesQuery, { schoolId })
+          graphqlRequest<{ classes: { items: ClassItem[] } }>(classesQuery, { schoolId }),
+          graphqlRequest<{ curriculumMappings: { items: CurriculumMappingItem[] } }>(mappingsQuery, { schoolId }).catch(() => null),
+          graphqlRequest<{ subjects: Array<{ id: string; name: string }> }>(subjectsQuery, { schoolId }).catch(() => null)
         ]);
 
         const user = userRes.user;
@@ -164,14 +201,22 @@ export const StaffProfilePage = () => {
           }
           cleanAddress = parts.filter((p) => !p.startsWith("Dept:")).join(" | ");
         } else {
-          const depts = ["Mathematics", "Natural Sciences", "History", "Languages", "Administration"];
-          department = depts[(user.name.codePointAt(0) || 0) % depts.length];
+          department = "";
         }
 
         const assignedClassIds = user.classIds || [];
         const assignedClassNames = classes
           .filter(c => assignedClassIds.includes(c.id))
           .map(c => `${c.grade}-${c.section}`);
+
+        const allMappings = mappingsRes?.curriculumMappings?.items || [];
+        const teacherMappings = allMappings.filter(m => m.teacherId === id);
+        const allSubjects = subjectsRes?.subjects || [];
+        const subjectMap = new Map(allSubjects.map((s: { id: string; name: string }) => [s.id, s.name]));
+        const assignedSubjects = teacherMappings.map(m => {
+          const className = `${m.grade}-${m.section}`;
+          return { subjectName: subjectMap.get(m.subjectId) || m.subjectId, className };
+        });
 
         const classMap = new Map(classes.map(c => [c.id, `${c.grade}-${c.section}`]));
         const scheduleSlots = (user.timetableSlots || []).map((slot: any) => {
@@ -194,8 +239,8 @@ export const StaffProfilePage = () => {
           id: user.employeeId || "ST-1024-0" + (pCode % 100),
           role: user.role === "TEACHER" ? "Faculty" : user.role,
           department: user.department || department,
-          performance: user.performance ?? (80 + (pCode % 20)),
-          auraScore: user.auraScore ?? (85 + (pCode % 15)),
+          performance: user.performance,
+          auraScore: user.auraScore,
           status: user.staffStatus === "ACTIVE" ? "Active" : user.staffStatus === "ON_LEAVE" ? "On Leave" : user.staffStatus === "REMOTE" ? "Remote" : user.staffStatus === "INACTIVE" ? "Inactive" : (user.staffStatus || "Active"),
           img: `/Avatar/${pCode % 2 === 0 ? "Female" : "Male"} Avatar Age3${5 + (pCode % 4)}.png`,
           email: user.email || `${user.name.toLowerCase().replace(/\s+/g, ".")}@letuic.edu`,
@@ -203,6 +248,7 @@ export const StaffProfilePage = () => {
           address: cleanAddress || "Not Provided",
           joinDate: formattedDate,
           assignedClasses: assignedClassNames,
+          assignedSubjects: assignedSubjects,
           scheduleSlots: scheduleSlots,
           achievements: user.achievements || [],
           facultyInsights: user.facultyInsights || []
@@ -264,7 +310,7 @@ export const StaffProfilePage = () => {
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB] font-sans">
       <TopBar
         title="Faculty Profile"
-        subtitle={`${staffDetails.id} • ${staffDetails.department}`}
+        subtitle={`${staffDetails.id}${staffDetails.department ? ` \u2022 ${staffDetails.department}` : ""}`}
         onBack={() => navigate(-1)}
         actions={
           <div className="flex items-center gap-2">
@@ -311,8 +357,8 @@ export const StaffProfilePage = () => {
 
               <div className="flex flex-wrap gap-x-12 gap-y-4">
                 {[
-                  { label: "Performance", value: `${staffDetails.performance}%`, icon: "trending_up", color: "text-green-600" },
-                  { label: "Aura Score", value: staffDetails.auraScore, icon: "verified", color: "text-primary" },
+                  { label: "Performance", value: staffDetails.performance != null ? `${staffDetails.performance}%` : "—", icon: "trending_up", color: "text-green-600" },
+                  { label: "Aura Score", value: staffDetails.auraScore ?? "—", icon: "verified", color: "text-primary" },
                   { label: "Workload", value: "24h / wk", icon: "schedule", color: "text-blue-600" },
                   { label: "Join Date", value: staffDetails.joinDate, icon: "calendar_today", color: "text-slate-400" }
                 ].map((stat, i) => (
@@ -381,15 +427,33 @@ export const StaffProfilePage = () => {
                 <div className="bg-white rounded-[24px] border border-slate-100/60 p-5 shadow-sm shadow-slate-100/20">
                   <h4 className="text-[12px] font-black text-brand-navy uppercase tracking-widest mb-4">Assigned Subjects / Classes</h4>
                   <div className="space-y-3">
-                    {staffDetails.assignedClasses.length > 0 ? (
-                      staffDetails.assignedClasses.map((cls, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50">
-                          <span className="text-[12px] font-bold text-brand-navy">Class Teacher: {cls}</span>
-                          <span className="material-symbols-outlined text-[16px] text-slate-300">chevron_right</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-3 text-[12px] text-muted-gray/70 text-center italic">No active class teacher assignments</div>
+                    {staffDetails.assignedClasses.length > 0 && (
+                      <>
+                        <p className="text-[10px] font-bold text-muted-gray/60 uppercase tracking-widest mb-2">Class Teacher</p>
+                        {staffDetails.assignedClasses.map((cls, i) => (
+                          <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/50 border border-slate-100/50">
+                            <span className="text-[12px] font-bold text-brand-navy">{cls}</span>
+                            <span className="material-symbols-outlined text-[16px] text-slate-300">chevron_right</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    {staffDetails.assignedSubjects.length > 0 && (
+                      <>
+                        <p className="text-[10px] font-bold text-muted-gray/60 uppercase tracking-widest mb-2">Subjects Taught</p>
+                        {staffDetails.assignedSubjects.map((sub, i) => (
+                          <div key={i} className="flex items-center justify-between p-3 rounded-2xl bg-primary/5 border border-primary/10">
+                            <div className="flex items-center gap-2">
+                              <span className="material-symbols-outlined text-[16px] text-primary">book</span>
+                              <span className="text-[12px] font-bold text-brand-navy">{sub.subjectName}</span>
+                            </div>
+                            <span className="text-[10px] font-medium text-muted-gray">{sub.className}</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    {staffDetails.assignedClasses.length === 0 && staffDetails.assignedSubjects.length === 0 && (
+                      <div className="p-3 text-[12px] text-muted-gray/70 text-center italic">No active assignments</div>
                     )}
                   </div>
                 </div>

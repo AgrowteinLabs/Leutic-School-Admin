@@ -2676,6 +2676,40 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     }
   };
 
+  const handleExportSchema = () => {
+    const csvRows: string[] = [];
+    csvRows.push('=== SUBJECTS ===');
+    csvRows.push('Subject Name,Code,Category,Department');
+    subjects.forEach((s: Subject) => {
+      const escapedName = `"${s.name.replace(/"/g, '""')}"`;
+      csvRows.push(`${escapedName},${s.code || ''},${s.category || ''},${s.department || ''}`);
+    });
+    csvRows.push('');
+    csvRows.push('=== GRADE TEMPLATES ===');
+    csvRows.push('Grade,Periods/Day,Subject Count');
+    gradeConfigs.forEach((gc: GradeConfig) => {
+      csvRows.push(`${gc.grade},${gc.periodsPerDay || ''},${gc.subjects?.length || ''}`);
+    });
+    csvRows.push('');
+    csvRows.push('=== TEACHER MAPPINGS ===');
+    csvRows.push('Grade,Section,Subject,Teacher,Additional');
+    mappings.forEach((m: Mapping) => {
+      const subName = subjects.find((s: Subject) => s.id === m.subjectId)?.name || m.subjectId;
+      const teacherName = teachers.find((t: Teacher) => t.id === m.teacherId)?.name || m.teacherId;
+      csvRows.push(`${m.grade},${m.section},${subName},${teacherName},${m.isAdditional ? 'Yes' : 'No'}`);
+    });
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'curriculum_schema_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <CurriculumErrorBoundary>
       <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB]">
@@ -2686,7 +2720,10 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
               subtitle="Design academic structures, manage subjects, and assign faculty"
               actions={
                 <div className="flex gap-3">
-                  <button className="btn-outline h-10 px-5 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all">
+                  <button
+                    onClick={handleExportSchema}
+                    className="btn-outline h-10 px-5 rounded-xl text-[13px] font-bold flex items-center gap-2 transition-all"
+                  >
                     <span className="material-symbols-outlined text-lg">
                       download
                     </span>
@@ -5247,6 +5284,7 @@ const TierManagementForm = ({
   const removeTier = (groupId: string) => {
     setGroups(groups.filter((g) => g.id !== groupId));
   };
+
 
   return (
     <div className="flex flex-col h-full">

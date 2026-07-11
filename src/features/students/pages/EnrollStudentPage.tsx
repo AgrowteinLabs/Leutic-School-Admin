@@ -132,8 +132,7 @@ export const EnrollStudentPage = () => {
         (c) => `${c.grade} - ${c.section}` === admissionGrade,
       );
       const resolvedClassId = selectedClass ? selectedClass.id : undefined;
-      const finalAdmissionNo =
-        rollNo || `OA-2026-${Math.floor(100 + Math.random() * 900)}`;
+      const finalAdmissionNo = rollNo || undefined;
 
       const studentPassword = `Student${Math.random().toString(36).substring(2, 8)}${Math.floor(Math.random() * 10)}!`;
 
