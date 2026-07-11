@@ -23,7 +23,7 @@ interface TeacherRecord {
   address?: string;
 }
 
-const getDepartment = (address?: string, name?: string) => {
+const getDepartment = (address?: string) => {
   if (address?.includes("Dept:")) {
     const parts = address.split(" | ");
     const deptPart = parts.find((p) => p.startsWith("Dept:"));
@@ -278,7 +278,7 @@ export const StaffPage = ({
           "en-IN",
           { month: "short", day: "2-digit", year: "numeric" },
         );
-        const department = u.department || getDepartment(u.address, u.name);
+        const department = u.department || getDepartment(u.address);
         // Strip dept metadata from address for display
         let cleanAddress = u.address || "";
         if (cleanAddress.includes("Dept:")) {
