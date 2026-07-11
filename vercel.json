@@ -1,5 +1,8 @@
 {
   "rewrites": [
+    { "source": "/graphql", "destination": "http://3.7.222.252:4000/graphql" },
+    { "source": "/users/:path*", "destination": "http://3.7.222.252:4000/users/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
+
