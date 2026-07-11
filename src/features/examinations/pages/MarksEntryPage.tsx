@@ -290,11 +290,14 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
         }
       }
 
-      if (inputs.length > 0) {
-        await graphqlRequest(BULK_SAVE_MARKS, { inputs });
+      if (inputs.length === 0) {
+        alert("No changes detected to save.");
+        return;
       }
+
+      await graphqlRequest(BULK_SAVE_MARKS, { inputs });
+      await fetchRegistry();
       setIsSuccessModalOpen(true);
-      fetchRegistry();
     } catch (err) {
       console.error("Error saving marks:", err);
       alert("Failed to save some marks. Please check your inputs.");
@@ -410,10 +413,7 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
                             <span className="text-[13px] font-bold text-brand-navy">{student.rollNo}</span>
                           </td>
                           <td className="px-6 py-4 bg-white sticky left-[100px] z-30 group-hover:bg-slate-50 transition-colors shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-b border-slate-50">
-                            <div className="flex flex-col">
-                               <span className="text-[13px] font-bold text-brand-navy">{student.name}</span>
-                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{student.id.slice(0, 8)}</span>
-                            </div>
+                            <span className="text-[13px] font-bold text-brand-navy">{student.name}</span>
                           </td>
 
                           {isAllSubjects ? (
