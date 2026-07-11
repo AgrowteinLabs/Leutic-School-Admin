@@ -7,9 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
-const STUDENT_CLASS_CSV_TEMPLATE = `FullName,AdmissionNumber,RollNumber,Gender,BloodGroup,Address,MobileNo,Email,Password,FatherName,FatherMobile,MotherName,MotherMobile
-John Doe,ADM-001,1,Male,O+,123 Main St,9876543210,john@example.com,JohnPass1!,Robert Doe,9876543211,Jane Doe,9876543212
-Alice Smith,ADM-002,2,Female,A-,456 Elm St,9876543220,alice@example.com,AlicePass2!,Tom Smith,9876543221,Mary Smith,9876543222`;
+const STUDENT_CLASS_CSV_TEMPLATE = `FullName,AdmissionNumber,RollNumber,Gender,BloodGroup,Address,MobileNo,Email,Password,FatherName,FatherMobile,FatherOccupation,MotherName,MotherMobile,MotherOccupation,GuardianName,GuardianRelationship,GuardianMobile
+John Doe,ADM-001,1,Male,O+,123 Main St,9876543210,john@example.com,JohnPass1!,Robert Doe,9876543211,Engineer,Jane Doe,9876543212,Teacher,Robert Doe,Father,9876543211
+Alice Smith,ADM-002,2,Female,A-,456 Elm St,9876543220,alice@example.com,AlicePass2!,Tom Smith,9876543221,Doctor,Mary Smith,9876543222,Writer,Mary Smith,Mother,9876543222`;
 
 const parseCSV = (text: string): string[][] => {
   const lines = text.split(/\r?\n/);
@@ -1138,6 +1138,7 @@ export const ClassDetailsPage = () => {
             relationship: "Father",
             fullName: r.fathername,
             mobileNo: r.fathermobile || undefined,
+            occupation: r.fatheroccupation || undefined,
           });
         }
         if (r.mothername) {
@@ -1145,6 +1146,14 @@ export const ClassDetailsPage = () => {
             relationship: "Mother",
             fullName: r.mothername,
             mobileNo: r.mothermobile || undefined,
+            occupation: r.motheroccupation || undefined,
+          });
+        }
+        if (r.guardianname) {
+          guardians.push({
+            relationship: r.guardianrelationship || "Guardian",
+            fullName: r.guardianname,
+            mobileNo: r.guardianmobile || undefined,
           });
         }
 

@@ -173,12 +173,7 @@ export const DashboardPage = () => {
         const classMap = new Map(classesList.map(c => [c.id, c]));
         const matchedClass = foundUser.classId ? classMap.get(foundUser.classId) : null;
         
-        let overviewData = {
-            participationRate: 75,
-            attendanceRate: 92,
-            gpa: 3.5,
-            statusAlert: foundUser.isActive ? "Active" : "Inactive"
-        };
+        let overviewData: any = null;
         try {
             interface OverviewResponse {
                 studentOverview: {
@@ -198,7 +193,7 @@ export const DashboardPage = () => {
                     }
                 }
             `, { id: foundUser.id });
-            if (overviewRes.studentOverview) {
+            if (overviewRes && overviewRes.studentOverview) {
                 overviewData = overviewRes.studentOverview;
             }
         } catch (e: unknown) {
@@ -210,13 +205,13 @@ export const DashboardPage = () => {
             id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
             grade: matchedClass ? matchedClass.grade : "Unassigned",
             section: matchedClass ? (matchedClass.section || "") : "",
-            participation: overviewData.participationRate,
-            auraScore: overviewData.participationRate,
-            attendanceRate: overviewData.attendanceRate,
-            gpa: overviewData.gpa,
-            status: overviewData.statusAlert,
+            participation: overviewData ? overviewData.participationRate : null,
+            auraScore: overviewData ? overviewData.participationRate : null,
+            attendanceRate: overviewData ? overviewData.attendanceRate : null,
+            gpa: overviewData ? overviewData.gpa : null,
+            status: overviewData ? overviewData.statusAlert : (foundUser.isActive ? "Active" : "Inactive"),
             img: "/Avatar/Male Avatar Age16.png",
-            phone: foundUser.mobileNo || "+91 99999-99999"
+            phone: foundUser.mobileNo || "N/A"
         });
         setIsDrawerOpen(true);
     };
@@ -304,12 +299,7 @@ export const DashboardPage = () => {
                 const res = await graphqlRequest<GetClassStudentsResponse>(query, { classId: matchedClass.id });
                 const foundUser = res.users?.items?.[0];
                 if (foundUser) {
-                    let overviewData = {
-                        participationRate: 62,
-                        attendanceRate: 72,
-                        gpa: 2.8,
-                        statusAlert: "At Risk"
-                    };
+                    let overviewData: any = null;
                     try {
                         interface OverviewResponse {
                             studentOverview: {
@@ -329,7 +319,7 @@ export const DashboardPage = () => {
                                 }
                             }
                         `, { id: foundUser.id });
-                        if (overviewRes.studentOverview) {
+                        if (overviewRes && overviewRes.studentOverview) {
                             overviewData = overviewRes.studentOverview;
                         }
                     } catch (e: unknown) {}
@@ -339,13 +329,13 @@ export const DashboardPage = () => {
                         id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
                         grade: matchedClass.grade,
                         section: matchedClass.section || "",
-                        participation: overviewData.participationRate,
-                        auraScore: overviewData.participationRate,
-                        attendanceRate: overviewData.attendanceRate,
-                        gpa: overviewData.gpa,
-                        status: overviewData.statusAlert,
+                        participation: overviewData ? overviewData.participationRate : null,
+                        auraScore: overviewData ? overviewData.participationRate : null,
+                        attendanceRate: overviewData ? overviewData.attendanceRate : null,
+                        gpa: overviewData ? overviewData.gpa : null,
+                        status: overviewData ? overviewData.statusAlert : (foundUser.isActive ? "Active" : "Inactive"),
                         img: "/Avatar/Male Avatar Age16.png",
-                        phone: foundUser.mobileNo || "+91 99999-99999"
+                        phone: foundUser.mobileNo || "N/A"
                     });
                     setIsDrawerOpen(true);
                     return;
@@ -385,7 +375,13 @@ export const DashboardPage = () => {
                         />
                         <StatCard
                             label="Attendance Today"
-                            value={summary ? `${summary.todayAttendanceRate}%` : "..."}
+                            value={
+                                summary 
+                                    ? (String(summary.todayAttendanceRate).endsWith("%") 
+                                        ? summary.todayAttendanceRate 
+                                        : `${summary.todayAttendanceRate}%`) 
+                                    : "..."
+                            }
                             trend="+1.2%"
                             trendType="up"
                             icon="fact_check"

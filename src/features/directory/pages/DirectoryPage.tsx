@@ -9,9 +9,9 @@ import { DriversPage } from "../../transportation/pages/DriversPage";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
 // CSV Templates
-const STUDENT_CSV_TEMPLATE = `FullName,AdmissionNumber,RollNumber,EnrollmentGrade,EnrollmentSection,Gender,BloodGroup,Address,MobileNo,Email,Password,FatherName,FatherMobile,FatherOccupation,MotherName,MotherMobile,MotherOccupation
-John Doe,ADM-001,1,Grade 9,A,Male,O+,123 Main St,9876543210,john@example.com,JohnPass1!,Robert Doe,9876543211,Engineer,Jane Doe,9876543212,Teacher
-Alice Smith,ADM-002,2,Grade 10,B,Female,A-,456 Elm St,9876543220,alice@example.com,AlicePass2!,Tom Smith,9876543221,Doctor,Mary Smith,9876543222,Writer`;
+const STUDENT_CSV_TEMPLATE = `FullName,AdmissionNumber,RollNumber,EnrollmentGrade,EnrollmentSection,Gender,BloodGroup,Address,MobileNo,Email,Password,FatherName,FatherMobile,FatherOccupation,MotherName,MotherMobile,MotherOccupation,GuardianName,GuardianRelationship,GuardianMobile
+John Doe,ADM-001,1,Grade 9,A,Male,O+,123 Main St,9876543210,john@example.com,JohnPass1!,Robert Doe,9876543211,Engineer,Jane Doe,9876543212,Teacher,Robert Doe,Father,9876543211
+Alice Smith,ADM-002,2,Grade 10,B,Female,A-,456 Elm St,9876543220,alice@example.com,AlicePass2!,Tom Smith,9876543221,Doctor,Mary Smith,9876543222,Writer,Mary Smith,Mother,9876543222`;
 
 const STAFF_CSV_TEMPLATE = `FullName,Email,MobileNo,Role,Password,EmployeeId,Designation,Department,Qualifications,YearsExperience,WorkShift,BusRouteLabel,Address,QualifiedGrades,SubjectSpecializations,EnrollmentGrade,EnrollmentSection
 Dr. Alan Turing,alan.turing@school.edu,9876543210,TEACHER,Turing123!,EMP-001,Senior Lecturer,Mathematics,PhD Computer Science,10,Morning (8:00 - 15:00),Yes - Route A,123 Science Way,Grade 9;Grade 10,Mathematics;Information Technology,Grade 9,A
@@ -298,6 +298,13 @@ export const DirectoryPage = () => {
               fullName: r.mothername,
               mobileNo: r.mothermobile || undefined,
               occupation: r.motheroccupation || undefined,
+            });
+          }
+          if (r.guardianname) {
+            guardians.push({
+              relationship: r.guardianrelationship || "Guardian",
+              fullName: r.guardianname,
+              mobileNo: r.guardianmobile || undefined,
             });
           }
 

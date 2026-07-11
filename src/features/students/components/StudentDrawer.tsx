@@ -121,8 +121,12 @@ export const StudentDrawer = ({ isOpen, onClose, student }: StudentDrawerProps) 
                             <Trophy size={10} className="text-primary" /> Aura
                         </span>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold text-foreground tracking-tight">{student.auraScore}</span>
-                            <span className="text-[10px] font-bold text-[#B0AFA8]">/ 100</span>
+                            <span className="text-2xl font-bold text-foreground tracking-tight">
+                                {student.auraScore !== null && student.auraScore !== undefined ? student.auraScore : "N/A"}
+                            </span>
+                            {student.auraScore !== null && student.auraScore !== undefined && (
+                                <span className="text-[10px] font-bold text-[#B0AFA8]">/ 100</span>
+                            )}
                         </div>
                     </div>
                     <div className="flex flex-col">
@@ -130,7 +134,9 @@ export const StudentDrawer = ({ isOpen, onClose, student }: StudentDrawerProps) 
                             <Calendar size={10} className="text-blue-500" /> Attendance
                         </span>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold text-foreground tracking-tight">{student.attendanceRate}%</span>
+                            <span className="text-2xl font-bold text-foreground tracking-tight">
+                                {student.attendanceRate !== null && student.attendanceRate !== undefined ? `${student.attendanceRate}%` : "N/A"}
+                            </span>
                         </div>
                     </div>
                     <div className="flex flex-col">
@@ -138,7 +144,9 @@ export const StudentDrawer = ({ isOpen, onClose, student }: StudentDrawerProps) 
                             <GraduationCap size={10} className="text-amber-500" /> GPA
                         </span>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold text-foreground tracking-tight">{student.gpa}</span>
+                            <span className="text-2xl font-bold text-foreground tracking-tight">
+                                {student.gpa !== null && student.gpa !== undefined ? student.gpa : "N/A"}
+                            </span>
                         </div>
                     </div>
                 </div>
