@@ -59,7 +59,7 @@ interface StudentUI {
   id: string;
   initials: string;
   participation: number;
-  auraScore: number;
+  auraScore?: number;
   status: string;
   statusType: "normal" | "risk";
 }
@@ -929,11 +929,11 @@ export const ClassDetailsPage = () => {
             const res = await graphqlRequest<{ studentAuraPoints: { totalPoints: number } }>(auraQuery, { studentId: s.id });
             return {
               id: s.id,
-              points: res?.studentAuraPoints?.totalPoints ?? 80
+              points: res?.studentAuraPoints?.totalPoints
             };
           } catch (e) {
             console.error("Failed to load aura points for student:", s.id, e);
-            return { id: s.id, points: 80 };
+            return { id: s.id, points: undefined as number | undefined };
           }
         })
       );
@@ -983,7 +983,7 @@ export const ClassDetailsPage = () => {
           ? Math.round(s.participationRate) 
           : (80 + ((s.name.codePointAt(0) || 0) % 20));
 
-        const auraScore = auraMap.get(s.id) ?? 80;
+        const auraScore = auraMap.get(s.id);
 
         let status = "Good Standing";
         let statusType: "normal" | "risk" = "normal";
@@ -1571,7 +1571,7 @@ export const ClassDetailsPage = () => {
 
                       <div className="flex flex-col items-center w-24">
                         <span className="text-[14px] font-bold text-foreground">
-                          {student.auraScore}
+                          {student.auraScore ?? "—"}
                         </span>
                       </div>
 

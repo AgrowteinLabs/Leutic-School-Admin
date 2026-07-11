@@ -14,7 +14,7 @@ interface TeacherRecord {
   id: string;
   role: string;
   department: string;
-  performance: number;
+  performance?: number;
   status: string;
   img: string;
   joiningDate: string;
@@ -31,14 +31,7 @@ const getDepartment = (address?: string, name?: string) => {
       return deptPart.replace("Dept:", "").trim();
     }
   }
-  const depts = [
-    "Mathematics",
-    "Natural Sciences",
-    "History",
-    "Languages",
-    "Administration",
-  ];
-  return depts[(name?.codePointAt(0) || 0) % depts.length];
+  return "";
 };
 
 const formatBlankStat = (value: string | number | null | undefined) =>
@@ -98,22 +91,26 @@ const StaffRow = ({
         </span>
       </td>
       <td className="px-6 py-4">
-        <div className="flex items-center gap-1.5">
-          <span
-            className="material-symbols-outlined text-[16px] text-[#F59E0B]"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            star
-          </span>
-          <div className="flex items-baseline gap-1">
-            <span className="text-[13px] font-bold text-foreground">
-              {(performance / 20).toFixed(1)}
+        {performance ? (
+          <div className="flex items-center gap-1.5">
+            <span
+              className="material-symbols-outlined text-[16px] text-[#F59E0B]"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              star
             </span>
-            <span className="text-[11px] font-medium text-[#B0AFA8]">
-              / 5.0
-            </span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[13px] font-bold text-foreground">
+                {(performance / 20).toFixed(1)}
+              </span>
+              <span className="text-[11px] font-medium text-[#B0AFA8]">
+                / 5.0
+              </span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <span className="text-[12px] text-[#B0AFA8] font-medium">—</span>
+        )}
       </td>
       <td className="px-6 py-4">
         <span
@@ -297,7 +294,7 @@ export const StaffPage = ({
           id: u.employeeId || "#ST-1024-0" + (idx + 1).toString().padStart(2, "00"),
           role: u.role === "ADMIN" ? "Admin" : "Faculty",
           department,
-          performance: u.feedbackScore || (80 + ((u.name.codePointAt(0) || 0) % 20)),
+          performance: u.feedbackScore || undefined,
           status: u.staffStatus || "Active",
           img: u.profilePhotoUrl || `/Avatar/${idx % 2 === 0 ? "Female" : "Male"} Avatar Age3${5 + (idx % 4)}.png`,
           joiningDate: u.joiningDate ? new Date(u.joiningDate).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }) : formattedDate,
