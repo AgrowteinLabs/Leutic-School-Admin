@@ -146,27 +146,46 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   }, [fetchSchoolProfile, fetchAcademicYears]);
 
   useEffect(() => {
-    const schoolId = localStorage.getItem("school_id");
-    if (schoolId) {
+    let lastSchoolId = localStorage.getItem("school_id");
+    if (lastSchoolId) {
       refetchAll();
     } else {
       setIsLoading(false);
     }
 
-    // Optional: listen for storage changes (e.g. login/logout)
+    const interval = setInterval(() => {
+      const currentSchoolId = localStorage.getItem("school_id");
+      if (currentSchoolId !== lastSchoolId) {
+        lastSchoolId = currentSchoolId;
+        if (currentSchoolId) {
+          refetchAll();
+        } else {
+          setSchoolProfile(null);
+          setActiveAcademicYear(null);
+          setAcademicYears([]);
+        }
+      }
+    }, 1000);
+
     const handleStorageChange = () => {
       const currentId = localStorage.getItem("school_id");
-      if (currentId) {
-        refetchAll();
-      } else {
-        setSchoolProfile(null);
-        setActiveAcademicYear(null);
-        setAcademicYears([]);
+      if (currentId !== lastSchoolId) {
+        lastSchoolId = currentId;
+        if (currentId) {
+          refetchAll();
+        } else {
+          setSchoolProfile(null);
+          setActiveAcademicYear(null);
+          setAcademicYears([]);
+        }
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, [refetchAll]);
 
   return (

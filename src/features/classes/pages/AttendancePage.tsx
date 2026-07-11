@@ -577,7 +577,6 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
       tableRows = students.map((s: StudentItem) => `
         <tr>
           <td>${s.rollNo || '-'}</td>
-          <td>${s.id}</td>
           <td>${s.name}</td>
           <td class="status-${(s.status || 'unmarked').toLowerCase()}">${s.status || 'Unmarked'}</td>
           <td>${s.remarks || '-'}</td>
@@ -586,7 +585,6 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
     } else {
       tableRows = staff.map((s: StaffItem) => `
         <tr>
-          <td>${s.id}</td>
           <td>${s.name}</td>
           <td>${s.role || '-'}</td>
           <td class="status-${(s.status || 'unmarked').toLowerCase()}">${s.status || 'Unmarked'}</td>
@@ -630,8 +628,8 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
             <thead>
               <tr>
                 ${activeTab === 'students' 
-                  ? '<th>Roll No</th><th>Student ID</th><th>Name</th><th>Status</th><th>Notes</th>'
-                  : '<th>Staff ID</th><th>Name</th><th>Role</th><th>Status</th><th>Substitution</th>'
+                  ? '<th>Roll No</th><th>Name</th><th>Status</th><th>Notes</th>'
+                  : '<th>Name</th><th>Role</th><th>Status</th><th>Substitution</th>'
                 }
               </tr>
             </thead>
@@ -939,7 +937,9 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               <div className="size-8 rounded-full bg-cover bg-center border border-slate-100 shadow-sm" style={{ backgroundImage: `url("${item.img}")` }} />
                               <div className="flex flex-col leading-tight">
                                 <span className="text-[13px] font-bold text-foreground group-hover:text-primary transition-colors">{item.name}</span>
-                                <span className="text-[11px] font-bold text-[#B0AFA8]">{activeTab === 'students' ? studentItem.id : staffItem.role || item.id}</span>
+                                {activeTab === 'staff' && staffItem.role && (
+                                  <span className="text-[11px] font-bold text-[#B0AFA8]">{staffItem.role}</span>
+                                )}
                               </div>
                             </div>
                           </td>

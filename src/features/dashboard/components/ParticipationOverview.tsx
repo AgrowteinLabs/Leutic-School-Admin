@@ -5,11 +5,20 @@ import { graphqlRequest } from "../../../lib/graphqlClient";
 export const ParticipationOverview = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchStats = async () => {
+            setIsLoading(true);
+            setError(null);
             try {
                 const schoolId = localStorage.getItem("school_id") || "";
+                if (!schoolId) {
+                    setError("No school ID found in session. Please log in.");
+                    setIsLoading(false);
+                    return;
+                }
                 const res = await graphqlRequest<any>(`
                     query GetTodayAttendanceStats($schoolId: String!) {
                         todayAttendanceStats(schoolId: $schoolId) {
@@ -21,19 +30,45 @@ export const ParticipationOverview = () => {
                         }
                     }
                 `, { schoolId });
-                setStats(res.todayAttendanceStats);
-            } catch (e) {
+                
+                if (res && res.todayAttendanceStats) {
+                    setStats(res.todayAttendanceStats);
+                } else {
+                    setError("No attendance data returned from backend.");
+                }
+            } catch (e: any) {
                 console.error("Failed to fetch today's attendance stats:", e);
+                setError(e.message || "Failed to fetch today's attendance stats.");
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchStats();
     }, []);
 
-    const total = stats?.totalStudents ?? 1240;
-    const present = stats?.presentCount ?? 1068;
-    const absent = stats?.absentCount ?? 124;
-    const late = stats?.lateCount ?? 48;
-    const percent = stats?.attendancePercentage ?? 86;
+    if (isLoading) {
+        return (
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 h-[290px] flex flex-col justify-center items-center">
+                <p className="text-[12px] text-[#B0AFA8] font-bold text-center">Loading attendance stats...</p>
+            </div>
+        );
+    }
+
+    if (error || !stats) {
+        return (
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 h-[290px] flex flex-col justify-center items-center text-center">
+                <span className="material-symbols-outlined text-[32px] text-[#B0AFA8] mb-2">info</span>
+                <h3 className="text-foreground text-[14px] font-semibold mb-1">Attendance Today</h3>
+                <p className="text-[11px] text-[#71716A] px-4">{error || "Attendance stats are not available."}</p>
+            </div>
+        );
+    }
+
+    const total = stats.totalStudents;
+    const present = stats.presentCount;
+    const absent = stats.absentCount;
+    const late = stats.lateCount;
+    const percent = stats.attendancePercentage;
 
     const C = 351.86; // circumference at r=56: 2 × π × 56 ≈ 351.86
     const presentArc = total > 0 ? (present / total) * C : 0;
@@ -98,3 +133,4 @@ export const ParticipationOverview = () => {
         </div>
     );
 };
+
