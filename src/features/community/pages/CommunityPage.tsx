@@ -28,24 +28,14 @@ const GET_COMMUNITY_POSTS = `
       eventCTAText
       eventCTALink
       pollQuestion
-      pollOptions {
-        id
-        text
-        votes
-      }
+      pollOptions
       status
       views
       hasAcceptedAnswer
       createdAt
       authorId
-      replies {
-        id
-        content
-        isVerified
-        parentId
-        createdAt
-        authorId
-      }
+      replies
+      eventCalendarId
     }
   }
 `;
@@ -87,10 +77,7 @@ const VERIFY_REPLY = `
     verifyReply(replyId: $replyId) {
       id
       hasAcceptedAnswer
-      replies {
-        id
-        isVerified
-      }
+      replies
     }
   }
 `;
@@ -153,10 +140,14 @@ interface Post {
         isVoted?: boolean;
         totalVotes?: number;
         pollOptions?: { label: string; votes: number; color?: string }[];
+        rawDate?: string;
+        ctaText?: string;
+        ctaLink?: string;
     };
     status?: string;
     category?: string;
     replies?: any;
+    eventCalendarId?: string | null;
 }
 
 export const AuraButton = ({ isAuraed, onAura, isBursting }: { isAuraed: boolean, onAura: () => void, isBursting: boolean }) => {
@@ -291,11 +282,17 @@ export const CommunityPost = ({ post }: { post: Post }) => {
                     <div className="group/box rounded-[24px] bg-tertiary border border-tertiary-border p-5 flex items-center gap-6">
                         <div className="flex flex-col size-16 rounded-2xl overflow-hidden border border-tertiary-border shrink-0">
                             <div className="bg-brand-navy py-1 flex items-center justify-center">
-                                <span className="text-[7px] font-black text-primary/90 uppercase tracking-[0.25em]">2025</span>
+                                <span className="text-[7px] font-black text-primary/90 uppercase tracking-[0.25em]">
+                                    {post.metadata?.rawDate ? new Date(post.metadata.rawDate).getFullYear() : "2026"}
+                                </span>
                             </div>
                             <div className="flex-1 bg-tertiary-light flex flex-col items-center justify-center -space-y-1">
-                                <span className="text-[24px] font-black text-brand-navy leading-none">12</span>
-                                <span className="text-[9px] font-black text-brand-navy/50 uppercase tracking-[0.15em]">Oct</span>
+                                <span className="text-[24px] font-black text-brand-navy leading-none">
+                                    {post.metadata?.rawDate ? new Date(post.metadata.rawDate).getDate() : "12"}
+                                </span>
+                                <span className="text-[9px] font-black text-brand-navy/50 uppercase tracking-[0.15em]">
+                                    {post.metadata?.rawDate ? new Date(post.metadata.rawDate).toLocaleDateString("en-IN", { month: "short" }) : "Oct"}
+                                </span>
                             </div>
                         </div>
 
@@ -303,28 +300,28 @@ export const CommunityPost = ({ post }: { post: Post }) => {
                             <div className="space-y-1.5">
                                 <div className="flex items-center gap-2 text-brand-navy">
                                     <span className="material-symbols-outlined text-[18px]">sports_basketball</span>
-                                    <span className="font-bold tracking-tight" style={{ fontSize: 'var(--font-size-body)' }}>Regional Basketball Finals</span>
+                                    <span className="font-bold tracking-tight" style={{ fontSize: 'var(--font-size-body)' }}>{post.content.split('\n')[0]}</span>
                                 </div>
                                 <div className="flex items-center gap-2.5 text-muted-gray">
                                     <span className="material-symbols-outlined text-[16px] opacity-50">location_on</span>
-                                    <span className="font-medium" style={{ fontSize: 'var(--font-size-small)' }}>Main Sports Arena, Silver Oak Campus</span>
+                                    <span className="font-medium" style={{ fontSize: 'var(--font-size-small)' }}>{post.metadata?.venue || "Main Campus"}</span>
                                 </div>
                                 <div className="flex items-center gap-3 pt-2">
-                                    <div className="flex -space-x-2">
-                                        {[
-                                            "/Avatar/Male Avatar Age30.png",
-                                            "/Avatar/Female Avatar Age22.png",
-                                            "/Avatar/Male Avatar Age40.png"
-                                        ].map((url, i) => (
-                                            <img key={i} src={url} className="size-6 rounded-full border-2 border-tertiary-light object-cover bg-white" alt="Student" />
-                                        ))}
-                                    </div>
-                                    <span className="font-semibold text-muted-gray/80" style={{ fontSize: '10px' }}>42 Teams Registered</span>
+                                    {post.eventCalendarId && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#EAF2D7] text-[#2E7D32] border border-[#D9EA85] rounded-full text-[10px] font-bold">
+                                            <span className="material-symbols-outlined text-[12px]">calendar_today</span>
+                                            Synced to Calendar
+                                        </span>
+                                    )}
                                 </div>
                             </div>
 
-                            <button className="h-10 px-6 rounded-xl bg-brand-navy text-primary font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0" style={{ fontSize: 'var(--font-size-small)' }}>
-                                Join Now
+                            <button 
+                                onClick={() => post.metadata?.ctaLink && window.open(post.metadata.ctaLink, "_blank")}
+                                className="h-10 px-6 rounded-xl bg-brand-navy text-primary font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0" 
+                                style={{ fontSize: 'var(--font-size-small)' }}
+                            >
+                                {post.metadata?.ctaText || "Join Now"}
                             </button>
                         </div>
                     </div>
@@ -651,6 +648,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                     metadata = {
                         venue: p.eventVenue,
                         date: p.eventDate ? new Date(p.eventDate).toLocaleDateString("en-IN", { month: "short", day: "2-digit" }) : undefined,
+                        rawDate: p.eventDate,
                         tags: [p.category || "Campus"],
                         rsvp: p.eventIsRSVP,
                         ctaText: p.eventCTAText,
@@ -685,7 +683,8 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                     isVerified: p.status === "APPROVED",
                     metadata,
                     status: p.status,
-                    replies: p.replies
+                    replies: p.replies,
+                    eventCalendarId: p.eventCalendarId || null
                 };
             });
             setPosts(mapped);

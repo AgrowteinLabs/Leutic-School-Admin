@@ -116,9 +116,7 @@ export const ReportsPage = () => {
                 icon="filter_list"
               />
             </div>
-            <div className="text-[#B0AFA8] text-[10px] font-bold capitalize italic pr-4 whitespace-nowrap shrink-0">
-              Sample data • Not connected to API
-            </div>
+
           </div>
 
           {/* Active Tab Content with Animation */}

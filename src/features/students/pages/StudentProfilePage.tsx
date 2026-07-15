@@ -196,10 +196,9 @@ export const StudentProfilePage = () => {
               id
               name
               admissionNumber
-            classId
-            bloodGroup
-            studentStatus
-            createdAt
+              classId
+              bloodGroup
+              studentStatus
               guardians {
                 id
                 relationship
@@ -252,6 +251,9 @@ export const StudentProfilePage = () => {
                 dateString
                 summaryText
               }
+            }
+            user(id: $studentIdID) {
+              createdAt
             }
             studentProgress(studentId: $studentIdStr) {
               studentId
@@ -334,7 +336,7 @@ export const StudentProfilePage = () => {
           auraScore: profileObj.overview?.auraPoints || 0,
           attendanceRate: attendanceDetail?.percentage || 95,
           gpa: progressDetail?.overallAverage ? (progressDetail.overallAverage / 25).toFixed(1) : "3.5",
-          enrollmentDate: profileObj.createdAt ? new Date(profileObj.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }) : "",
+          enrollmentDate: res?.user?.createdAt ? new Date(res.user.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }) : "",
           bloodGroup: profileObj.bloodGroup || "O+",
           guardianName: parentsWithNames[0]?.name || "Guardian of " + profileObj.name,
           phone: parentsWithNames[0]?.ph || "+91 99999-99999",

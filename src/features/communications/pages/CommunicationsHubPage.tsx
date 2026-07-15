@@ -15,6 +15,7 @@ export const CommunicationsHubPage = () => {
     if (activeTab === "announcements") {
       navigate("/communications/announcements/add");
     }
+    // Messages tab — coordination feature not yet implemented
   };
 
   const setActiveTab = (tabId: string) => {
@@ -31,12 +32,23 @@ export const CommunicationsHubPage = () => {
             <div className="flex gap-3">
               <button 
                 onClick={handleComposeClick}
-                className="btn-primary h-10 px-6 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30"
+                title={activeTab === "messages" ? "Staff coordination coming soon" : "Create a new notice"}
+                className={cn(
+                  "h-10 px-6 rounded-[10px] text-[13px] font-bold flex items-center gap-2 transition-all shadow-sm shadow-slate-100/30",
+                  activeTab === "messages"
+                    ? "bg-[#F7F8F4] text-[#B0AFA8] cursor-not-allowed"
+                    : "btn-primary"
+                )}
               >
                 <span className="material-symbols-outlined text-sm">
                   {activeTab === "messages" ? "edit_square" : "campaign"}
                 </span>
                 {activeTab === "messages" ? "Start Coordination" : "Post Notice"}
+                {activeTab === "messages" && (
+                  <span className="px-1.5 py-0.5 rounded bg-white/50 text-[9px] font-bold uppercase tracking-wider">
+                    Soon
+                  </span>
+                )}
               </button>
             </div>
           }
