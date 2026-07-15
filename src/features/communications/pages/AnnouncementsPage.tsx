@@ -533,7 +533,6 @@ export const AnnouncementsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 <div className="border-t border-slate-100 px-4 py-3">
                   <TablePagination
                     currentPage={currentPage}
-                    totalPages={Math.ceil(totalRecords / itemsPerPage)}
                     totalItems={totalRecords}
                     itemsPerPage={itemsPerPage}
                     onPageChange={setCurrentPage}

@@ -71,7 +71,7 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
 
   // Live data will be fetched from the backend API
   const defaultCoords: [number, number] = [9.9816, 76.2763]; // Kochi, Kerala
-  const buses: Array<{
+  interface Bus {
     id: string;
     route: string;
     driver: string;
@@ -81,10 +81,12 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
     eta: string;
     nextStop: string;
     coords: [number, number];
-  }> = [];
+  }
 
-  const activeBus = { id: "—", route: "1", driver: "—", status: "Idle", speed: "—", location: "—", eta: "—", nextStop: "—", coords: defaultCoords };
-  const filteredBuses = [];
+  const buses: Bus[] = [];
+
+  const activeBus: Bus = { id: "—", route: "1", driver: "—", status: "Idle", speed: "—", location: "—", eta: "—", nextStop: "—", coords: defaultCoords };
+  const filteredBuses: Bus[] = [];
 
   const handleNextBus = () => {};
   const handlePrevBus = () => {};

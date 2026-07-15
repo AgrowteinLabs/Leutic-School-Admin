@@ -32,7 +32,6 @@ const AVATAR_POOL = [
 ];
 
 export const ProgramCard = ({
-  id,
   name,
   category,
   participants,

@@ -18,16 +18,6 @@ const CATEGORY_ENUM_TO_DISPLAY: Record<string, string> = {
   LEADERSHIP: "Leadership & Community",
 };
 
-const DISPLAY_TO_CATEGORY_ENUM: Record<string, string> = {
-  "Sports": "SPORTS",
-  "Creative Arts": "ARTS",
-  "STEM & Technology": "STEM",
-  "Leadership & Community": "LEADERSHIP",
-  "Arts & Culture": "ARTS",
-  "Technology": "STEM",
-  "Academic": "STEM",
-  "Social": "LEADERSHIP",
-};
 
 const STATUS_MAP: Record<string, "Active" | "Warning" | "Planning" | "Completed"> = {
   ACTIVE: "Active",

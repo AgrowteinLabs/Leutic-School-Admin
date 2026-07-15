@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "../../../lib/utils";
 import {
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  Tooltip, Legend, ResponsiveContainer,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import { graphqlRequest } from "../../../lib/graphqlClient";

@@ -1148,6 +1148,50 @@ export const FeesPage = () => {
       </AnimatePresence>
 
       {/* ---- Delete Fee Confirmation Modal ---- */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDeleteConfirm(null)}
+              className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative bg-white p-8 rounded-[32px] max-w-md w-full shadow-2xl space-y-6 text-center"
+            >
+              <div className="size-16 rounded-[20px] bg-red-50 flex items-center justify-center text-red-600 mx-auto">
+                <span className="material-symbols-outlined text-[32px]">delete_forever</span>
+              </div>
+              <div>
+                <h3 className="text-[18px] font-bold text-foreground tracking-tight">Delete Fee Record</h3>
+                <p className="text-[13px] text-[#B0AFA8] font-medium mt-1">
+                  Are you sure you want to delete the fee record for <span className="font-semibold text-foreground">{showDeleteConfirm.studentName}</span> (₹{(showDeleteConfirm.amount || 0).toLocaleString()})? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 h-11 rounded-2xl text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteFee}
+                  disabled={isDeleting}
+                  className="flex-[2] h-11 bg-red-600 text-white text-[14px] font-bold rounded-2xl hover:bg-red-700 transition-all shadow-lg shadow-red-600/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDeleting ? "Deleting..." : "Confirm Delete"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Send Fee Reminder Modal ────────────────────────── */}
       <AnimatePresence>
