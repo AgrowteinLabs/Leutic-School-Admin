@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 
 export const AddVehiclePage = () => {
     const navigate = useNavigate();
@@ -35,8 +36,76 @@ export const AddVehiclePage = () => {
     const [cctvCapacity, setCctvCapacity] = useState("No CCTV");
     const [panicButtonStatus, setPanicButtonStatus] = useState("Calibrated");
 
-    const handleFinalize = () => {
-        setShowSuccess(true);
+    const handleFinalize = async () => {
+        const schoolId = localStorage.getItem("school_id") || "";
+
+        // Resolve route name to routeId if needed by querying routes
+        let routeId: string | undefined;
+        if (assignedRoute && assignedRoute !== "Select Route") {
+            try {
+                const routeRes = await graphqlRequest<any>(`
+                    query GetRoutes($schoolId: ID!) {
+                        routes(schoolId: $schoolId) {
+                            id
+                            name
+                        }
+                    }
+                `, { schoolId });
+                const matched = (routeRes?.routes || []).find(
+                    (r: any) => r.name === assignedRoute
+                );
+                if (matched) routeId = matched.id;
+            } catch {
+                // Route lookup failed; send route name as fallback
+                console.warn("Route lookup failed, skipping route mapping");
+            }
+        }
+
+        const createMutation = `
+            mutation CreateVehicle($input: CreateVehicleInput!) {
+                createVehicle(input: $input) {
+                    id
+                    registrationPlate
+                    vehicleType
+                    seatingCapacity
+                    fuelType
+                    status
+                    expiryCount
+                    manufacturingYear
+                    routeId
+                }
+            }
+        `;
+
+        try {
+            await graphqlRequest(createMutation, {
+                input: {
+                    schoolId,
+                    registrationPlate: regNumber,
+                    vehicleType: vehicleType.split(" (")[0],
+                    manufacturer: manufacturer || undefined,
+                    manufacturingYear: mfgYear ? parseInt(mfgYear, 10) : undefined,
+                    seatingCapacity: capacity ? parseInt(capacity, 10) : undefined,
+                    fuelType: fuelType,
+                    vin: chassisNo || undefined,
+                    insurancePolicyNumber: policyNumber || undefined,
+                    insuranceExpiry: policyExpiry ? policyExpiry.toISOString().split("T")[0] : undefined,
+                    pucExpiry: pucExpiry ? pucExpiry.toISOString().split("T")[0] : undefined,
+                    fitnessExpiry: fitnessExpiry ? fitnessExpiry.toISOString().split("T")[0] : undefined,
+                    permitNumber: permitNo || undefined,
+                    speedGovernorId: speedGovernorId || undefined,
+                    routeId: routeId || undefined,
+                    gpsTrackerImei: gpsImei || undefined,
+                    cctvStorageCapacity: cctvCapacity === "No CCTV" ? undefined : cctvCapacity,
+                    panicButtonCalibration: panicButtonStatus || undefined,
+                    status: "ACTIVE",
+                }
+            });
+            setShowSuccess(true);
+        } catch (err) {
+            console.error("Failed to register vehicle:", err);
+            alert("Failed to register vehicle. Please try again.");
+        }
     };
 
     const steps = [

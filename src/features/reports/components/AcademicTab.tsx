@@ -1,11 +1,12 @@
+import { useState, useEffect } from "react";
 import { cn } from "../../../lib/utils";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  Tooltip, Legend, ResponsiveContainer,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
-import {
-  classPerformanceData, subjectPerformanceData, examComparisonData, teacherPerformanceData,
-} from "../data/sampleData";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useApp } from "../../../lib/AppContext";
+
 
 const chartColors = {
   primary: "#dbe890",
@@ -17,152 +18,174 @@ const chartColors = {
   social: "#8b5cf6",
 };
 
-const radarData = subjectPerformanceData.map((s) => ({
-  subject: s.subject.slice(0, 7),
-  average: s.average,
-  passRate: s.passRate,
-  fullMark: 100,
-}));
+interface SubjectPerformance {
+  subject: string;
+  average: number;
+  passRate: number;
+  topScore: number;
+  bottomScore: number;
+}
 
-export const AcademicTab = () => (
-  <div className="space-y-8">
-    {/* Stat Row */}
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {[
-        { label: "School Average", value: "78%", icon: "school", trend: "+2.4%", up: true },
-        { label: "Pass Rate", value: "89.6%", icon: "check_circle", trend: "+1.1%", up: true },
-        { label: "Highest Class Avg", value: "90% (10-A)", icon: "trending_up", trend: "+4.2%", up: true },
-        { label: "At-Risk Students", value: "23", icon: "warning", trend: "-3", up: true },
-      ].map((s, i) => (
-        <div key={i} className="flex items-center gap-4 rounded-2xl px-5 py-4 bg-white border border-slate-100  -100/30 group hover: transition-all">
-          <div className="size-11 rounded-2xl flex items-center justify-center bg-accent shrink-0">
-            <span className="material-symbols-outlined text-[22px] text-foreground/70">{s.icon}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[#B0AFA8] text-[12px] font-medium truncate">{s.label}</p>
-            <div className="flex items-baseline gap-2 mt-0.5">
-              <p className="text-foreground text-[22px] font-semibold leading-none tracking-tight">{s.value}</p>
-              <span className={cn("text-[11px] font-medium", s.up ? "text-[#2E7D32]" : "text-[#B91C1C]")}>{s.trend}</span>
+export const AcademicTab = () => {
+  const { activeAcademicYear } = useApp();
+  const schoolId = localStorage.getItem("school_id") || "";
+  const academicYearId = activeAcademicYear?.id || undefined;
+
+  const [subjectData, setSubjectData] = useState<SubjectPerformance[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const res = await graphqlRequest<{ subjectPerformance: SubjectPerformance[] }>(`
+          query GetSubjectPerformance($schoolId: String!, $academicYearId: String) {
+            subjectPerformance(schoolId: $schoolId, academicYearId: $academicYearId) {
+              subject
+              average
+              passRate
+              topScore
+              bottomScore
+            }
+          }
+        `, { schoolId, academicYearId: academicYearId || undefined });
+        if (res?.subjectPerformance) {
+          setSubjectData(res.subjectPerformance);
+        }
+      } catch (err) {
+        console.error("Failed to load subject performance:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [schoolId, academicYearId]);
+
+  const radarData = subjectData.map((s) => ({
+    subject: s.subject.slice(0, 7),
+    average: s.average,
+    passRate: s.passRate,
+    fullMark: 100,
+  }));
+
+  // Compute KPI cards from live data
+  const schoolAvg = subjectData.length > 0
+    ? (subjectData.reduce((sum, s) => sum + s.average, 0) / subjectData.length).toFixed(1)
+    : null;
+  const passRate = subjectData.length > 0
+    ? (subjectData.reduce((sum, s) => sum + s.passRate, 0) / subjectData.length).toFixed(1)
+    : null;
+  const topSubject = subjectData.length > 0
+    ? subjectData.reduce((best, s) => s.average > best.average ? s : best, subjectData[0])
+    : null;
+  const atRisk = subjectData.length > 0
+    ? subjectData.filter(s => s.bottomScore < 40).length
+    : null;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="material-symbols-outlined text-3xl text-[#B0AFA8] animate-spin">sync</span>
+      </div>
+    );
+  }
+
+  if (subjectData.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center">
+        <span className="material-symbols-outlined text-5xl text-[#B0AFA8] mb-4">school</span>
+        <p className="text-[#B0AFA8] text-[14px] font-medium">No academic data available yet.</p>
+        <p className="text-[#B0AFA8] text-[12px] font-medium mt-1">Subject performance will appear once exams are recorded.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Stat Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "School Average", value: `${schoolAvg}%`, icon: "school", trend: "Across all subjects", up: true },
+          { label: "Pass Rate", value: `${passRate}%`, icon: "check_circle", trend: "All subjects", up: true },
+          { label: "Top Subject", value: topSubject ? `${topSubject.average}%` : "—", icon: "trending_up", trend: topSubject?.subject || "—", up: true },
+          { label: "At-Risk Subjects", value: String(atRisk), icon: "warning", trend: "Bottom score < 40%", up: false },
+        ].map((s, i) => (
+          <div key={i} className="flex items-center gap-4 rounded-2xl px-5 py-4 bg-white border border-slate-100 group hover: transition-all">
+            <div className="size-11 rounded-2xl flex items-center justify-center bg-accent shrink-0">
+              <span className="material-symbols-outlined text-[22px] text-foreground/70">{s.icon}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[#B0AFA8] text-[12px] font-medium truncate">{s.label}</p>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <p className="text-foreground text-[22px] font-semibold leading-none tracking-tight">{s.value}</p>
+                {s.trend && (
+                  <span className={cn("text-[11px] font-medium", s.up ? "text-[#2E7D32]" : "text-[#B91C1C]")}>{s.trend}</span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
 
-    {/* Class-wise Performance Chart */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Subject Radar — powered by live data */}
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:col-span-2">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-foreground text-[15px] font-semibold">Subject Performance Radar</h3>
+              <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Average vs Pass Rate comparison</p>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={320}>
+            <RadarChart data={radarData}>
+              <PolarGrid stroke="#f1f5f9" />
+              <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "#64748b" }} />
+              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: "#94a3b8" }} />
+              <Radar name="Average" dataKey="average" stroke={chartColors.secondary} fill={chartColors.secondary} fillOpacity={0.15} strokeWidth={2} />
+              <Radar name="Pass Rate" dataKey="passRate" stroke={chartColors.maths} fill={chartColors.maths} fillOpacity={0.1} strokeWidth={2} />
+              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
+              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #f1f5f9", fontSize: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Teacher Performance Table — powered by live data */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-foreground text-[15px] font-semibold">Class-wise Average Marks</h3>
-            <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Across all subjects • Current term</p>
-          </div>
-          <button className="text-[11px] font-medium text-[#B0AFA8] hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-[#F7F8F4]">View Details</button>
-        </div>
-        <ResponsiveContainer width="100%" height={320}>
-          <BarChart data={classPerformanceData} barGap={2} barCategoryGap="20%">
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="class" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} domain={[0, 100]} />
-            <Tooltip
-              contentStyle={{ borderRadius: 12, border: "1px solid #f1f5f9", fontSize: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}
-            />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
-            <Bar dataKey="maths" name="Maths" fill={chartColors.maths} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="science" name="Science" fill={chartColors.science} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="english" name="English" fill={chartColors.english} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Subject Radar */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-foreground text-[15px] font-semibold">Subject Performance Radar</h3>
-            <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Average vs Pass Rate comparison</p>
+            <h3 className="text-foreground text-[15px] font-semibold">Subject-wise Performance</h3>
+            <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Average marks and pass rates by subject</p>
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={320}>
-          <RadarChart data={radarData}>
-            <PolarGrid stroke="#f1f5f9" />
-            <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "#64748b" }} />
-            <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: "#94a3b8" }} />
-            <Radar name="Average" dataKey="average" stroke={chartColors.secondary} fill={chartColors.secondary} fillOpacity={0.15} strokeWidth={2} />
-            <Radar name="Pass Rate" dataKey="passRate" stroke={chartColors.maths} fill={chartColors.maths} fillOpacity={0.1} strokeWidth={2} />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
-            <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #f1f5f9", fontSize: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }} />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-
-    {/* Exam Comparison Trend */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-foreground text-[15px] font-semibold">Exam Performance Trend</h3>
-          <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Unit Tests → Mid Term → Annual progression</p>
-        </div>
-      </div>
-      <ResponsiveContainer width="100%" height={280}>
-        <LineChart data={examComparisonData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="exam" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} domain={[50, 100]} />
-          <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #f1f5f9", fontSize: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }} />
-          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
-          <Line type="monotone" dataKey="classAvg" name="Class Average" stroke={chartColors.secondary} strokeWidth={2.5} dot={{ r: 4, fill: chartColors.secondary }} activeDot={{ r: 6 }} />
-          <Line type="monotone" dataKey="schoolAvg" name="School Average" stroke={chartColors.maths} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
-          <Line type="monotone" dataKey="topPerformer" name="Top Performer" stroke={chartColors.science} strokeWidth={2} dot={{ r: 3 }} />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-
-    {/* Teacher Performance Table */}
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 ">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-foreground text-[15px] font-semibold">Teacher-wise Performance</h3>
-          <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Student outcomes grouped by teacher</p>
-        </div>
-        <button className="btn-outline px-4 py-2 rounded-[10px] text-[13px] font-semibold flex items-center gap-2 transition-all">
-          <span className="material-symbols-outlined text-[16px]">download</span>
-          Export
-        </button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-slate-100">
-              {["Teacher", "Subject", "Avg Marks", "Pass Rate", "Students", "Performance"].map((h) => (
-                <th key={h} className="pb-3 text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {teacherPerformanceData.map((t, i) => (
-              <tr key={i} className="border-b border-slate-50 hover:bg-[#F7F8F4]/50 transition-colors">
-                <td className="py-3.5 text-[13px] font-semibold text-foreground">{t.teacher}</td>
-                <td className="py-3.5 text-[13px] text-[#444441]">{t.subject}</td>
-                <td className="py-3.5 text-[13px] font-semibold text-foreground">{t.avgMarks}%</td>
-                <td className="py-3.5">
-                  <span className={cn(
-                    "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                    t.passRate >= 90 ? "bg-[#EAF2D7] text-[#2E7D32]" : t.passRate >= 80 ? "bg-[#FEF3C7] text-[#B45309]" : "bg-[#FEE2E2] text-[#B91C1C]"
-                  )}>{t.passRate}%</span>
-                </td>
-                <td className="py-3.5 text-[13px] text-[#444441]">{t.students}</td>
-                <td className="py-3.5">
-                  <div className="w-24 h-2 bg-[#F0F0EC] rounded-full overflow-hidden">
-                    <div className={cn("h-full rounded-full transition-all", t.avgMarks >= 80 ? "bg-[#2E7D32]" : t.avgMarks >= 70 ? "bg-[#B45309]" : "bg-[#B91C1C]")} style={{ width: `${t.avgMarks}%` }} />
-                  </div>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-slate-100">
+                {["Subject", "Average", "Pass Rate", "Top Score", "Bottom Score"].map((h) => (
+                  <th key={h} className="pb-3 text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {subjectData.map((s, i) => (
+                <tr key={i} className="border-b border-slate-50 hover:bg-[#F7F8F4]/50 transition-colors">
+                  <td className="py-3.5 text-[13px] font-semibold text-foreground">{s.subject}</td>
+                  <td className="py-3.5 text-[13px] font-semibold text-foreground">{s.average}%</td>
+                  <td className="py-3.5">
+                    <span className={cn(
+                      "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                      s.passRate >= 90 ? "bg-[#EAF2D7] text-[#2E7D32]" : s.passRate >= 80 ? "bg-[#FEF3C7] text-[#B45309]" : "bg-[#FEE2E2] text-[#B91C1C]"
+                    )}>{s.passRate}%</span>
+                  </td>
+                  <td className="py-3.5 text-[13px] font-bold text-[#2E7D32]">{s.topScore}%</td>
+                  <td className="py-3.5 text-[13px] font-bold text-[#B91C1C]">{s.bottomScore}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};

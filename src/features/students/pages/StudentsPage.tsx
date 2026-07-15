@@ -335,17 +335,17 @@ export const StudentsPage = ({
             id: user.admissionNumber || user.id.slice(0, 8),
             grade: user.enrollmentGrade || (matchedClass ? matchedClass.grade : "Unassigned"),
             section: matchedClass ? matchedClass.section || "" : "",
-            participation: 75,
-            auraScore: user.auraPoints || 0,
+            participation: 0,
+            auraScore: user.auraPoints ?? 0,
             status: mapStatusToDisplay(user.studentStatus),
             img: "/Avatar/Male Avatar Age16.png",
             enrollmentDate: new Date(user.createdAt).toLocaleDateString(
               "en-IN",
               { month: "short", day: "2-digit", year: "numeric" },
             ),
-            bloodGroup: user.bloodGroup || "O+",
+            bloodGroup: user.bloodGroup || "—",
             guardianName: user.guardians?.[0]?.fullName || "Guardian of " + user.name,
-            phone: user.guardians?.[0]?.mobileNo || user.mobileNo || "+91 99999-99999",
+            phone: user.guardians?.[0]?.mobileNo || user.mobileNo || "—",
             uid: user.id,
           };
         });

@@ -105,8 +105,8 @@ export const KnowYourStudentPage = () => {
                         graphqlRequest<any>(attQuery, { studentId }).catch(() => null)
                     ]);
 
-                    const totalPoints = auraRes?.studentAuraPoints?.totalPoints ?? 80;
-                    const attendancePct = attRes?.studentAttendanceSummary?.percentage ?? 100;
+                    const totalPoints = auraRes?.studentAuraPoints?.totalPoints ?? -1;
+                    const attendancePct = attRes?.studentAttendanceSummary?.percentage ?? -1;
                     const auraScore = Math.min(Math.max(totalPoints, 0), 100);
 
                     return {
@@ -117,8 +117,8 @@ export const KnowYourStudentPage = () => {
                 } catch (e) {
                     return {
                         studentId,
-                        aura: 80,
-                        attendance: 100
+                        aura: -1,
+                        attendance: -1
                     };
                 }
             });
@@ -291,11 +291,11 @@ export const KnowYourStudentPage = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {filteredStudents.map((s, idx) => {
-                                const metrics = metricsMap[s.id] || { aura: 80, attendance: 100 };
+                                const metrics = metricsMap[s.id] || { aura: -1, attendance: -1 };
                                 const sClass = classesMap[s.classId || ""];
                                 const gradeText = sClass ? sClass.grade : "Unassigned";
                                 const sectionText = sClass?.section ? `Section ${sClass.section}` : "";
-                                const isAtRisk = metrics.attendance < 85;
+                                const isAtRisk = metrics.attendance !== -1 && metrics.attendance < 85;
                                 const imgUrl = getStudentAvatar(s.id, idx);
 
                                 return (
@@ -328,14 +328,14 @@ export const KnowYourStudentPage = () => {
                                                     <p className="text-[9px] font-medium text-[#B0AFA8] mb-1 uppercase tracking-tighter">Aura Score</p>
                                                     <div className="flex items-center gap-2">
                                                         <div className="h-1 flex-1 bg-[#F0F0EC] rounded-full overflow-hidden">
-                                                            <div className="h-full bg-primary" style={{ width: `${metrics.aura}%` }} />
+                                                            <div className="h-full bg-primary" style={{ width: metrics.aura !== -1 ? `${metrics.aura}%` : "0%" }} />
                                                         </div>
-                                                        <span className="text-[11px] font-bold text-foreground">{metrics.aura}%</span>
+                                                        <span className="text-[11px] font-bold text-foreground">{metrics.aura !== -1 ? `${metrics.aura}%` : "—"}</span>
                                                     </div>
                                                 </div>
                                                 <div>
                                                     <p className="text-[9px] font-medium text-[#B0AFA8] mb-1 uppercase tracking-tighter">Attendance</p>
-                                                    <p className="text-[11px] font-bold text-foreground">{metrics.attendance}%</p>
+                                                    <p className="text-[11px] font-bold text-foreground">{metrics.attendance !== -1 ? `${metrics.attendance}%` : "—"}</p>
                                                 </div>
                                             </div>
                                         </div>

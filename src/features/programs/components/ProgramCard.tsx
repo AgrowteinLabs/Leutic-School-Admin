@@ -1,6 +1,7 @@
 import { cn } from "../../../lib/utils";
 
 interface ProgramCardProps {
+  id?: string;
   name: string;
   category: string;
   participants: number;
@@ -11,6 +12,7 @@ interface ProgramCardProps {
   location: string;
   targetGrades: string;
   onClick?: () => void;
+  onEdit?: () => void;
   index?: number;
 }
 
@@ -40,6 +42,7 @@ export const ProgramCard = ({
   location,
   targetGrades,
   onClick,
+  onEdit,
   index = 0,
 }: ProgramCardProps) => {
   const getStatusStyles = (s: string) => {
@@ -78,14 +81,25 @@ export const ProgramCard = ({
             {name}
           </h3>
         </div>
-        <span
-          className={cn(
-            "px-3 py-1 rounded-full text-[10px] font-bold tracking-tight border whitespace-nowrap ml-2",
-            getStatusStyles(status)
+        <div className="flex items-center gap-2 ml-2 shrink-0">
+          {onEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="size-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-[#B0AFA8] hover:text-primary hover:border-primary/30 transition-all opacity-0 group-hover:opacity-100"
+              title="Edit Program"
+            >
+              <span className="material-symbols-outlined text-[14px]">edit_note</span>
+            </button>
           )}
-        >
-          {status}
-        </span>
+          <span
+            className={cn(
+              "px-3 py-1 rounded-full text-[10px] font-bold tracking-tight border whitespace-nowrap",
+              getStatusStyles(status)
+            )}
+          >
+            {status}
+          </span>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 mb-8">

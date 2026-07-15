@@ -48,14 +48,20 @@ const DELETE_DRIVER = `
   }
 `;
 
-const parseDriverAddress = (addressStr: string) => {
-  const meta = {
-    licExp: "Oct 22, 2026",
-    experience: "5 Years",
+const parseDriverAddress = (addressStr: string) => {    const meta: {
+    licExp: string;
+    experience: string;
+    bus: string;
+    route: string;
+    shift: string;
+    joiningDate: string;
+  } = {
+    licExp: "N/A",
+    experience: "N/A",
     bus: "Unassigned",
     route: "Unassigned",
-    shift: "Morning & Evening",
-    joiningDate: "Jan 12, 2022",
+    shift: "N/A",
+    joiningDate: "N/A",
   };
 
   if (!addressStr) return meta;
@@ -126,14 +132,12 @@ const DriverRow = ({
         </div>
       </td>
       <td className="px-6 py-4">
-        <div className="flex flex-col">
-          <span className="text-[13px] font-bold text-foreground leading-tight">{bus} — {route}</span>
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{regNo || "KL01MT8872"}</span>
+        <div className="flex flex-col">                      <span className="text-[13px] font-bold text-foreground leading-tight">{bus} — {route}</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{regNo || "—"}</span>
         </div>
       </td>
       <td className="px-6 py-4">
-        <div className="flex flex-col">
-          <span className="text-[13px] font-bold text-foreground leading-tight">{joiningDate || "Jan 12, 2022"}</span>
+        <div className="flex flex-col">                          <span className="text-[13px] font-bold text-foreground leading-tight">{joiningDate || "—"}</span>
           <span className="text-[10px] font-medium text-[#B0AFA8]">{experience} Service</span>
         </div>
       </td>
@@ -148,8 +152,7 @@ const DriverRow = ({
           </span>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className="text-[13px] font-bold text-foreground">{phone || "+91 98472-11002"}</span>
+      <td className="px-6 py-4 whitespace-nowrap">                      <span className="text-[13px] font-bold text-foreground">{phone || "—"}</span>
       </td>
       <td className="px-6 py-4 w-[140px]">
         <span
@@ -250,8 +253,8 @@ export const DriversPage = ({
         route: meta.route,
         shift: meta.shift,
         joiningDate: meta.joiningDate,
-        status: "Active", // Defaulting active since they are registered in the DB
-        regNo: "KL01MT8872",
+        status: "Active",
+        regNo: "N/A",
         img: "/Avatar/Male Avatar Age45.png",
       };
     });
@@ -323,14 +326,14 @@ export const DriversPage = ({
             />
             <StatCard
               label="Active Vehicles"
-              value={statsData ? String(statsData.activeVehiclesCount) : "24"}
+              value={statsData ? String(statsData.activeVehiclesCount) : "—"}
               trend="Institutional fleet"
               icon="directions_bus"
               color="secondary"
             />
             <StatCard
               label="Route Coverage"
-              value={statsData ? `${statsData.routeCoveragePercent}%` : "98%"}
+              value={statsData ? `${statsData.routeCoveragePercent}%` : "—"}
               trend="On-time metrics"
               icon="map"
               color="secondary"

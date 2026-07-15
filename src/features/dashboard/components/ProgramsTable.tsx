@@ -1,21 +1,6 @@
 import { useState, useEffect } from "react";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
-interface DBEvent {
-    id: string;
-    title: string;
-    description?: string;
-    date: string;
-    type: "HOLIDAY" | "EXAM" | "ACTIVITY" | "HALF_DAY" | "ANNUAL_DAY";
-}
-
-interface DBCalendar {
-    id: string;
-    schoolId: string;
-    name: string;
-    events: DBEvent[];
-}
-
 export const ProgramsTable = () => {
     const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -25,48 +10,28 @@ export const ProgramsTable = () => {
             setIsLoading(true);
             try {
                 const schoolId = localStorage.getItem("school_id") || "";
-                interface GetCalendarsResponse {
-                    calendars: {
-                        items: DBCalendar[];
-                    };
-                }
-                const res = await graphqlRequest<GetCalendarsResponse>(`
-                    query GetCalendarsWithEvents($page: Int, $pageSize: Int) {
-                        calendars(page: $page, pageSize: $pageSize) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const startDate = today.toISOString();
+
+                const res = await graphqlRequest<any>(`
+                    query GetUpcomingEvents($schoolId: String!, $startDate: String!) {
+                        events(schoolId: $schoolId, startDate: $startDate, page: 1, pageSize: 20) {
                             items {
                                 id
-                                schoolId
-                                name
-                                events {
-                                    id
-                                    title
-                                    description
-                                    date
-                                    type
-                                }
+                                title
+                                description
+                                date
+                                type
                             }
                         }
                     }
-                `, { page: 1, pageSize: 10 });
+                `, { schoolId, startDate });
 
-                // Filter to only this school's calendars (backend doesn't support schoolId param)
-                const schoolCals = (res.calendars?.items || []).filter(cal => cal.schoolId === schoolId);
+                const eventItems = res.events?.items || [];
 
-                
-                // Flatten and gather events from school calendars only
-                const allEvents: DBEvent[] = [];
-                schoolCals.forEach(cal => {
-                    if (cal.events) {
-                        allEvents.push(...cal.events);
-                    }
-                });
-
-                // Filter future events (or today onwards)
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const mapped = allEvents
-                    .map(ev => {
+                const mapped = eventItems
+                    .map((ev: any) => {
                         const evDate = new Date(ev.date);
                         const diffMs = evDate.getTime() - today.getTime();
                         const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
@@ -89,8 +54,8 @@ export const ProgramsTable = () => {
                             originalDate: evDate
                         };
                     })
-                    .filter(ev => ev.daysLeft >= 0)
-                    .sort((a, b) => a.originalDate.getTime() - b.originalDate.getTime())
+                    .filter((ev: any) => ev.daysLeft >= 0)
+                    .sort((a: any, b: any) => a.originalDate.getTime() - b.originalDate.getTime())
                     .slice(0, 5); // limit to next 5 upcoming
 
                 setEvents(mapped);
@@ -116,7 +81,7 @@ export const ProgramsTable = () => {
             {isLoading ? (
                 <p className="text-[12px] text-[#B0AFA8] font-bold text-center py-6">Loading upcoming events...</p>
             ) : events.length > 0 ? (
-                events.map((event, idx) => (
+                events.map((event: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-4 py-3 px-1 border-b border-slate-50 last:border-0 hover:bg-[#F7F8F4] rounded-[10px] transition-colors cursor-pointer group -mx-1">
                         {/* Date */}
                         <div className="flex flex-col items-center justify-center w-12 shrink-0">

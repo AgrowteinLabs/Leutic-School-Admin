@@ -981,7 +981,7 @@ export const ClassDetailsPage = () => {
       const mappedClassStudents = classStudents.map((s) => {
         const participation = s.participationRate !== undefined && s.participationRate !== null 
           ? Math.round(s.participationRate) 
-          : (80 + ((s.name.codePointAt(0) || 0) % 20));
+          : -1;
 
         const auraScore = auraMap.get(s.id);
 
@@ -1015,6 +1015,12 @@ export const ClassDetailsPage = () => {
         };
       });
 
+      // Compute average only from students with real participation data
+      const studentsWithParticipation = mappedClassStudents.filter(s => s.participation !== -1);
+      const computedAvgParticipation = studentsWithParticipation.length > 0
+        ? Math.round(studentsWithParticipation.reduce((sum, s) => sum + s.participation, 0) / studentsWithParticipation.length)
+        : 0;
+
       setClassDetails({
         id: cls.id,
         grade: cls.grade,
@@ -1023,7 +1029,7 @@ export const ClassDetailsPage = () => {
         shift: parsedShift,
         teacher: teacherName,
         teacherId: cls.classTeacherId,
-        avgParticipation: classStudents.length > 0 ? Math.round(mappedClassStudents.reduce((sum, s) => sum + s.participation, 0) / classStudents.length) : 0,
+        avgParticipation: computedAvgParticipation,
         attendanceRate: cls.attendanceRate !== undefined && cls.attendanceRate !== null ? cls.attendanceRate : 0,
         activePrograms: cls.activeProgramsCount !== undefined && cls.activeProgramsCount !== null ? cls.activeProgramsCount : 0,
         behaviorFlags: mappedClassStudents.filter(s => s.statusType === "risk").length,
@@ -1551,21 +1557,39 @@ export const ClassDetailsPage = () => {
 
                       <div className="flex items-center gap-4 w-[180px] px-6 border-x border-slate-50">
                         <div className="relative size-9 shrink-0">
-                          <svg className="size-full -rotate-90">
-                            <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2.5" stroke="#F7F8F4" />
-                            <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2.5"
-                              strokeDasharray={String(2 * Math.PI * 15.5)}
-                              strokeDashoffset={String(2 * Math.PI * 15.5 * (1 - student.participation / 100))}
-                              stroke={student.participation > 80 ? "#2E7D32" : student.participation > 60 ? "#EF9800" : "#E63535"}
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-[9px] font-black text-foreground">{student.participation}%</span>
-                          </div>
+                          {student.participation === -1 ? (
+                            <div className="size-full flex items-center justify-center">
+                              <svg className="size-full -rotate-90">
+                                <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2.5" stroke="#F0F0EC" />
+                                <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2.5"
+                                  stroke="#D0D0CC"
+                                  strokeLinecap="round"
+                                  strokeDasharray="3 6"
+                                />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-[9px] font-black text-[#B0AFA8]">—</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <svg className="size-full -rotate-90">
+                                <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2.5" stroke="#F7F8F4" />
+                                <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="2.5"
+                                  strokeDasharray={String(2 * Math.PI * 15.5)}
+                                  strokeDashoffset={String(2 * Math.PI * 15.5 * (1 - student.participation / 100))}
+                                  stroke={student.participation > 80 ? "#2E7D32" : student.participation > 60 ? "#EF9800" : "#E63535"}
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-[9px] font-black text-foreground">{student.participation}%</span>
+                              </div>
+                            </>
+                          )}
                         </div>
                         <span className="text-[11px] font-bold text-[#B0AFA8] tracking-wide">
-                          {student.participation > 85 ? "Exceptional" : student.participation > 70 ? "Consistent" : "Developing"}
+                          {student.participation === -1 ? "No Data" : student.participation > 85 ? "Exceptional" : student.participation > 70 ? "Consistent" : "Developing"}
                         </span>
                       </div>
 

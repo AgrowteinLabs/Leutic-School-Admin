@@ -1,16 +1,36 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+
+const DISPLAY_TO_CATEGORY_ENUM: Record<string, string> = {
+  "Sports": "SPORTS",
+  "Creative Arts": "ARTS",
+  "STEM & Technology": "STEM",
+  "Leadership & Community": "LEADERSHIP",
+};
+
+const CATEGORY_ENUM_TO_DISPLAY: Record<string, string> = {
+  SPORTS: "Sports",
+  ARTS: "Creative Arts",
+  STEM: "STEM & Technology",
+  LEADERSHIP: "Leadership & Community",
+};
 
 export const AddProgramPage = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const editId = searchParams.get("edit");
+    const isEditing = !!editId;
+
     const [activeStep, setActiveStep] = useState(1);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [isLoadingEdit, setIsLoadingEdit] = useState(false);
 
     // Step 1: Basic Info
     const [name, setName] = useState("");
@@ -26,9 +46,120 @@ export const AddProgramPage = () => {
     const [targetGrades, setTargetGrades] = useState<string[]>([]);
     const [leadTeacher, setLeadTeacher] = useState("");
     const [capacity, setCapacity] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFinalize = () => {
-        setShowSuccess(true);
+    // Fetch existing program data when editing
+    useEffect(() => {
+        if (!editId) return;
+        setIsLoadingEdit(true);
+        const fetchProgram = async () => {
+            try {
+                const res = await graphqlRequest<any>(`
+                    query GetSpecialProgram($id: ID!) {
+                        specialProgram(id: $id) {
+                            id
+                            name
+                            category
+                            leadTeacher
+                            enrolledStudentsCount
+                            startDate
+                            endDate
+                            location
+                            targetGrades
+                            status
+                        }
+                    }
+                `, { id: editId });
+                const p = res?.specialProgram;
+                if (p) {
+                    setName(p.name || "");
+                    const displayCat = CATEGORY_ENUM_TO_DISPLAY[p.category] || "";
+                    setCategory(displayCat);
+                    setLeadTeacher(p.leadTeacher || "");
+                    setCapacity(p.enrolledStudentsCount ? String(p.enrolledStudentsCount) : "");
+                    setStartDate(p.startDate ? new Date(p.startDate) : null);
+                    setEndDate(p.endDate ? new Date(p.endDate) : null);
+                    setLocation(p.location || "");
+                    if (p.targetGrades) {
+                        setTargetGrades(p.targetGrades.split(", ").filter(Boolean));
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load program for editing:", err);
+            } finally {
+                setIsLoadingEdit(false);
+            }
+        };
+        fetchProgram();
+    }, [editId]);
+
+    const handleFinalize = async () => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+
+        const schoolId = localStorage.getItem("school_id") || "";
+        const categoryEnum = DISPLAY_TO_CATEGORY_ENUM[category] || "STEM";
+
+        const input = {
+            name,
+            category: categoryEnum,
+            leadTeacher: leadTeacher || "To be assigned",
+            enrolledStudentsCount: capacity ? parseInt(capacity, 10) : 0,
+            status: "ACTIVE",
+            startDate: startDate ? startDate.toISOString() : undefined,
+            endDate: endDate ? endDate.toISOString() : undefined,
+            location: location || undefined,
+            targetGrades: targetGrades.length > 0 ? targetGrades.join(", ") : undefined,
+        };
+
+        try {
+            if (isEditing && editId) {
+                // Update existing program
+                await graphqlRequest(`
+                    mutation UpdateSpecialProgram($id: ID!, $input: UpdateSpecialProgramInput!) {
+                        updateSpecialProgram(id: $id, input: $input) {
+                            id
+                            name
+                            status
+                            leadTeacher
+                            startDate
+                            endDate
+                            location
+                            targetGrades
+                            enrolledStudentsCount
+                        }
+                    }
+                `, { id: editId, input });
+            } else {
+                // Create new program
+                await graphqlRequest(`
+                    mutation CreateSpecialProgram($input: CreateSpecialProgramInput!) {
+                        createSpecialProgram(input: $input) {
+                            id
+                            name
+                            status
+                            leadTeacher
+                            startDate
+                            endDate
+                            location
+                            targetGrades
+                            enrolledStudentsCount
+                        }
+                    }
+                `, {
+                    input: {
+                        schoolId,
+                        ...input,
+                    }
+                });
+            }
+            setShowSuccess(true);
+        } catch (err) {
+            console.error("Failed to save program:", err);
+            alert(`Failed to ${isEditing ? "update" : "create"} program. Please try again.`);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const steps = [
@@ -40,12 +171,12 @@ export const AddProgramPage = () => {
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB] font-sans">
             <TopBar
-                title="Create New Program"
-                subtitle="Configure details for your new school activity"
+                title={isEditing ? "Edit Program" : "Create New Program"}
+                subtitle={isEditing ? "Modify program details and settings" : "Configure details for your new school activity"}
                 actions={
                     <div className="flex items-center gap-3">
                         <PDSButton variant="text" onClick={() => navigate(-1)}>Cancel</PDSButton>
-                        <PDSButton variant="primary" icon="check_circle" onClick={handleFinalize} disabled={activeStep < 3}>Create Program</PDSButton>
+                        <PDSButton variant="primary" icon="check_circle" onClick={handleFinalize} disabled={activeStep < 3 || isSubmitting || isLoadingEdit}>{isSubmitting ? "Saving..." : isEditing ? "Update Program" : "Create Program"}</PDSButton>
                     </div>
                 }
             />
@@ -118,7 +249,7 @@ export const AddProgramPage = () => {
                                                             <PDSFormGroup 
                                                                 label="Category" 
                                                                 type="select" 
-                                                                options={["Academic", "Sports", "Creative Arts", "Technology", "Arts & Culture", "Social"]} 
+                                                                options={["Sports", "Creative Arts", "STEM & Technology", "Leadership & Community"]} 
                                                                 value={category} 
                                                                 onChange={setCategory} 
                                                                 searchable 
@@ -168,7 +299,7 @@ export const AddProgramPage = () => {
                                                             </PDSButton>
                                                         ) : (
                                                             <PDSButton variant="primary" className="px-12 h-10" onClick={handleFinalize}>
-                                                                Create Program
+                                                                {isEditing ? "Update Program" : "Create Program"}
                                                             </PDSButton>
                                                         )}
                                                     </div>
@@ -187,8 +318,8 @@ export const AddProgramPage = () => {
 
             <PDSSuccessModal 
                 show={showSuccess}
-                title="Program Created!"
-                description="The new school program has been successfully created and scheduled."
+                title={isEditing ? "Program Updated!" : "Program Created!"}
+                description={isEditing ? "The school program has been successfully updated." : "The new school program has been successfully created and scheduled."}
                 buttonText="Return to Programs"
                 onClose={() => navigate("/academics/programs")}
             />

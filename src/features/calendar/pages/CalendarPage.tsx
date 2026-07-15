@@ -37,6 +37,7 @@ export const CalendarPage = () => {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [classesList, setClassesList] = useState<any[]>([]);
   const [calendars, setCalendars] = useState<DBCalendar[]>([]);
+  const [allEvents, setAllEvents] = useState<DBEvent[]>([]);
   const [timetableSlots, setTimetableSlots] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,6 +60,17 @@ export const CalendarPage = () => {
   const [showHolidayModal, setShowHolidayModal] = useState(false);
   const [holidayName, setHolidayName] = useState("");
   const [holidayDateStr, setHolidayDateStr] = useState("");
+
+  // Teacher Substitution State
+  const [showSubstituteModal, setShowSubstituteModal] = useState(false);
+  const [absentTeacherId, setAbsentTeacherId] = useState("");
+  const [absentTeacherName, setAbsentTeacherName] = useState("");
+  const [leaveStartDate, setLeaveStartDate] = useState("");
+  const [leaveEndDate, setLeaveEndDate] = useState("");
+  const [leaveReason, setLeaveReason] = useState("");
+  const [selectedSubstituteTeacherId, setSelectedSubstituteTeacherId] = useState("");
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+  const [isSavingLeave, setIsSavingLeave] = useState(false);
 
   // Success Feedback State
   const [showSuccess, setShowSuccess] = useState(false);
@@ -120,7 +132,7 @@ export const CalendarPage = () => {
         setSelectedClass(loadedClasses[0].id);
       }
 
-      // 3. Get Calendars & Events
+      // 3. Get Calendars (metadata only)
       // Note: Backend calendars() query doesn't support schoolId filtering.
       // We filter client-side using the schoolId field returned on each item.
       const calendarsRes = await graphqlRequest<any>(`
@@ -131,14 +143,6 @@ export const CalendarPage = () => {
               schoolId
               name
               classId
-              events {
-                id
-                calendarId
-                title
-                description
-                date
-                type
-              }
             }
           }
         }
@@ -151,11 +155,75 @@ export const CalendarPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [schoolId, selectedClass, selectedTeacher]);
+  }, [schoolId]);
+
+  const fetchEvents = useCallback(async () => {
+    if (!schoolId) return;
+    try {
+      const startDate = new Date(Date.UTC(currentYear, currentMonth, 1)).toISOString();
+      const endDate = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999)).toISOString();
+
+      const eventsRes = await graphqlRequest<any>(`
+        query GetMonthEvents($schoolId: String!, $startDate: String!, $endDate: String!) {
+          events(schoolId: $schoolId, startDate: $startDate, endDate: $endDate, page: 1, pageSize: 100) {
+            items {
+              id
+              calendarId
+              title
+              description
+              date
+              type
+            }
+            total
+          }
+        }
+      `, { schoolId, startDate, endDate });
+
+      setAllEvents(eventsRes?.events?.items || []);
+    } catch (err) {
+      console.error("Failed to fetch monthly events:", err);
+    }
+  }, [schoolId, currentMonth, currentYear]);
+
+  // Fetch leave requests for the school
+  const fetchLeaveRequests = useCallback(async () => {
+    if (!schoolId) return;
+    try {
+      const res = await graphqlRequest<any>(`
+        query GetLeaveRequests($schoolId: ID!) {
+          leaveRequests(schoolId: $schoolId) {
+            id
+            userId
+            userName
+            schoolId
+            startDate
+            endDate
+            reason
+            status
+            substituteTeacherId
+            substituteTeacherName
+          }
+        }
+      `, { schoolId });
+      setLeaveRequests(res?.leaveRequests || []);
+    } catch (err) {
+      // Backend may not have leaveRequests query yet — silently ignore
+      console.warn("Failed to load leave requests (backend may need update):", err);
+      setLeaveRequests([]);
+    }
+  }, [schoolId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  useEffect(() => {
+    fetchLeaveRequests();
+  }, [fetchLeaveRequests]);
 
   // Navigate Months
   const handlePrevMonth = () => {
@@ -176,16 +244,7 @@ export const CalendarPage = () => {
     }
   };
 
-  // Flatten events
-  const allEvents = useMemo(() => {
-    const evs: DBEvent[] = [];
-    calendars.forEach(cal => {
-      if (cal.events) {
-        evs.push(...cal.events);
-      }
-    });
-    return evs;
-  }, [calendars]);
+
 
   // Resolve events for a specific cell
   const getEventsForDay = (dayNum: number) => {
@@ -364,6 +423,7 @@ export const CalendarPage = () => {
       setShowNewEventModal(false);
       setEditingEvent(null);
       fetchData();
+      fetchEvents();
     } catch (e) {
       console.error("Failed to save calendar event:", e);
       alert("Failed to save event. Check fields and try again.");
@@ -409,6 +469,7 @@ export const CalendarPage = () => {
       setEventDesc("");
       setShowNewEventModal(false);
       fetchData();
+      fetchEvents();
     } catch (e) {
       console.error("Failed to update event:", e);
       alert("Failed to update event. Please try again.");
@@ -431,6 +492,7 @@ export const CalendarPage = () => {
         }
       `, { id: eventId });
       fetchData();
+      fetchEvents();
     } catch (e) {
       console.error("Failed to delete event:", e);
       alert("Failed to delete event. Please try again.");
@@ -515,6 +577,7 @@ export const CalendarPage = () => {
 
       setShowHolidayModal(false);
       fetchData();
+      fetchEvents();
 
       // Show success feedback
       setSuccessTitle("Holiday Declared");
@@ -525,6 +588,59 @@ export const CalendarPage = () => {
       alert("Failed to mark holiday.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Open substitute assignment modal for a teacher
+  const handleOpenSubstituteModal = (teacherId: string, teacherName: string) => {
+    setAbsentTeacherId(teacherId);
+    setAbsentTeacherName(teacherName);
+    const todayStr = new Date(currentYear, currentMonth, selectedDayNum).toISOString().split("T")[0];
+    setLeaveStartDate(todayStr);
+    setLeaveEndDate(todayStr);
+    setLeaveReason("");
+    setSelectedSubstituteTeacherId("");
+    setShowSubstituteModal(true);
+  };
+
+  // Create a leave request with substitute assignment
+  const handleAssignSubstitute = async () => {
+    if (!absentTeacherId || !leaveStartDate || isSavingLeave) return;
+    setIsSavingLeave(true);
+    try {
+      await graphqlRequest(`
+        mutation CreateLeaveRequest($input: CreateLeaveRequestInput!) {
+          createLeaveRequest(input: $input) {
+            id
+            userId
+            userName
+            status
+            substituteTeacherId
+            substituteTeacherName
+          }
+        }
+      `, {
+        input: {
+          userId: absentTeacherId,
+          schoolId,
+          startDate: new Date(leaveStartDate).toISOString(),
+          endDate: new Date(leaveEndDate || leaveStartDate).toISOString(),
+          reason: leaveReason || "Teacher absent — substitute assigned",
+          substituteTeacherId: selectedSubstituteTeacherId || undefined,
+        }
+      });
+
+      setShowSubstituteModal(false);
+      fetchLeaveRequests();
+
+      setSuccessTitle("Substitute Assigned");
+      setSuccessMessage(`${absentTeacherName} has been marked absent. ${selectedSubstituteTeacherId ? "A substitute has been assigned." : ""}`);
+      setShowSuccess(true);
+    } catch (e) {
+      console.error("Failed to assign substitute:", e);
+      alert("Failed to assign substitute. The backend may need the leaveRequest mutation added. See docs/TEACHER_SUBSTITUTION_BACKEND_SPEC.md");
+    } finally {
+      setIsSavingLeave(false);
     }
   };
 
@@ -895,6 +1011,62 @@ export const CalendarPage = () => {
               </div>
             )}
 
+            {/* Teacher Substitution Card */}
+            {activeView === "teacher" && (
+              <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm shadow-slate-100/30">
+                <h3 className="text-[14px] font-black text-foreground tracking-tight mb-1 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#B45309] text-lg">swap_horiz</span>
+                  Teacher Substitution
+                </h3>
+                <p className="text-[11px] font-bold text-[#B0AFA8] mb-4 leading-relaxed">
+                  Mark a teacher as absent and assign a substitute.
+                </p>
+                <button
+                  onClick={() => {
+                    const t = teachers.find(t => t.id === selectedTeacher);
+                    handleOpenSubstituteModal(selectedTeacher, t?.name || "Selected Teacher");
+                  }}
+                  className="w-full bg-[#0F2328] text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#0F2328]/10 hover:bg-[#0F2328]/95 transition-all"
+                >
+                  <span className="material-symbols-outlined text-sm">person_off</span> Mark Absent / Assign Substitute
+                </button>
+
+                {/* Recent leave requests for the selected teacher */}
+                {leaveRequests.filter(lr => lr.userId === selectedTeacher).length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <p className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider mb-3">Recent Leave</p>
+                    <div className="space-y-2 max-h-[200px] overflow-y-auto no-scrollbar">
+                      {leaveRequests.filter(lr => lr.userId === selectedTeacher).slice(0, 5).map((lr) => (
+                        <div key={lr.id} className="flex items-start gap-3 p-2.5 rounded-xl bg-[#F7F8F4] border border-slate-50">
+                          <div className={cn(
+                            "size-2 rounded-full mt-1 shrink-0",
+                            lr.status === "APPROVED" ? "bg-emerald-500" :
+                            lr.status === "REJECTED" ? "bg-red-500" : "bg-amber-500"
+                          )} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[12px] font-bold text-foreground truncate">{lr.reason || lr.userName}</p>
+                            <p className="text-[10px] text-slate-500 font-medium">
+                              {lr.startDate?.split("T")[0]} — {lr.endDate?.split("T")[0]}
+                            </p>
+                            {lr.substituteTeacherName && (
+                              <p className="text-[10px] text-primary font-bold mt-0.5">
+                                Sub: {lr.substituteTeacherName}
+                              </p>
+                            )}
+                            <span className={cn(
+                              "text-[9px] font-bold uppercase tracking-wider",
+                              lr.status === "APPROVED" ? "text-emerald-600" :
+                              lr.status === "REJECTED" ? "text-red-500" : "text-amber-600"
+                            )}>{lr.status}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="bg-[#D9EA85] rounded-[24px] p-6 text-foreground shadow-sm">
               <h3 className="text-[16px] font-black tracking-tight mb-2">
                 Quick Actions
@@ -1121,6 +1293,108 @@ export const CalendarPage = () => {
                   {isSaving ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : "Delete"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🆕 Substitute Assignment Modal */}
+      <AnimatePresence>
+        {showSubstituteModal && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <button
+              type="button"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm w-full h-full border-0 p-0 block cursor-default"
+              onClick={() => setShowSubstituteModal(false)}
+              aria-label="Close substitute backdrop"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white p-8 rounded-[32px] max-w-md w-full border border-slate-100 shadow-2xl space-y-6"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-brand-navy tracking-tight">Assign Substitute</h3>
+                <button onClick={() => setShowSubstituteModal(false)} className="size-8 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400">
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-center gap-3">
+                <span className="material-symbols-outlined text-amber-600">info</span>
+                <p className="text-[12px] font-bold text-amber-800">
+                  Marking <span className="underline">{absentTeacherName}</span> as absent will notify relevant staff.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Start Date</span>
+                    <input
+                      type="date"
+                      value={leaveStartDate}
+                      onChange={(e) => setLeaveStartDate(e.target.value)}
+                      className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-2.5 text-[13px] font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">End Date</span>
+                    <input
+                      type="date"
+                      value={leaveEndDate}
+                      onChange={(e) => setLeaveEndDate(e.target.value)}
+                      className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-2.5 text-[13px] font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-foreground"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Reason</span>
+                  <input
+                    type="text"
+                    value={leaveReason}
+                    onChange={(e) => setLeaveReason(e.target.value)}
+                    placeholder="e.g. Medical, Personal, Training..."
+                    className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-2.5 text-[13px] font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-foreground"
+                  />
+                </div>
+
+                <div>
+                  <span className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-wider block mb-1.5">Substitute Teacher</span>
+                  <select
+                    value={selectedSubstituteTeacherId}
+                    onChange={(e) => setSelectedSubstituteTeacherId(e.target.value)}
+                    className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-2.5 text-[13px] font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-foreground cursor-pointer"
+                  >
+                    <option value="">— No substitute (unscheduled) —</option>
+                    {teachers
+                      .filter(t => t.id !== absentTeacherId)
+                      .map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowSubstituteModal(false)}
+                  className="flex-1 h-12 rounded-2xl text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAssignSubstitute}
+                  disabled={!leaveStartDate || isSavingLeave}
+                  className="flex-1 h-12 bg-[#0F2328] text-white text-[14px] font-bold rounded-2xl hover:bg-[#0F2328]/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                >
+                  {isSavingLeave ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : "Assign Substitute"}
                 </button>
               </div>
             </motion.div>

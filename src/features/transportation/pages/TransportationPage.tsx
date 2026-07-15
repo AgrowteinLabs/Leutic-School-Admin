@@ -69,35 +69,27 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
   const [recenterTrigger, setRecenterTrigger] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Buses starting from 1
-  const buses = Array.from({ length: 32 }, (_, i) => ({
-    id: (i + 1).toString(),
-    route: (i + 1).toString(),
-    driver: i % 2 === 0 ? "Madan Pal" : "Somesh Rao",
-    status: i % 5 === 0 ? "Idle" : "Active",
-    speed: i % 5 === 0 ? "0 km/h" : `${30 + (i % 20)} km/h`,
-    location: i % 2 === 0 ? "Marine Drive, Kochi" : "Kakkanad, Kochi",
-    eta: i % 5 === 0 ? "--" : `${2 + (i % 10)}m`,
-    nextStop: i % 2 === 0 ? "High Court" : "Infopark",
-    coords: i % 2 === 0 ? [9.9816, 76.2763] as [number, number] : [10.0159, 76.3419] as [number, number],
-  }));
+  // Live data will be fetched from the backend API
+  const defaultCoords: [number, number] = [9.9816, 76.2763]; // Kochi, Kerala
+  interface Bus {
+    id: string;
+    route: string;
+    driver: string;
+    status: string;
+    speed: string;
+    location: string;
+    eta: string;
+    nextStop: string;
+    coords: [number, number];
+  }
 
-  const activeBus = buses.find(b => b.route === activeRoute) || buses[0];
-  const filteredBuses = buses.filter(b => b.id.includes(searchQuery)).slice(0, 5);
+  const buses: Bus[] = [];
 
-  const handleNextBus = () => {
-      const currentIndex = buses.findIndex(b => b.route === activeRoute);
-      const nextIndex = (currentIndex + 1) % buses.length;
-      setActiveRoute(buses[nextIndex].route);
-      setRecenterTrigger(prev => prev + 1);
-  };
+  const activeBus: Bus = { id: "—", route: "1", driver: "—", status: "Idle", speed: "—", location: "—", eta: "—", nextStop: "—", coords: defaultCoords };
+  const filteredBuses: Bus[] = [];
 
-  const handlePrevBus = () => {
-      const currentIndex = buses.findIndex(b => b.route === activeRoute);
-      const prevIndex = (currentIndex - 1 + buses.length) % buses.length;
-      setActiveRoute(buses[prevIndex].route);
-      setRecenterTrigger(prev => prev + 1);
-  };
+  const handleNextBus = () => {};
+  const handlePrevBus = () => {};
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -136,26 +128,6 @@ export const TransportationPage = ({ isHubChild }: { isHubChild?: boolean }) => 
           />
           <RecenterMap center={activeBus.coords} trigger={recenterTrigger} />
           
-          {/* Architectural Neighborhood Labels */}
-          {[
-            { name: "Kakkanad", coords: [10.0159, 76.3419] as [number, number] },
-            { name: "Vyttila", coords: [9.9707, 76.3220] as [number, number] },
-            { name: "Edappally", coords: [10.0261, 76.3116] as [number, number] },
-            { name: "Fort Kochi", coords: [9.9658, 76.2421] as [number, number] },
-            { name: "Marine Drive", coords: [9.9816, 76.2763] as [number, number] }
-          ].map(area => (
-            <Marker 
-              key={area.name} 
-              position={area.coords}
-              icon={L.divIcon({
-                className: "area-label-marker",
-                html: `<div class="area-label">${area.name}</div>`,
-                iconSize: [0, 0],
-                iconAnchor: [0, 0]
-              })}
-            />
-          ))}
-
           {buses.slice(0, 5).map(bus => (
             <Marker 
                 key={bus.id} 

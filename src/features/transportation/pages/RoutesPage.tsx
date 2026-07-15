@@ -7,70 +7,58 @@ import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { motion, AnimatePresence } from "framer-motion";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 
 interface RouteItem {
     id: string;
     name: string;
     driver: string;
     vehicle: string;
+    vehicleRegNo: string;
     startTime: string;
     endTime: string;
+    eveningStartTime: string;
+    eveningEndTime: string;
     status: string;
     stops: string[];
 }
 
-const DEFAULT_ROUTES: RouteItem[] = [
-    {
-        id: "route-1",
-        name: "Route A - North Coast",
-        driver: "Madan Pal",
-        vehicle: "KL01PC4456 (Bus 01)",
-        startTime: "07:30 AM",
-        endTime: "09:00 AM",
-        status: "Active",
-        stops: ["Marine Drive", "High Court", "Mulavukad", "Cheranallur", "Koonamavu"]
-    },
-    {
-        id: "route-2",
-        name: "Route B - Central Kochi",
-        driver: "Somesh Rao",
-        vehicle: "KL01TR0112 (Bus 05)",
-        startTime: "08:00 AM",
-        endTime: "09:15 AM",
-        status: "Active",
-        stops: ["Vyttila Hub", "Kadavanthra", "Kaloor", "Palarivattom", "Kakkanad"]
-    },
-    {
-        id: "route-3",
-        name: "Route C - Suburban South",
-        driver: "Unassigned",
-        vehicle: "Unassigned",
-        startTime: "07:15 AM",
-        endTime: "08:45 AM",
-        status: "Inactive",
-        stops: ["Tripunithura", "Maradu", "Kundannoor", "Nettoor", "Aroor"]
-    },
-    {
-        id: "route-4",
-        name: "Route D - Infopark Express",
-        driver: "Rajesh Nair",
-        vehicle: "KA01ME3342 (Bus 12)",
-        startTime: "07:45 AM",
-        endTime: "09:10 AM",
-        status: "Active",
-        stops: ["Aluva", "Kalamassery", "Edappally", "Vazhakkala", "Infopark"]
-    }
-];
+interface RouteStopInput {
+    name: string;
+    orderIndex: number;
+}
 
-const DRIVERS_LIST = ["Madan Pal", "Somesh Rao", "Rajesh Nair", "Kishore Kumar", "Unassigned"];
-const VEHICLES_LIST = [
-    "KL01PC4456 (Bus 01)",
-    "KL01TR0112 (Bus 05)",
-    "KA01ME3342 (Bus 12)",
-    "KL07BB9982 (Bus 08)",
-    "TN01ES2210 (Bus 02)",
-    "Unassigned"
-];
+interface BackendRoute {
+    id: string;
+    schoolId: string;
+    name: string;
+    driverName: string;
+    vehicleRegNo: string;
+    vehicleName: string;
+    morningStartTime: string;
+    morningEndTime: string;
+    eveningStartTime?: string;
+    eveningEndTime?: string;
+    status: string;
+    stops: Array<{ id: string; name: string; orderIndex: number }>;
+}
+
+const mapBackendToRouteItem = (r: BackendRoute): RouteItem => ({
+    id: r.id,
+    name: r.name,
+    driver: r.driverName || "Unassigned",
+    vehicle: r.vehicleName ? `${r.vehicleRegNo} (${r.vehicleName})` : (r.vehicleRegNo || "Unassigned"),
+    vehicleRegNo: r.vehicleRegNo || "",
+    startTime: r.morningStartTime,
+    endTime: r.morningEndTime,
+    eveningStartTime: r.eveningStartTime || "03:30 PM",
+    eveningEndTime: r.eveningEndTime || "05:00 PM",
+    status: r.status === "ACTIVE" ? "Active" : "Inactive",
+    stops: (r.stops || []).map((s) => s.name),
+});
+
+const DRIVERS_LIST = ["Unassigned"];
+const VEHICLES_LIST = ["Unassigned"];
 
 const RouteCard = ({
     route,
@@ -261,6 +249,8 @@ export const RoutesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const [formVehicle, setFormVehicle] = useState("Unassigned");
     const [formStartTime, setFormStartTime] = useState("07:30 AM");
     const [formEndTime, setFormEndTime] = useState("09:00 AM");
+    const [formEveningStart, setFormEveningStart] = useState("03:30 PM");
+    const [formEveningEnd, setFormEveningEnd] = useState("05:00 PM");
     const [formStatus, setFormStatus] = useState("Active");
     const [formStops, setFormStops] = useState<{ id: string; name: string }[]>([]);
     const [newStopText, setNewStopText] = useState("");
@@ -296,21 +286,45 @@ export const RoutesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         setDraggedIndex(null);
     };
 
-    // Load from local storage
+    // Fetch routes from backend API
     useEffect(() => {
-        const saved = localStorage.getItem("leutic-routes");
-        if (saved) {
-            setRoutes(JSON.parse(saved));
-        } else {
-            setRoutes(DEFAULT_ROUTES);
-            localStorage.setItem("leutic-routes", JSON.stringify(DEFAULT_ROUTES));
-        }
+        const fetchRoutes = async () => {
+            try {
+                const schoolId = localStorage.getItem("school_id") || "";
+                const res = await graphqlRequest<{ routes: BackendRoute[] }>(`
+                    query GetRoutes($schoolId: ID!) {
+                        routes(schoolId: $schoolId) {
+                            id
+                            name
+                            driverName
+                            vehicleRegNo
+                            vehicleName
+                            morningStartTime
+                            morningEndTime
+                            eveningStartTime
+                            eveningEndTime
+                            status
+                            stops {
+                                id
+                                name
+                                orderIndex
+                            }
+                        }
+                    }
+                `, { schoolId });
+                if (res.routes) {
+                    setRoutes(res.routes.map(mapBackendToRouteItem));
+                }
+            } catch (err) {
+                console.error("Failed to load routes:", err);
+            }
+        };
+        fetchRoutes();
     }, []);
 
-    // Save to local storage helper
+    // Save helper — persists via backend API
     const saveRoutes = (updatedRoutes: RouteItem[]) => {
         setRoutes(updatedRoutes);
-        localStorage.setItem("leutic-routes", JSON.stringify(updatedRoutes));
     };
 
     // Filtered routes
@@ -352,6 +366,8 @@ export const RoutesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         setFormVehicle("Unassigned");
         setFormStartTime("07:30 AM");
         setFormEndTime("09:00 AM");
+        setFormEveningStart("03:30 PM");
+        setFormEveningEnd("05:00 PM");
         setFormStatus("Active");
         setFormStops([{ id: "default-stop", name: "School Main Gate" }]);
         setNewStopText("");
@@ -366,15 +382,23 @@ export const RoutesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         setFormVehicle(route.vehicle);
         setFormStartTime(route.startTime);
         setFormEndTime(route.endTime);
+        setFormEveningStart(route.eveningStartTime);
+        setFormEveningEnd(route.eveningEndTime);
         setFormStatus(route.status);
         setFormStops(route.stops.map((s, idx) => ({ id: `stop-${idx}-${Date.now()}`, name: s })));
         setNewStopText("");
         setIsDrawerOpen(true);
     };
 
-    // Delete Route
-    const handleDeleteClick = (id: string, name: string) => {
-        if (confirm(`Are you sure you want to delete ${name}?`)) {
+    // Delete Route via API
+    const handleDeleteClick = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+        try {
+            await graphqlRequest<{ removeRoute: string }>(`
+                mutation RemoveRoute($id: ID!) {
+                    removeRoute(id: $id)
+                }
+            `, { id });
             const updated = routes.filter((r) => r.id !== id);
             saveRoutes(updated);
             setSuccessModal({
@@ -382,11 +406,14 @@ export const RoutesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 title: "Route Deleted",
                 message: `Route "${name}" has been permanently removed.`
             });
+        } catch (err) {
+            console.error("Failed to delete route:", err);
+            alert("Failed to delete route. Please try again.");
         }
     };
 
-    // Save Drawer Changes
-    const handleSaveRoute = () => {
+    // Save Drawer Changes — persists via backend API
+    const handleSaveRoute = async () => {
         if (!formName.trim()) {
             alert("Please enter a route name.");
             return;
@@ -396,49 +423,120 @@ export const RoutesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             return;
         }
 
-        if (editingRoute) {
-            // Edit mode
-            const updated = routes.map((r) => {
-                if (r.id === editingRoute.id) {
-                    return {
-                        ...r,
-                        name: formName,
-                        driver: formDriver,
-                        vehicle: formVehicle,
-                        startTime: formStartTime,
-                        endTime: formEndTime,
-                        status: formStatus,
-                        stops: formStops.map((s) => s.name)
-                    };
-                }
-                return r;
-            });
-            saveRoutes(updated);
-            setSuccessModal({
-                show: true,
-                title: "Route Updated",
-                message: `Route details for "${formName}" saved successfully.`
-            });
-        } else {
-            // Add mode
-            const newRoute: RouteItem = {
-                id: `route-${Date.now()}`,
-                name: formName,
-                driver: formDriver,
-                vehicle: formVehicle,
-                startTime: formStartTime,
-                endTime: formEndTime,
-                status: formStatus,
-                stops: formStops.map((s) => s.name)
-            };
-            saveRoutes([...routes, newRoute]);
-            setSuccessModal({
-                show: true,
-                title: "Route Created",
-                message: `New route "${formName}" configured successfully.`
-            });
+        const schoolId = localStorage.getItem("school_id") || "";
+
+        // Parse vehicle string back to reg no and name
+        let vehicleRegNo = "";
+        let vehicleName = "";
+        if (formVehicle && formVehicle !== "Unassigned") {
+            const parts = formVehicle.split(" (");
+            vehicleRegNo = parts[0] || "";
+            vehicleName = parts[1] ? parts[1].replace(")", "") : "";
         }
-        setIsDrawerOpen(false);
+
+        const stopsInput: RouteStopInput[] = formStops.map((s, idx) => ({
+            name: s.name,
+            orderIndex: idx,
+        }));
+
+        try {
+            if (editingRoute) {
+                // Update mode
+                const updateMutation = `
+                    mutation UpdateRoute($id: ID!, $input: UpdateRouteInput!) {
+                        updateRoute(id: $id, input: $input) {
+                            id
+                            name
+                            driverName
+                            vehicleRegNo
+                            vehicleName
+                            morningStartTime
+                            morningEndTime
+                            eveningStartTime
+                            eveningEndTime
+                            status
+                            stops {
+                                id
+                                name
+                                orderIndex
+                            }
+                        }
+                    }
+                `;
+                const res = await graphqlRequest<{ updateRoute: BackendRoute }>(updateMutation, {
+                    id: editingRoute.id,
+                    input: {
+                        name: formName,
+                        driverName: formDriver,
+                        vehicleRegNo,
+                        vehicleName,
+                        morningStartTime: formStartTime,
+                        morningEndTime: formEndTime,
+                        eveningStartTime: formEveningStart,
+                        eveningEndTime: formEveningEnd,
+                        status: formStatus === "Active" ? "ACTIVE" : "INACTIVE",
+                        stops: stopsInput,
+                    }
+                });
+                const updated = routes.map((r) =>
+                    r.id === editingRoute.id ? mapBackendToRouteItem(res.updateRoute) : r
+                );
+                saveRoutes(updated);
+                setSuccessModal({
+                    show: true,
+                    title: "Route Updated",
+                    message: `Route details for "${formName}" saved successfully.`
+                });
+            } else {
+                // Create mode
+                const createMutation = `
+                    mutation CreateRoute($input: CreateRouteInput!) {
+                        createRoute(input: $input) {
+                            id
+                            name
+                            driverName
+                            vehicleRegNo
+                            vehicleName
+                            morningStartTime
+                            morningEndTime
+                            eveningStartTime
+                            eveningEndTime
+                            status
+                            stops {
+                                id
+                                name
+                                orderIndex
+                            }
+                        }
+                    }
+                `;
+                const res = await graphqlRequest<{ createRoute: BackendRoute }>(createMutation, {
+                    input: {
+                        schoolId,
+                        name: formName,
+                        driverName: formDriver,
+                        vehicleRegNo,
+                        vehicleName,
+                        morningStartTime: formStartTime,
+                        morningEndTime: formEndTime,
+                        eveningStartTime: formEveningStart,
+                        eveningEndTime: formEveningEnd,
+                        status: formStatus === "Active" ? "ACTIVE" : "INACTIVE",
+                        stops: stopsInput,
+                    }
+                });
+                saveRoutes([...routes, mapBackendToRouteItem(res.createRoute)]);
+                setSuccessModal({
+                    show: true,
+                    title: "Route Created",
+                    message: `New route "${formName}" configured successfully.`
+                });
+            }
+            setIsDrawerOpen(false);
+        } catch (err) {
+            console.error("Failed to save route:", err);
+            alert("Failed to save route. Please try again.");
+        }
     };
 
     // Stops handlers
@@ -619,18 +717,30 @@ export const RoutesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <PDSFormGroup
-                                        label="Start Time"
-                                        placeholder="e.g. 07:30 AM"
-                                        value={formStartTime}
-                                        onChange={setFormStartTime}
-                                    />
-                                    <PDSFormGroup
-                                        label="End Time"
-                                        placeholder="e.g. 09:00 AM"
-                                        value={formEndTime}
-                                        onChange={setFormEndTime}
-                                    />
+                                <PDSFormGroup
+                                    label="Start Time"
+                                    placeholder="e.g. 07:30 AM"
+                                    value={formStartTime}
+                                    onChange={setFormStartTime}
+                                />
+                                <PDSFormGroup
+                                    label="End Time"
+                                    placeholder="e.g. 09:00 AM"
+                                    value={formEndTime}
+                                    onChange={setFormEndTime}
+                                />
+                                <PDSFormGroup
+                                    label="Evening Start Time"
+                                    placeholder="e.g. 03:30 PM"
+                                    value={formEveningStart}
+                                    onChange={setFormEveningStart}
+                                />
+                                <PDSFormGroup
+                                    label="Evening End Time"
+                                    placeholder="e.g. 05:00 PM"
+                                    value={formEveningEnd}
+                                    onChange={setFormEveningEnd}
+                                />
                                 </div>
 
                                 <PDSFormGroup

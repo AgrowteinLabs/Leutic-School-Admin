@@ -1,19 +1,22 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
+import { graphqlRequest } from "../../../lib/graphqlClient";
 
 const VehicleRow = ({
   vehicle,
   onClick,
+  onEdit,
   onDelete,
 }: {
   vehicle: any;
   onClick: (vehicle: any) => void;
+  onEdit: (vehicle: any) => void;
   onDelete: (vehicle: any) => void;
 }) => {
   const { id, type, regNo, capacity, fuelType, route, status, expiryCount } = vehicle;
@@ -97,6 +100,7 @@ const VehicleRow = ({
             <span className="material-symbols-outlined text-[18px]">analytics</span>
           </button>
           <button
+            onClick={(e) => { e.stopPropagation(); onEdit(vehicle); }}
             className="size-8 flex items-center justify-center rounded-lg text-[#B0AFA8] hover:bg-white hover:text-primary hover:shadow-sm transition-all"
             title="Edit Asset"
           >
@@ -124,22 +128,105 @@ export const VehiclesPage = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [vehicleToDelete, setVehicleToDelete] = useState<any>(null);
+  const [vehicleToEdit, setVehicleToEdit] = useState<any>(null);
+  const [isDecommissioning, setIsDecommissioning] = useState(false);
+
+  // Edit drawer form fields
+  const [editRegNo, setEditRegNo] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editCapacity, setEditCapacity] = useState("");
+  const [editFuelType, setEditFuelType] = useState("");
+  const [editStatus, setEditStatus] = useState("");
+  const [editMfgYear, setEditMfgYear] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [vehicles] = useState([
-    { id: "01", type: "Standard Bus", regNo: "KL01PC4456", capacity: 42, fuelType: "Diesel", route: "North Coast", status: "Active", expiryCount: 0 },
-    { id: "05", type: "Mini Bus", regNo: "KL01TR0112", capacity: 24, fuelType: "CNG", route: "Central Loop", status: "Active", expiryCount: 1 },
-    { id: "08", type: "Standard Bus", regNo: "KL07BB9982", capacity: 42, fuelType: "Diesel", route: "East Extension", status: "Idle", expiryCount: 0 },
-    { id: "12", type: "Standard Bus", regNo: "KA01ME3342", capacity: 42, fuelType: "Electric", route: "West Hub", status: "At Risk", expiryCount: 2 },
-    { id: "15", type: "Van", regNo: "KL01MT8872", capacity: 12, fuelType: "Petrol", route: "Highland", status: "Active", expiryCount: 0 },
-    { id: "04", type: "Standard Bus", regNo: "MH12TS5541", capacity: 42, fuelType: "Diesel", route: "South Sector", status: "At Risk", expiryCount: 1 },
-    { id: "02", type: "Standard Bus", regNo: "TN01ES2210", capacity: 42, fuelType: "CNG", route: "Coastal Road", status: "Active", expiryCount: 0 },
-  ]);
+  interface BackendVehicle {
+    id: string;
+    registrationPlate: string;
+    vehicleType: string;
+    seatingCapacity: number;
+    fuelType: string;
+    routeId: string;
+    status: string;
+    expiryCount: number;
+    manufacturingYear: number | null;
+  }
+
+  const [vehicles, setVehicles] = useState<BackendVehicle[]>([]);
+  const [routeNames, setRouteNames] = useState<Record<string, string>>({});
+
+  const fetchVehiclesData = useCallback(async () => {
+    try {
+        const schoolId = localStorage.getItem("school_id") || "";
+        const res = await graphqlRequest<any>(`
+          query GetVehicles($filter: VehiclesFilterDto!) {
+            vehicles(filter: $filter) {
+              items {
+                id
+                registrationPlate
+                vehicleType
+                seatingCapacity
+                fuelType
+                routeId
+                status
+                expiryCount
+                manufacturingYear
+              }
+              total
+              page
+              pageSize
+            }
+          }
+        `, { filter: { schoolId, page: 1, pageSize: 100 } });
+
+        const items = res?.vehicles?.items || [];
+        setVehicles(items);
+
+        // Fetch route names to display route info
+        if (items.some((v: any) => v.routeId)) {
+          const routeRes = await graphqlRequest<any>(`
+            query GetRoutes($schoolId: ID!) {
+              routes(schoolId: $schoolId) {
+                id
+                name
+              }
+            }
+          `, { schoolId });
+          const routeMap: Record<string, string> = {};
+          (routeRes?.routes || []).forEach((r: any) => {
+            routeMap[r.id] = r.name;
+          });
+          setRouteNames(routeMap);
+        }
+      } catch (err) {
+        console.error("Failed to load vehicles:", err);
+      }
+  }, []);
+
+  useEffect(() => {
+    fetchVehiclesData();
+  }, [fetchVehiclesData]);
+
+  // Map backend vehicles to display format
+  const mappedVehicles = useMemo(() => {
+    return vehicles.map((v) => ({
+      id: v.id,
+      type: v.vehicleType || "Standard Bus",
+      regNo: v.registrationPlate,
+      capacity: v.seatingCapacity || 0,
+      fuelType: v.fuelType || "—",
+      route: routeNames[v.routeId] || "Unassigned",
+      status: v.status === "ACTIVE" ? "Active" : v.status === "IDLE" ? "Idle" : v.status === "AT_RISK" ? "At Risk" : v.status,
+      expiryCount: v.expiryCount || 0,
+      manufacturingYear: v.manufacturingYear,
+    }));
+  }, [vehicles, routeNames]);
 
   const filteredVehicles = useMemo(() => {
-    return vehicles.filter((v) => {
+    return mappedVehicles.filter((v: any) => {
       const matchesSearch =
         v.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         v.regNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -149,12 +236,78 @@ export const VehiclesPage = ({
 
       return matchesSearch && matchesStatus;
     });
-  }, [searchTerm, statusFilter, vehicles]);
+  }, [searchTerm, statusFilter, mappedVehicles]);
 
   const paginatedVehicles = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredVehicles.slice(start, start + itemsPerPage);
   }, [filteredVehicles, currentPage, itemsPerPage]);
+
+  const handleEditClick = (vehicle: any) => {
+    setVehicleToEdit(vehicle);
+    setEditRegNo(vehicle.regNo || "");
+    setEditType(vehicle.type || "");
+    setEditCapacity(String(vehicle.capacity || ""));
+    setEditFuelType(vehicle.fuelType || "Diesel");
+    setEditStatus(vehicle.status || "Active");
+    setEditMfgYear(String(vehicle.manufacturingYear || ""));
+  };
+
+  const handleSaveEdit = async () => {
+    if (!vehicleToEdit) return;
+    setIsSavingEdit(true);
+    try {
+      await graphqlRequest(`
+        mutation UpdateVehicle($id: ID!, $input: UpdateVehicleInput!) {
+          updateVehicle(id: $id, input: $input) {
+            id
+            registrationPlate
+            vehicleType
+            seatingCapacity
+            fuelType
+            status
+            manufacturingYear
+          }
+        }
+      `, {
+        id: vehicleToEdit.id,
+        input: {
+          registrationPlate: editRegNo || undefined,
+          vehicleType: editType || undefined,
+          seatingCapacity: editCapacity ? parseInt(editCapacity, 10) : undefined,
+          fuelType: editFuelType || undefined,
+          status: editStatus === "Active" ? "ACTIVE" : editStatus === "Idle" ? "IDLE" : editStatus === "At Risk" ? "AT_RISK" : undefined,
+          manufacturingYear: editMfgYear ? parseInt(editMfgYear, 10) : undefined,
+        }
+      });
+      setVehicleToEdit(null);
+      fetchVehiclesData();
+    } catch (err) {
+      console.error("Failed to update vehicle:", err);
+      alert("Failed to update vehicle. Please try again.");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDecommission = async () => {
+    if (!vehicleToDelete) return;
+    setIsDecommissioning(true);
+    try {
+      await graphqlRequest(`
+        mutation RemoveVehicle($id: ID!) {
+          removeVehicle(id: $id)
+        }
+      `, { id: vehicleToDelete.id });
+      setVehicleToDelete(null);
+      fetchVehiclesData();
+    } catch (err) {
+      console.error("Failed to decommission vehicle:", err);
+      alert("Failed to decommission vehicle. Please try again.");
+    } finally {
+      setIsDecommissioning(false);
+    }
+  };
 
   return (
     <div
@@ -175,10 +328,10 @@ export const VehiclesPage = ({
 
           {/* Fleet Performance Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard label="Total Fleet" value="32" trend="Registered units" icon="directions_bus" color="primary" />
-            <StatCard label="Expiring Soon" value="5" trend="Next 30 days" icon="assignment_late" color="secondary" />
-            <StatCard label="Compliance Risk" value="2" trend="Action required" icon="error" color="secondary" />
-            <StatCard label="Idle Units" value="8" trend="Unassigned" icon="hourglass_empty" color="secondary" />
+            <StatCard label="Total Fleet" value={String(vehicles.length)} trend="Registered units" icon="directions_bus" color="primary" />
+            <StatCard label="Expiring Soon" value={String(vehicles.filter(v => v.expiryCount > 0).length)} trend="Next 30 days" icon="assignment_late" color="secondary" />
+            <StatCard label="Compliance Risk" value={String(vehicles.filter(v => v.expiryCount > 2).length)} trend="Action required" icon="error" color="secondary" />
+            <StatCard label="Idle Units" value={String(vehicles.filter(v => v.status === 'IDLE' || v.status === 'idle').length)} trend="Unassigned" icon="hourglass_empty" color="secondary" />
           </div>
 
           <div className="bg-white rounded-[24px] border border-slate-100 flex flex-col overflow-hidden">
@@ -242,12 +395,13 @@ export const VehiclesPage = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 text-brand-navy">
-                  {paginatedVehicles.map((vehicle) => (
+                  {paginatedVehicles.map((vehicle: any) => (
                     <VehicleRow
                       key={vehicle.id}
                       vehicle={vehicle}
                       onClick={() => { }}
-                      onDelete={(v) => setVehicleToDelete(v)}
+                      onEdit={handleEditClick}
+                      onDelete={(v: any) => setVehicleToDelete(v)}
                     />
                   ))}
                 </tbody>
@@ -269,6 +423,87 @@ export const VehiclesPage = ({
         </div>
       </div>
 
+      {/* ── Edit Vehicle Drawer ──────────────────────────────── */}
+      <AnimatePresence>
+        {vehicleToEdit && (
+          <div className="fixed inset-0 z-[100] flex justify-end">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setVehicleToEdit(null)}
+              className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm cursor-pointer"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 350, damping: 35 }}
+              className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col z-10 border-l border-slate-100"
+            >
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between shrink-0">
+                <div>
+                  <h3 className="text-[18px] font-bold text-brand-navy tracking-tight">Edit Vehicle</h3>
+                  <p className="text-[12px] text-[#B0AFA8] font-medium mt-0.5">{vehicleToEdit.regNo}</p>
+                </div>
+                <button
+                  onClick={() => setVehicleToEdit(null)}
+                  className="size-8 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-brand-navy transition-all"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar">
+                <div className="space-y-1.5 group">
+                  <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest px-1">Registration Plate</label>
+                  <input value={editRegNo} onChange={(e) => setEditRegNo(e.target.value)} className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl py-3.5 px-5 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-foreground transition-all" />
+                </div>
+                <div className="space-y-1.5 group">
+                  <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest px-1">Vehicle Type</label>
+                  <select value={editType} onChange={(e) => setEditType(e.target.value)} className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl py-3.5 px-5 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-foreground appearance-none cursor-pointer">
+                    {["Standard Bus", "Mini Bus", "Van", "Electric Shuttle"].map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5 group">
+                    <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest px-1">Seating Capacity</label>
+                    <input type="number" value={editCapacity} onChange={(e) => setEditCapacity(e.target.value)} className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl py-3.5 px-5 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-foreground transition-all" />
+                  </div>
+                  <div className="space-y-1.5 group">
+                    <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest px-1">Manufacturing Year</label>
+                    <input type="number" value={editMfgYear} onChange={(e) => setEditMfgYear(e.target.value)} className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl py-3.5 px-5 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-foreground transition-all" />
+                  </div>
+                </div>
+                <div className="space-y-1.5 group">
+                  <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest px-1">Fuel Type</label>
+                  <select value={editFuelType} onChange={(e) => setEditFuelType(e.target.value)} className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl py-3.5 px-5 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-foreground appearance-none cursor-pointer">
+                    {["Diesel", "CNG", "Electric", "Petrol"].map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5 group">
+                  <label className="text-[11px] font-bold text-[#B0AFA8] uppercase tracking-widest px-1">Status</label>
+                  <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="w-full bg-[#F7F8F4] border border-slate-100 rounded-2xl py-3.5 px-5 outline-none focus:ring-4 focus:ring-primary/10 text-[14px] font-semibold text-foreground appearance-none cursor-pointer">
+                    {["Active", "Idle", "At Risk"].map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="p-8 border-t border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+                <button onClick={() => setVehicleToEdit(null)} className="text-[13px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors">Cancel</button>
+                <button onClick={handleSaveEdit} disabled={isSavingEdit} className="btn-primary px-8 h-11 rounded-xl text-[13px] font-bold shadow-lg shadow-primary/10 disabled:opacity-50">
+                  {isSavingEdit ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {vehicleToDelete && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -283,7 +518,9 @@ export const VehiclesPage = ({
               </div>
               <div className="flex gap-3 pt-4">
                 <button onClick={() => setVehicleToDelete(null)} className="flex-1 h-12 rounded-2xl text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors">Cancel</button>
-                <button className="flex-1 h-12 bg-red-600 text-white text-[14px] font-bold rounded-2xl hover:bg-red-700 transition-all shadow-lg shadow-red-600/10">Decommission</button>
+                <button onClick={handleDecommission} disabled={isDecommissioning} className="flex-1 h-12 bg-red-600 text-white text-[14px] font-bold rounded-2xl hover:bg-red-700 transition-all shadow-lg shadow-red-600/10 disabled:opacity-50">
+                  {isDecommissioning ? "Decommissioning..." : "Decommission"}
+                </button>
               </div>
             </div>
           </div>

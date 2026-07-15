@@ -25,17 +25,19 @@ import {
 } from "lucide-react";
 
 interface DashboardStudent {
+    uid: string;
     name: string;
     id: string;
     grade: string;
     section: string;
     auraScore: number;
-    attendanceRate: number;
-    gpa: number;
+    attendanceRate: number | null;
+    gpa: number | null;
     img: string;
     status: string;
-    participation: number;
+    participation: number | null;
     phone: string;
+    behavioralAuditLog: { lastAuditDate: string; auditedBy: string } | null;
 }
 
 interface DashboardClass {
@@ -57,6 +59,14 @@ export const DashboardPage = () => {
     const [classesList, setClassesList] = useState<DashboardClass[]>([]);
     const [summary, setSummary] = useState<any>(null);
     const [alerts, setAlerts] = useState<any[]>([]);
+    const [attendanceStats, setAttendanceStats] = useState<{
+        totalStudents: number;
+        presentCount: number;
+        absentCount: number;
+        lateCount: number;
+        attendancePercentage: number;
+    } | null>(null);
+    const [attendanceStatsError, setAttendanceStatsError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -82,6 +92,13 @@ export const DashboardPage = () => {
                         pendingActionsCount
                         urgentActionsCount
                     }
+                    todayAttendanceStats(schoolId: $schoolIdForClasses) {
+                        totalStudents
+                        presentCount
+                        absentCount
+                        lateCount
+                        attendancePercentage
+                    }
                     classMonitorAlerts(schoolId: $schoolIdForClasses) {
                         items {
                             classId
@@ -96,29 +113,35 @@ export const DashboardPage = () => {
                     }
                 }
             `;
-            try {
-                interface DashboardDataResponse {
-                    students: { total: number };
-                    teachers: { total: number };
-                    classes: { items: DashboardClass[] };
-                    dashboardStatSummary: {
-                        todayAttendanceRate: number;
-                        pendingActionsCount: number;
-                        urgentActionsCount: number;
-                    };
-                    classMonitorAlerts: {
-                        items: Array<{
-                            classId: string;
-                            grade: string;
-                            section: string;
-                            classTeacherName: string;
-                            issueType: string;
-                            issueDetails: string;
-                            scorePercentage: number;
-                            severityStatus: string;
-                        }>;
-                    };
-                }
+            try {                    interface DashboardDataResponse {
+                        students: { total: number };
+                        teachers: { total: number };
+                        classes: { items: DashboardClass[] };
+                        dashboardStatSummary: {
+                            todayAttendanceRate: number;
+                            pendingActionsCount: number;
+                            urgentActionsCount: number;
+                        };
+                        todayAttendanceStats: {
+                            totalStudents: number;
+                            presentCount: number;
+                            absentCount: number;
+                            lateCount: number;
+                            attendancePercentage: number;
+                        };
+                        classMonitorAlerts: {
+                            items: Array<{
+                                classId: string;
+                                grade: string;
+                                section: string;
+                                classTeacherName: string;
+                                issueType: string;
+                                issueDetails: string;
+                                scorePercentage: number;
+                                severityStatus: string;
+                            }>;
+                        };
+                    }
                 const res = await graphqlRequest<DashboardDataResponse>(query, { 
                     schoolIdForClasses: schoolId,
                     schoolIdForUsers: schoolId
@@ -127,9 +150,17 @@ export const DashboardPage = () => {
                 setTeachersCount(res.teachers?.total ?? 0);
                 setClassesList(res.classes?.items ?? []);
                 setSummary(res.dashboardStatSummary || null);
+                if (res.todayAttendanceStats) {
+                    setAttendanceStats(res.todayAttendanceStats);
+                    setAttendanceStatsError(null);
+                } else {
+                    setAttendanceStats(null);
+                    setAttendanceStatsError("No attendance data returned from backend.");
+                }
                 setAlerts(res.classMonitorAlerts?.items || []);
             } catch (err) {
                 console.error("Error loading dashboard counts:", err);
+                setAttendanceStatsError("Failed to load attendance data.");
             }
         };
         fetchDashboardData();
@@ -174,44 +205,89 @@ export const DashboardPage = () => {
         const matchedClass = foundUser.classId ? classMap.get(foundUser.classId) : null;
         
         let overviewData: any = null;
+        let auraPoints: number | null = null;
+        let attendancePct: number | null = null;
+        let behavioralAuditLog: { lastAuditDate: string; auditedBy: string } | null = null;
+        
         try {
-            interface OverviewResponse {
-                studentOverview: {
-                    participationRate: number;
-                    attendanceRate: number;
-                    gpa: number;
-                    statusAlert: string;
-                };
-            }
-            const overviewRes = await graphqlRequest<OverviewResponse>(`
-                query GetStudentOverview($id: ID!) {
-                    studentOverview(id: $id) {
-                        participationRate
-                        attendanceRate
-                        gpa
-                        statusAlert
+            const [overviewRes, auraRes, attRes, profileRes] = await Promise.all([
+                graphqlRequest<any>(`
+                    query GetStudentOverview($id: ID!) {
+                        studentOverview(id: $id) {
+                            participationRate
+                            attendanceRate
+                            gpa
+                            statusAlert
+                        }
                     }
-                }
-            `, { id: foundUser.id });
-            if (overviewRes && overviewRes.studentOverview) {
+                `, { id: foundUser.id }).catch(() => null),
+                graphqlRequest<any>(`
+                    query GetStudentAura($studentId: String!) {
+                        studentAuraPoints(studentId: $studentId) {
+                            totalPoints
+                        }
+                    }
+                `, { studentId: foundUser.id }).catch(() => null),
+                graphqlRequest<any>(`
+                    query GetStudentAttendance($studentId: String!) {
+                        studentAttendanceSummary(studentId: $studentId) {
+                            percentage
+                        }
+                    }
+                `, { studentId: foundUser.id }).catch(() => null),
+                graphqlRequest<any>(`
+                    query GetStudentAuditLog($studentId: ID!) {
+                        studentProfile(studentId: $studentId) {
+                            behavioralAuditLog {
+                                lastAuditDate
+                                auditedBy
+                            }
+                        }
+                    }
+                `, { studentId: foundUser.id }).catch(() => null)
+            ]);
+
+            if (overviewRes?.studentOverview) {
                 overviewData = overviewRes.studentOverview;
             }
+            if (auraRes?.studentAuraPoints?.totalPoints !== undefined) {
+                auraPoints = auraRes.studentAuraPoints.totalPoints;
+            }
+            if (attRes?.studentAttendanceSummary?.percentage !== undefined) {
+                attendancePct = attRes.studentAttendanceSummary.percentage;
+            }
+            if (profileRes?.studentProfile?.behavioralAuditLog) {
+                behavioralAuditLog = profileRes.studentProfile.behavioralAuditLog;
+            }
         } catch (e: unknown) {
-            console.error("Failed to fetch student overview in search:", e);
+            console.error("Failed to fetch student data:", e);
         }
 
+        // Pick a deterministic avatar based on student ID
+        const avatarIndex = foundUser.id.split("").reduce((a: number, c: string) => a + c.charCodeAt(0), 0) % 6;
+        const avatars = [
+            '/Avatar/Female Avatar Age17.png',
+            '/Avatar/Male Avatar Age16.png',
+            '/Avatar/Female Avatar Age16.png',
+            '/Avatar/Male Avatar Age17.png',
+            '/Avatar/Female Avatar Age15.png',
+            '/Avatar/Male Avatar Age14.png'
+        ];
+
         setSelectedStudent({
+            uid: foundUser.id,
             name: foundUser.name,
             id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
             grade: matchedClass ? matchedClass.grade : "Unassigned",
             section: matchedClass ? (matchedClass.section || "") : "",
-            participation: overviewData ? overviewData.participationRate : null,
-            auraScore: overviewData ? overviewData.participationRate : null,
-            attendanceRate: overviewData ? overviewData.attendanceRate : null,
-            gpa: overviewData ? overviewData.gpa : null,
-            status: overviewData ? overviewData.statusAlert : (foundUser.isActive ? "Active" : "Inactive"),
-            img: "/Avatar/Male Avatar Age16.png",
-            phone: foundUser.mobileNo || "N/A"
+            participation: overviewData?.participationRate ?? null,
+            auraScore: auraPoints ?? 0,
+            attendanceRate: attendancePct,
+            gpa: overviewData?.gpa ?? null,
+            status: overviewData?.statusAlert || (foundUser.isActive ? "Active" : "Inactive"),
+            img: avatars[avatarIndex],
+            phone: foundUser.mobileNo || "N/A",
+            behavioralAuditLog
         });
         setIsDrawerOpen(true);
     };
@@ -300,42 +376,84 @@ export const DashboardPage = () => {
                 const foundUser = res.users?.items?.[0];
                 if (foundUser) {
                     let overviewData: any = null;
+                    let auraPoints: number | null = null;
+                    let attendancePct: number | null = null;
+                    let behavioralAuditLog: { lastAuditDate: string; auditedBy: string } | null = null;
                     try {
-                        interface OverviewResponse {
-                            studentOverview: {
-                                participationRate: number;
-                                attendanceRate: number;
-                                gpa: number;
-                                statusAlert: string;
-                            };
-                        }
-                        const overviewRes = await graphqlRequest<OverviewResponse>(`
-                            query GetStudentOverview($id: ID!) {
-                                studentOverview(id: $id) {
-                                    participationRate
-                                    attendanceRate
-                                    gpa
-                                    statusAlert
+                        const [overviewRes, auraRes, attRes, profileRes] = await Promise.all([
+                            graphqlRequest<any>(`
+                                query GetStudentOverview($id: ID!) {
+                                    studentOverview(id: $id) {
+                                        participationRate
+                                        attendanceRate
+                                        gpa
+                                        statusAlert
+                                    }
                                 }
-                            }
-                        `, { id: foundUser.id });
-                        if (overviewRes && overviewRes.studentOverview) {
+                            `, { id: foundUser.id }).catch(() => null),
+                            graphqlRequest<any>(`
+                                query GetStudentAura($studentId: String!) {
+                                    studentAuraPoints(studentId: $studentId) {
+                                        totalPoints
+                                    }
+                                }
+                            `, { studentId: foundUser.id }).catch(() => null),
+                            graphqlRequest<any>(`
+                                query GetStudentAttendance($studentId: String!) {
+                                    studentAttendanceSummary(studentId: $studentId) {
+                                        percentage
+                                    }
+                                }
+                            `, { studentId: foundUser.id }).catch(() => null),
+                            graphqlRequest<any>(`
+                                query GetStudentAuditLog($studentId: ID!) {
+                                    studentProfile(studentId: $studentId) {
+                                        behavioralAuditLog {
+                                            lastAuditDate
+                                            auditedBy
+                                        }
+                                    }
+                                }
+                            `, { studentId: foundUser.id }).catch(() => null)
+                        ]);
+                        if (overviewRes?.studentOverview) {
                             overviewData = overviewRes.studentOverview;
+                        }
+                        if (auraRes?.studentAuraPoints?.totalPoints !== undefined) {
+                            auraPoints = auraRes.studentAuraPoints.totalPoints;
+                        }
+                        if (attRes?.studentAttendanceSummary?.percentage !== undefined) {
+                            attendancePct = attRes.studentAttendanceSummary.percentage;
+                        }
+                        if (profileRes?.studentProfile?.behavioralAuditLog) {
+                            behavioralAuditLog = profileRes.studentProfile.behavioralAuditLog;
                         }
                     } catch (e: unknown) {}
                     
+                    const avatarIndex = foundUser.id.split("").reduce((a: number, c: string) => a + c.charCodeAt(0), 0) % 6;
+                    const avatars = [
+                        '/Avatar/Female Avatar Age17.png',
+                        '/Avatar/Male Avatar Age16.png',
+                        '/Avatar/Female Avatar Age16.png',
+                        '/Avatar/Male Avatar Age17.png',
+                        '/Avatar/Female Avatar Age15.png',
+                        '/Avatar/Male Avatar Age14.png'
+                    ];
+
                     setSelectedStudent({
+                        uid: foundUser.id,
                         name: foundUser.name,
                         id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
                         grade: matchedClass.grade,
                         section: matchedClass.section || "",
-                        participation: overviewData ? overviewData.participationRate : null,
-                        auraScore: overviewData ? overviewData.participationRate : null,
-                        attendanceRate: overviewData ? overviewData.attendanceRate : null,
-                        gpa: overviewData ? overviewData.gpa : null,
-                        status: overviewData ? overviewData.statusAlert : (foundUser.isActive ? "Active" : "Inactive"),
-                        img: "/Avatar/Male Avatar Age16.png",
-                        phone: foundUser.mobileNo || "N/A"
+                        participation: overviewData?.participationRate ?? null,
+                        auraScore: auraPoints ?? 0,
+                        attendanceRate: attendancePct,
+                        gpa: overviewData?.gpa ?? null,
+                        status: overviewData?.statusAlert || (foundUser.isActive ? "Active" : "Inactive"),
+                        img: avatars[avatarIndex],
+                        phone: foundUser.mobileNo || "N/A",
+                        behavioralAuditLog
                     });
                     setIsDrawerOpen(true);
                     return;
@@ -376,13 +494,11 @@ export const DashboardPage = () => {
                         <StatCard
                             label="Attendance Today"
                             value={
-                                summary 
-                                    ? (String(summary.todayAttendanceRate).endsWith("%") 
-                                        ? summary.todayAttendanceRate 
-                                        : `${summary.todayAttendanceRate}%`) 
+                                attendanceStats
+                                    ? `${attendanceStats.attendancePercentage}%`
                                     : "..."
                             }
-                            trend="+1.2%"
+                            trend={`${attendanceStats ? attendanceStats.presentCount.toLocaleString() : "..."} present`}
                             trendType="up"
                             icon="fact_check"
                         />
@@ -554,7 +670,11 @@ export const DashboardPage = () => {
 
                             {/* Attendance + Upcoming */}
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                <ParticipationOverview />
+                                <ParticipationOverview
+                                    stats={attendanceStats}
+                                    isLoading={!attendanceStats && !attendanceStatsError}
+                                    error={attendanceStatsError}
+                                />
 
                                 <div className="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col">
                                     <div className="flex items-center justify-between mb-5">

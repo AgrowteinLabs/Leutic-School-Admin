@@ -15,6 +15,8 @@ interface DBClass {
   section?: string;
 }
 
+type PublishMode = "now" | "draft" | "schedule";
+
 export const AddNoticePage = () => {
   const navigate = useNavigate();
 
@@ -25,6 +27,9 @@ export const AddNoticePage = () => {
     recipient: "All School",
     attachments: [] as File[],
   });
+
+  const [publishMode, setPublishMode] = useState<PublishMode>("now");
+  const [scheduledDate, setScheduledDate] = useState("");
 
   const [isDragging, setIsDragging] = useState(false);
   const [modalState, setModalState] = useState<"idle" | "confirm" | "success">("idle");
@@ -68,13 +73,17 @@ export const AddNoticePage = () => {
     setIsPublishing(true);
     const schoolId = localStorage.getItem("school_id") || "";
     
-    const targetRoles = noticeData.audiences.flatMap(aud => {
-      if (aud === "Everyone") return ["STUDENT", "PARENT", "TEACHER", "DRIVER", "STAFF"];
-      if (aud === "Students") return ["STUDENT"];
-      if (aud === "Parents") return ["PARENT"];
-      if (aud === "Teachers") return ["TEACHER"];
-      return [aud.toUpperCase()];
-    });
+    const targetRoles = Array.from(
+      new Set(
+        noticeData.audiences.flatMap(aud => {
+          if (aud === "Everyone") return ["STUDENT", "PARENT", "TEACHER", "DRIVER", "SCHOOL_ADMIN"];
+          if (aud === "Students") return ["STUDENT"];
+          if (aud === "Parents") return ["PARENT"];
+          if (aud === "Teachers") return ["TEACHER"];
+          return [aud.toUpperCase()];
+        })
+      )
+    );
 
     let classId: string | undefined = undefined;
     if (noticeData.recipient !== "All School") {
@@ -84,12 +93,22 @@ export const AddNoticePage = () => {
       }
     }
 
+    // Determine status and scheduledAt from publishMode
+    const status = publishMode === "draft" ? "DRAFT"
+      : publishMode === "schedule" ? "SCHEDULED"
+      : "PUBLISHED";
+    const scheduledAt = publishMode === "schedule" && scheduledDate
+      ? new Date(scheduledDate).toISOString()
+      : undefined;
+
     try {
       await graphqlRequest<any>(`
         mutation CreateAnnouncement($input: CreateAnnouncementDto!) {
           createAnnouncement(createAnnouncementInput: $input) {
             id
             title
+            status
+            scheduledAt
           }
         }
       `, {
@@ -98,7 +117,9 @@ export const AddNoticePage = () => {
           content: noticeData.content,
           targetRoles,
           schoolId,
-          classId
+          classId,
+          status,
+          scheduledAt,
         }
       });
       setIsPublishing(false);
@@ -146,6 +167,29 @@ export const AddNoticePage = () => {
     handleFiles(e.dataTransfer.files);
   };
 
+  const publishModeMeta: Record<PublishMode, {
+    label: string; icon: string; badge: string; badgeClass: string;
+  }> = {
+    now: {
+      label: "Publish Now",
+      icon: "send",
+      badge: "Ready",
+      badgeClass: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    },
+    draft: {
+      label: "Save as Draft",
+      icon: "edit_note",
+      badge: "Draft",
+      badgeClass: "bg-amber-50 text-amber-600 border-amber-100",
+    },
+    schedule: {
+      label: "Schedule",
+      icon: "schedule",
+      badge: "Scheduled",
+      badgeClass: "bg-sky-50 text-sky-600 border-sky-100",
+    },
+  };
+
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB] font-sans">
       <TopBar
@@ -154,7 +198,9 @@ export const AddNoticePage = () => {
         actions={
           <div className="flex items-center gap-3">
             <PDSButton variant="text" onClick={() => navigate(-1)}>Discard</PDSButton>
-            <PDSButton variant="primary" icon="send" onClick={() => setModalState("confirm")}>Publish Notice</PDSButton>
+            <PDSButton variant="primary" icon="send" onClick={() => setModalState("confirm")}>
+              {publishModeMeta[publishMode].label}
+            </PDSButton>
           </div>
         }
       />
@@ -169,14 +215,37 @@ export const AddNoticePage = () => {
               <div className="size-12 rounded-[20px] bg-primary/10 flex items-center justify-center text-primary">
                 <span className="material-symbols-outlined text-[24px]">campaign</span>
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col flex-1">
                 <div className="flex items-center gap-3">
                   <h4 className="font-bold text-[18px] tracking-tight text-foreground">Write a new notice</h4>
-                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-[10px] font-bold text-amber-600 border border-amber-100 flex items-center gap-1">
-                    <span className="size-1 rounded-full bg-amber-400 animate-pulse" />{" "}Draft
+                  <span className={cn(
+                    "px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center gap-1",
+                    publishModeMeta[publishMode].badgeClass,
+                  )}>
+                    <span className="size-1 rounded-full bg-current animate-pulse" />
+                    {publishModeMeta[publishMode].badge}
                   </span>
                 </div>
                 <p className="text-[13px] font-medium text-[#B0AFA8]">Fill in the details below to send a message to the school community</p>
+              </div>
+
+              {/* Mode selector */}
+              <div className="flex items-center gap-1.5 bg-white border border-slate-100 rounded-2xl p-1 shadow-sm">
+                {(["now", "draft", "schedule"] as PublishMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setPublishMode(mode)}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5",
+                      publishMode === mode
+                        ? "bg-slate-900 text-white shadow-sm"
+                        : "text-[#B0AFA8] hover:text-foreground",
+                    )}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">{publishModeMeta[mode].icon}</span>
+                    {publishModeMeta[mode].label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -208,6 +277,23 @@ export const AddNoticePage = () => {
                   value={noticeData.audiences}
                   onChange={(val) => setNoticeData({ ...noticeData, audiences: val })}
                 />
+
+                {/* Schedule date picker — visible only when mode is "schedule" */}
+                {publishMode === "schedule" && (
+                  <div className="space-y-2">
+                    <span className="text-[13px] font-bold text-foreground">Schedule Date & Time</span>
+                    <input
+                      type="datetime-local"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="w-full bg-[#F7F8F4] border border-slate-100 rounded-xl px-4 py-2.5 text-[13px] font-medium outline-none focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white transition-all text-foreground"
+                    />
+                    <p className="text-[11px] text-[#B0AFA8] font-medium">
+                      The backend will auto-publish at this time via the scheduling cron job.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Message Content */}
@@ -244,7 +330,7 @@ export const AddNoticePage = () => {
                     onClick={() => document.getElementById("file-upload")?.click()}
                     className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 text-[12px] font-bold text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-2"
                   >
-                    <span className="material-symbols-outlined text-[18px]">add_circle</span>{" "}Add files
+                    <span className="material-symbols-outlined text-[18px]">add_circle</span> Add files
                   </button>
                 </div>
                 
@@ -320,7 +406,9 @@ export const AddNoticePage = () => {
               </div>
               <div className="flex gap-4">
                 <PDSButton variant="text" onClick={() => navigate(-1)}>Save and exit</PDSButton>
-                <PDSButton variant="primary" icon="send" onClick={() => setModalState("confirm")}>Publish Notice</PDSButton>
+                <PDSButton variant="primary" icon={publishModeMeta[publishMode].icon} onClick={() => setModalState("confirm")}>
+                  {publishModeMeta[publishMode].label}
+                </PDSButton>
               </div>
             </div>
 
@@ -377,13 +465,30 @@ export const AddNoticePage = () => {
                     exit={{ opacity: 0, x: -20 }}
                     className="flex flex-col items-center gap-8 w-full"
                   >
-                    <div className="size-24 rounded-[32px] bg-primary/10 flex items-center justify-center text-primary shadow-sm shadow-primary/5">
-                      <span className="material-symbols-outlined text-[44px]">send</span>
+                    <div className={cn(
+                      "size-24 rounded-[32px] flex items-center justify-center shadow-sm shadow-primary/5",
+                      publishMode === "now" ? "bg-primary/10 text-primary" :
+                      publishMode === "draft" ? "bg-amber-50 text-amber-600" :
+                      "bg-sky-50 text-sky-600",
+                    )}>
+                      <span className="material-symbols-outlined text-[44px]">{publishModeMeta[publishMode].icon}</span>
                     </div>
                     <div className="space-y-3">
-                      <h3 className="text-[26px] font-bold text-foreground tracking-tight">Ready to publish?</h3>
+                      <h3 className="text-[26px] font-bold text-foreground tracking-tight">
+                        {publishMode === "now" && "Ready to publish?"}
+                        {publishMode === "draft" && "Save as Draft?"}
+                        {publishMode === "schedule" && "Schedule this notice?"}
+                      </h3>
                       <p className="text-[15px] text-slate-500 font-medium leading-relaxed">
-                        This will broadcast the notice to <strong>{noticeData.recipient}</strong> and notify all selected audiences.
+                        {publishMode === "now" && (
+                          <>This will broadcast the notice to <strong>{noticeData.recipient}</strong> and notify all selected audiences immediately.</>
+                        )}
+                        {publishMode === "draft" && (
+                          <>This notice will be saved as a draft. You can publish it later from the announcements page.</>
+                        )}
+                        {publishMode === "schedule" && (
+                          <>This notice will be saved as <strong>SCHEDULED</strong> and auto-published on <strong>{new Date(scheduledDate).toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" })}</strong>.</>
+                        )}
                       </p>
                     </div>
                     <div className="flex items-center gap-4 w-full pt-4">
@@ -398,12 +503,16 @@ export const AddNoticePage = () => {
                         variant="primary"
                         className="flex-1 h-12 rounded-2xl shadow-lg shadow-primary/20"
                         onClick={handlePost}
-                        disabled={isPublishing}
+                        disabled={isPublishing || (publishMode === "schedule" && !scheduledDate)}
                       >
                         {isPublishing ? (
                           <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
                         ) : (
-                          "Yes, Publish Now"
+                          {
+                            now: "Yes, Publish Now",
+                            draft: "Save as Draft",
+                            schedule: "Confirm Schedule"
+                          }[publishMode]
                         )}
                       </PDSButton>
                     </div>
@@ -432,9 +541,15 @@ export const AddNoticePage = () => {
                       />
                     </div>
 
-                    <h3 className="text-[24px] font-bold text-[#3D6B2C] tracking-tight mb-2">Notice Published!</h3>
+                    <h3 className="text-[24px] font-bold text-[#3D6B2C] tracking-tight mb-2">
+                      {publishMode === "now" && "Notice Published!"}
+                      {publishMode === "draft" && "Draft Saved!"}
+                      {publishMode === "schedule" && "Notice Scheduled!"}
+                    </h3>
                     <p className="text-[#B0AFA8] text-[15px] font-medium leading-relaxed mb-10 px-4">
-                      Your institutional broadcast is now live and has been sent to the community.
+                      {publishMode === "now" && "Your institutional broadcast is now live and has been sent to the community."}
+                      {publishMode === "draft" && "Your draft has been saved. You can find it under the Drafts filter in the announcements page."}
+                      {publishMode === "schedule" && "Your notice will be automatically published at the scheduled time via the cron engine."}
                     </p>
 
                     <PDSButton

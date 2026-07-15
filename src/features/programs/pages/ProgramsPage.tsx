@@ -11,6 +11,20 @@ import { ProgramCard } from "../components/ProgramCard";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { PDSButton } from "../../../components/pds/PDSButton";
 
+const CATEGORY_ENUM_TO_DISPLAY: Record<string, string> = {
+  SPORTS: "Sports",
+  ARTS: "Creative Arts",
+  STEM: "STEM & Technology",
+  LEADERSHIP: "Leadership & Community",
+};
+
+
+const STATUS_MAP: Record<string, "Active" | "Warning" | "Planning" | "Completed"> = {
+  ACTIVE: "Active",
+  SUSPENDED: "Warning",
+  COMPLETED: "Completed",
+};
+
 export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,10 +40,16 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             specialPrograms(schoolId: $schoolId) {
               id
               name
+              category
               status
-              description
-              credits
-              studentCount
+              leadTeacher
+              enrolledStudentsCount
+              startDate
+              endDate
+              location
+              targetGrades
+              createdAt
+              updatedAt
             }
           }
         `, { schoolId });
@@ -45,8 +65,9 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     if (programsList.length === 0) {
       return [
         {
-          name: "Regional Science Fair 2024",
-          category: "Academic",
+          id: undefined,
+          name: "Regional Science Fair 2026",
+          category: "STEM & Technology",
           participants: 45,
           status: "Active" as const,
           leadTeacher: "Dr. Sunitha V.",
@@ -59,7 +80,7 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
           name: "District Athletics League",
           category: "Sports",
           participants: 120,
-          status: "Warning" as const,
+          status: "Active" as const,
           leadTeacher: "Coach Sreekumar",
           startDate: "Nov 01",
           endDate: "Feb 15",
@@ -79,7 +100,7 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         },
         {
           name: "National Coding Challenge",
-          category: "Technology",
+          category: "STEM & Technology",
           participants: 32,
           status: "Active" as const,
           leadTeacher: "Mr. Satya Nadella",
@@ -90,7 +111,7 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         },
         {
           name: "Annual Music Festival",
-          category: "Arts & Culture",
+          category: "Creative Arts",
           participants: 85,
           status: "Active" as const,
           leadTeacher: "Mrs. M.S. Subbulakshmi",
@@ -101,7 +122,7 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         },
         {
           name: "Community Service Drive",
-          category: "Social",
+          category: "Leadership & Community",
           participants: 200,
           status: "Completed" as const,
           leadTeacher: "Ms. Medha Patkar",
@@ -112,20 +133,21 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         }
       ];
     }
-    return programsList.map((p) => ({
+    return programsList.map((p: any) => ({
+      id: p.id,
       name: p.name,
-      category: p.description || "Program",
-      participants: p.studentCount || 0,
-      status: p.status === "ACTIVE" ? ("Active" as const) : p.status === "PLANNING" ? ("Planning" as const) : ("Completed" as const),
-      leadTeacher: "Not assigned",
-      startDate: "—",
-      endDate: "—",
-      location: "—",
-      targetGrades: "Students: " + (p.studentCount || 0)
+      category: CATEGORY_ENUM_TO_DISPLAY[p.category] || p.category || "Program",
+      participants: p.enrolledStudentsCount || p.enrolledStudentsCount === 0 ? p.enrolledStudentsCount : (p.studentCount || 0),
+      status: STATUS_MAP[p.status] || "Active",
+      leadTeacher: p.leadTeacher || "Not assigned",
+      startDate: p.startDate ? new Date(p.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—",
+      endDate: p.endDate ? new Date(p.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—",
+      location: p.location || "—",
+      targetGrades: p.targetGrades || (p.enrolledStudentsCount ? `Students: ${p.enrolledStudentsCount}` : "—")
     }));
   }, [programsList]);
 
-  const categories = ["All Categories", "Academic", "Sports", "Creative Arts", "Technology", "Arts & Culture", "Social"];
+  const categories = ["All Categories", "Sports", "Creative Arts", "STEM & Technology", "Leadership & Community"];
 
   const filteredPrograms = useMemo(() => {
     return programs.filter(p => {
@@ -134,7 +156,7 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       const matchesCategory = !selectedCategory || selectedCategory === "All Categories" || p.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedCategory, programs]);
 
   return (
     <div className={cn("flex-1 flex flex-col overflow-hidden bg-[#FDFCFB] relative", !isHubChild && "h-screen")}>
@@ -154,9 +176,9 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         <div className="max-w-[1400px] mx-auto space-y-8">
           {/* Header Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 [&>*]:shadow-none">
-            <StatCard label="Total Programs" value="12" icon="folder" iconBg="bg-blue-50" />
-            <StatCard label="Active Now" value="08" icon="bolt" iconBg="bg-amber-50" />
-            <StatCard label="Total Participants" value="540" icon="group" iconBg="bg-emerald-50" />
+            <StatCard label="Total Programs" value={programsList.length > 0 ? String(programsList.length) : "12"} icon="folder" iconBg="bg-blue-50" />
+            <StatCard label="Active Now" value={programsList.length > 0 ? String(programsList.filter((p: any) => p.status === "ACTIVE").length) : "08"} icon="bolt" iconBg="bg-amber-50" />
+            <StatCard label="Total Participants" value={programsList.length > 0 ? String(programsList.reduce((sum: number, p: any) => sum + (p.enrolledStudentsCount || 0), 0)) : "540"} icon="group" iconBg="bg-emerald-50" />
             <StatCard label="Next Milestone" value="In 2 Days" icon="event_upcoming" iconBg="bg-indigo-50" />
           </div>
 
@@ -223,7 +245,11 @@ export const ProgramsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.3, delay: i * 0.05 }}
                   >
-                    <ProgramCard {...program} index={i} />
+                    <ProgramCard
+                    {...program}
+                    index={i}
+                    onEdit={program.id ? () => navigate(`/academics/programs/add?edit=${program.id}`) : undefined}
+                  />
                   </motion.div>
                 ))}
               </motion.div>
