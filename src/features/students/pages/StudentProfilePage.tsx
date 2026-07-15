@@ -47,7 +47,7 @@ interface StudentProfile {
   participation: number;
   auraScore: number;
   attendanceRate: number;
-  gpa: string;
+  gpa: string | null;
   enrollmentDate: string;
   bloodGroup: string;
   guardianName: string;
@@ -135,6 +135,10 @@ export const StudentProfilePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [showSecureEntryModal, setShowSecureEntryModal] = useState(false);
+  const [secureEntryTitle, setSecureEntryTitle] = useState("");
+  const [secureEntryComment, setSecureEntryComment] = useState("");
+  const [isSubmittingEntry, setIsSubmittingEntry] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -179,6 +183,36 @@ export const StudentProfilePage = () => {
       alert("An error occurred while uploading the image.");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleCreateBehavioralRecord = async () => {
+    if (!secureEntryTitle.trim() || !secureEntryComment.trim()) return;
+    setIsSubmittingEntry(true);
+    try {
+      const mutation = `
+        mutation CreateBehavioralRecord($input: CreateBehavioralRecordInput!) {
+          createBehavioralRecord(input: $input) {
+            id
+          }
+        }
+      `;
+      await graphqlRequest(mutation, {
+        input: {
+          studentId: id,
+          title: secureEntryTitle.trim(),
+          comment: secureEntryComment.trim()
+        }
+      });
+      setShowSecureEntryModal(false);
+      setSecureEntryTitle("");
+      setSecureEntryComment("");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (err) {
+      console.error("Failed to create behavioral record:", err);
+      alert("Failed to save secure entry. Please try again.");
+    } finally {
+      setIsSubmittingEntry(false);
     }
   };
 
@@ -330,27 +364,27 @@ export const StudentProfilePage = () => {
         setStudent({
           name: profileObj.name,
           id: profileObj.admissionNumber || profileObj.id.slice(0, 8),
-          grade: classDetail?.grade || "10th Grade",
-          section: classDetail?.section || "A",
-          participation: progressDetail?.overallAverage || 85,
-          auraScore: profileObj.overview?.auraPoints || 0,
-          attendanceRate: attendanceDetail?.percentage || 95,
-          gpa: progressDetail?.overallAverage ? (progressDetail.overallAverage / 25).toFixed(1) : "3.5",
-          enrollmentDate: res?.user?.createdAt ? new Date(res.user.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }) : "",
-          bloodGroup: profileObj.bloodGroup || "O+",
+          grade: classDetail?.grade || "—",
+          section: classDetail?.section || "—",
+          participation: progressDetail?.overallAverage ?? -1,
+          auraScore: profileObj.overview?.auraPoints ?? 0,
+          attendanceRate: attendanceDetail?.percentage ?? -1,
+          gpa: progressDetail?.overallAverage ? (progressDetail.overallAverage / 25).toFixed(1) : null,
+          enrollmentDate: res?.user?.createdAt ? new Date(res.user.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" }) : "—",
+          bloodGroup: profileObj.bloodGroup || "—",
           guardianName: parentsWithNames[0]?.name || "Guardian of " + profileObj.name,
-          phone: parentsWithNames[0]?.ph || "+91 99999-99999",
+          phone: parentsWithNames[0]?.ph || "—",
           status: profileObj.studentStatus || "Active",
           img: "/Avatar/Male Avatar Age16.png",
           profileImageUrl: profileObj.profileImageUrl,
           parents: parentsWithNames.length > 0 ? parentsWithNames : [
-            { role: "Guardian", name: "Guardian of " + profileObj.name, ph: "+91 99999-99999", occupation: "Not Specified" }
+            { role: "Guardian", name: "Guardian of " + profileObj.name, ph: "—", occupation: "Not Specified" }
           ],
           participationIntelligence: profileObj.overview?.participationIntelligence || {
-            attendanceConsistency: 98,
-            assignmentHygiene: 94,
-            classEngagement: 86,
-            activityDensity: 90
+            attendanceConsistency: -1,
+            assignmentHygiene: -1,
+            classEngagement: -1,
+            activityDensity: -1
           },
           highlights: profileObj.overview?.highlights || [],
           termPerformances: profileObj.academicHistory?.termPerformances || [],
@@ -580,10 +614,13 @@ export const StudentProfilePage = () => {
                     </div>
                 </div>
                 <div className="relative z-10 pt-10">
-                    <button className="w-full py-2.5 btn-primary rounded-2xl text-[12px] font-black  transition-all flex items-center justify-center gap-3 shadow-xl shadow-primary/10">
+                    <a
+                        href={`tel:${student.parents[0]?.ph || student.phone}`}
+                        className="w-full py-2.5 btn-primary rounded-2xl text-[12px] font-black transition-all flex items-center justify-center gap-3 shadow-xl shadow-primary/10"
+                    >
                         <Phone size={16} fill="currentColor" strokeWidth={0} />
                         Call Now
-                    </button>
+                    </a>
                 </div>
             </div>
           </div>
@@ -602,10 +639,9 @@ export const StudentProfilePage = () => {
                         </div>
                         <div className="flex items-baseline justify-center sm:justify-start gap-2">
                             <span className="text-3xl font-bold text-foreground tracking-tight">{student.auraScore}</span>
-                            <span className="text-[11px] font-bold text-primary">+5.2</span>
                         </div>
                         <div className="h-1 bg-[#F7F8F4] rounded-full mt-4 overflow-hidden">
-                            <div className="h-full bg-primary" style={{ width: `${student.auraScore}%` }} />
+                            <div className="h-full bg-primary" style={{ width: `${Math.min(student.auraScore, 100)}%` }} />
                         </div>
                     </div>
                     <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left flex flex-col justify-between">
@@ -614,9 +650,15 @@ export const StudentProfilePage = () => {
                                 <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest leading-none">Attendance</p>
                                 <Calendar size={16} className="text-[#B0AFA8] hidden sm:block" />
                             </div>
-                            <span className="text-3xl font-bold text-foreground tracking-tight">{student.attendanceRate}%</span>
+                            <span className="text-3xl font-bold text-foreground tracking-tight">
+                                {student.attendanceRate !== -1 ? `${student.attendanceRate}%` : "—"}
+                            </span>
                         </div>
-                        <p className="text-[10px] text-[#2E7D32] font-bold mt-2 uppercase tracking-widest leading-none">Consistent High</p>
+                        {student.attendanceRate !== -1 && (
+                            <p className="text-[10px] text-[#2E7D32] font-bold mt-2 uppercase tracking-widest leading-none">
+                                {student.attendanceRate > 85 ? "Consistent High" : student.attendanceRate > 70 ? "Moderate" : "Needs Improvement"}
+                            </p>
+                        )}
                     </div>
                     <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left flex flex-col justify-between">
                         <div>
@@ -624,9 +666,10 @@ export const StudentProfilePage = () => {
                                 <p className="text-[#B0AFA8] text-[10px] font-bold uppercase tracking-widest leading-none">GPA Index</p>
                                 <GraduationCap size={16} className="text-[#B0AFA8] hidden sm:block" />
                             </div>
-                            <span className="text-3xl font-bold text-foreground tracking-tight">{student.gpa}</span>
+                            <span className="text-3xl font-bold text-foreground tracking-tight">
+                                {student.gpa ?? "—"}
+                            </span>
                         </div>
-                        <p className="text-[10px] text-[#B0AFA8] font-bold mt-2 uppercase tracking-widest italic leading-none">Rank: 08/120</p>
                     </div>
                     <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm text-center sm:text-left flex flex-col justify-between">
                         <div>
@@ -668,10 +711,9 @@ export const StudentProfilePage = () => {
                     </h3>
                     <p className="text-[12px] text-[#B0AFA8] font-medium">Weighted analysis of holistic student engagement</p>
                   </div>
-                  <div className="px-4 py-2 bg-[#F7F8F4] rounded-xl border border-slate-100">
-                    <span className="text-xl font-black text-foreground">
-                      {typeof student.participation === "number" ? student.participation.toFixed(2) : student.participation}%
-                    </span>
+                  <div className="px-4 py-2 bg-[#F7F8F4] rounded-xl border border-slate-100">                      <span className="text-xl font-black text-foreground">
+                        {student.participation !== -1 ? `${Number(student.participation).toFixed(2)}%` : "—"}
+                      </span>
                     <span className="text-[10px] font-bold text-[#B0AFA8] ml-2 uppercase">Composite</span>
                   </div>
                 </div>
@@ -687,13 +729,13 @@ export const StudentProfilePage = () => {
                       <div className="flex justify-between items-end">
                         <p className="text-[11px] font-bold text-[#444441] uppercase tracking-tight">{p.label}</p>
                         <p className="text-[13px] font-black text-foreground">
-                          {typeof p.val === "number" ? p.val.toFixed(2) : p.val}%
+                          {p.val !== -1 ? `${Number(p.val).toFixed(2)}%` : "—"}
                         </p>
                       </div>
                       <div className="h-1.5 bg-[#F7F8F4] rounded-full overflow-hidden">
                         <div 
                            className={cn("h-full transition-all duration-1000 delay-300", p.color)} 
-                           style={{ width: `${p.val}%` }} 
+                           style={{ width: p.val !== -1 ? `${p.val}%` : "0%" }} 
                         />
                       </div>
                     </div>
@@ -832,7 +874,10 @@ export const StudentProfilePage = () => {
                               <p className="text-[11px] text-white/40 italic">No behavioral log entries.</p>
                             )}
                         </div>
-                        <button className="w-full mt-10 py-3.5 bg-white/5 border border-dashed border-white/10 rounded-xl text-[10px] font-bold text-white/30 hover:bg-white/10 transition-all uppercase tracking-widest">
+                        <button
+                            onClick={() => setShowSecureEntryModal(true)}
+                            className="w-full mt-10 py-3.5 bg-white/5 border border-dashed border-white/10 rounded-xl text-[10px] font-bold text-white/30 hover:bg-white/10 hover:text-white/60 hover:border-white/20 transition-all uppercase tracking-widest"
+                        >
                             + Write Secure Entry
                         </button>
                     </div>
@@ -847,10 +892,157 @@ export const StudentProfilePage = () => {
   if (loading) {
     return (
       <div className="flex-1 flex flex-col h-screen overflow-hidden bg-white font-sans">
-        <TopBar title="Loading Profile..." subtitle="Fetching student details from the supergraph" onBack={() => navigate(-1)} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 opacity-40">
-          <span className="material-symbols-outlined text-5xl animate-spin">sync</span>
-          <p className="text-[13px] font-bold text-[#B0AFA8]">Loading student profile...</p>
+        <TopBar title="Loading Profile..." subtitle="Fetching student details" onBack={() => navigate(-1)} />
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          <div className="max-w-[1400px] mx-auto space-y-12">
+            {/* Profile Identity Card Skeleton */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-10 border-b border-slate-200 pb-12 pt-6 px-6 lg:px-10">
+              <div className="flex flex-col md:flex-row items-center gap-8 w-full">
+                {/* Avatar skeleton */}
+                <div className="size-24 sm:size-28 rounded-[32px] bg-slate-100 animate-pulse shrink-0" />
+                <div className="flex-1 space-y-5 w-full">
+                  {/* ID badge + name */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="h-5 w-24 bg-slate-100 rounded-full animate-pulse" />
+                    <div className="h-4 w-40 bg-slate-100 rounded-lg animate-pulse" />
+                  </div>
+                  <div className="h-9 w-64 bg-slate-100 rounded-xl animate-pulse" />
+                  {/* Info grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-5 border-t border-slate-100/50">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="space-y-2">
+                        <div className="h-3 w-16 bg-slate-100 rounded animate-pulse" />
+                        <div className="h-4 w-24 bg-slate-100 rounded-lg animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* School name skeleton */}
+              <div className="hidden md:flex flex-col items-end gap-1.5">
+                <div className="h-3 w-20 bg-slate-100 rounded animate-pulse" />
+                <div className="h-6 w-40 bg-slate-100 rounded-lg animate-pulse" />
+              </div>
+            </div>
+
+            {/* Tabs skeleton */}
+            <div className="flex gap-6 sm:gap-12 border-b border-slate-200 px-6 lg:px-10">
+              {["Overview", "Academic History", "Behavioral Records", "Parental Contact"].map((tab) => (
+                <div key={tab} className="pb-6">
+                  <div className="h-4 w-20 bg-slate-100 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+
+            {/* Main content skeleton */}
+            <div className="pb-32 px-6 lg:px-10">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                <div className="md:col-span-8 space-y-8">
+                  {/* Stats cards row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <div key={i} className="bg-slate-50 rounded-2xl p-6 space-y-4 border border-slate-100">
+                        <div className="flex justify-between items-start">
+                          <div className="h-3 w-16 bg-slate-100 rounded animate-pulse" />
+                          <div className="size-4 bg-slate-100 rounded animate-pulse" />
+                        </div>
+                        <div className="h-8 w-16 bg-slate-100 rounded-lg animate-pulse" />
+                        <div className="h-2 w-full bg-slate-100 rounded-full animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Participation Intelligence skeleton */}
+                  <div className="bg-slate-50 rounded-2xl border border-slate-100 p-8 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <div className="h-5 w-48 bg-slate-100 rounded-lg animate-pulse" />
+                        <div className="h-3 w-64 bg-slate-100 rounded animate-pulse" />
+                      </div>
+                      <div className="h-8 w-28 bg-slate-100 rounded-xl animate-pulse" />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="space-y-3">
+                          <div className="flex justify-between">
+                            <div className="h-3 w-32 bg-slate-100 rounded animate-pulse" />
+                            <div className="h-3 w-12 bg-slate-100 rounded animate-pulse" />
+                          </div>
+                          <div className="h-1.5 bg-slate-100 rounded-full animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Highlights skeleton */}
+                  <div className="bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden">
+                    <div className="px-8 py-5 border-b border-slate-100">
+                      <div className="h-5 w-36 bg-slate-100 rounded-lg animate-pulse" />
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="flex items-center gap-4 p-6">
+                          <div className="size-10 rounded-xl bg-slate-100 animate-pulse shrink-0" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 w-48 bg-slate-100 rounded animate-pulse" />
+                            <div className="h-3 w-64 bg-slate-100 rounded animate-pulse" />
+                          </div>
+                          <div className="h-6 w-20 bg-slate-100 rounded-full animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Recent Activities skeleton */}
+                  <div className="bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden">
+                    <div className="px-8 py-5 border-b border-slate-100">
+                      <div className="h-5 w-40 bg-slate-100 rounded-lg animate-pulse" />
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {[1, 2].map(i => (
+                        <div key={i} className="flex items-center gap-4 p-6">
+                          <div className="size-10 rounded-xl bg-slate-100 animate-pulse shrink-0" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 w-52 bg-slate-100 rounded animate-pulse" />
+                            <div className="h-3 w-36 bg-slate-100 rounded animate-pulse" />
+                          </div>
+                          <div className="h-6 w-20 bg-slate-100 rounded-full animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right sidebar skeleton */}
+                <div className="md:col-span-4 space-y-8">
+                  <div className="bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden">
+                    <div className="bg-slate-100 h-12 px-6 flex items-center justify-between animate-pulse">
+                      <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
+                      <div className="h-5 w-8 bg-slate-200 rounded-full animate-pulse" />
+                    </div>
+                    <div className="p-6 space-y-3">
+                      <div className="h-3 w-full bg-slate-100 rounded animate-pulse" />
+                      <div className="h-3 w-3/4 bg-slate-100 rounded animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="bg-slate-100 rounded-2xl p-8 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="h-4 w-20 bg-slate-200 rounded animate-pulse" />
+                      <div className="size-4 bg-slate-200 rounded animate-pulse" />
+                    </div>
+                    <div className="space-y-4">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="space-y-1.5">
+                          <div className="h-3 w-32 bg-slate-200 rounded animate-pulse" />
+                          <div className="h-3 w-full bg-slate-200/50 rounded animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -979,6 +1171,93 @@ export const StudentProfilePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Secure Entry Modal */}
+      {showSecureEntryModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <div
+            className="absolute inset-0 bg-slate-900/30 backdrop-blur-xl animate-in fade-in duration-300"
+            onClick={() => setShowSecureEntryModal(false)}
+            role="presentation"
+          />
+          <div className="relative w-full max-w-lg bg-white rounded-[28px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.1)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-12 duration-500">
+            <div className="px-8 py-6 flex items-center justify-between border-b border-slate-50">
+              <div className="flex items-center gap-4">
+                <div className="size-11 rounded-[14px] bg-[#F7F8F4] flex items-center justify-center text-secondary">
+                  <span className="material-symbols-outlined text-2xl">lock</span>
+                </div>
+                <div>
+                  <h3 className="text-[18px] font-bold text-foreground tracking-tight">Write Secure Entry</h3>
+                  <p className="text-[11px] font-medium text-[#8A8A85] mt-0.5">Add a behavioral record for {student.name}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSecureEntryModal(false)}
+                className="size-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-[#B0AFA8] transition-all hover:rotate-90"
+                aria-label="Close"
+              >
+                <span className="material-symbols-outlined text-2xl">close</span>
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-[#8A8A85] px-1">Title</label>
+                <input
+                  type="text"
+                  value={secureEntryTitle}
+                  onChange={(e) => setSecureEntryTitle(e.target.value)}
+                  placeholder="e.g. Classroom Observation, Positive Note, Incident Report"
+                  className="w-full h-11 bg-[#F9FAFB] border border-slate-100 rounded-[14px] px-6 text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white outline-none transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-[#8A8A85] px-1 flex items-center justify-between">
+                  Comment
+                  <span className="text-[10px] text-[#B0AFA8] font-medium">{secureEntryComment.length}/500 chars</span>
+                </label>
+                <textarea
+                  value={secureEntryComment}
+                  onChange={(e) => setSecureEntryComment(e.target.value.slice(0, 500))}
+                  placeholder="Describe the observation or incident in detail..."
+                  className="w-full h-32 bg-[#F9FAFB] border border-slate-100 rounded-[18px] p-6 text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white outline-none transition-all resize-none leading-relaxed"
+                />
+              </div>
+            </div>
+
+            <div className="px-8 py-6 bg-white border-t border-slate-50 flex items-center justify-between gap-3">
+              <button
+                onClick={() => {
+                  setShowSecureEntryModal(false);
+                  setSecureEntryTitle("");
+                  setSecureEntryComment("");
+                }}
+                className="px-6 h-11 rounded-[14px] text-[14px] font-bold text-[#8A8A85] hover:bg-slate-50 transition-all"
+              >
+                Discard
+              </button>
+              <button
+                onClick={handleCreateBehavioralRecord}
+                disabled={isSubmittingEntry || !secureEntryTitle.trim() || !secureEntryComment.trim()}
+                className="btn-primary px-8 h-11 rounded-[14px] text-[14px] font-bold flex items-center gap-2.5 transition-all disabled:opacity-50 disabled:grayscale shadow-xl shadow-primary/10 active:scale-95"
+              >
+                {isSubmittingEntry ? (
+                  <>
+                    <span className="material-symbols-outlined animate-spin text-lg">sync</span>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-lg">lock</span>
+                    Save Secure Entry
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

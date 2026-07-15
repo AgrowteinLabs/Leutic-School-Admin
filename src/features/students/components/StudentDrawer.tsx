@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { cn } from "../../../lib/utils";
 
 import { 
@@ -18,17 +19,19 @@ interface StudentDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   student: {
+    uid: string;
     name: string;
     id: string;
     grade: string;
     section: string;
     auraScore: number;
-    attendanceRate: number;
-    gpa: number;
+    attendanceRate: number | null;
+    gpa: number | null;
     img: string;
     status: string;
-    participation: number;
+    participation: number | null;
     phone: string;
+    behavioralAuditLog: { lastAuditDate: string; auditedBy: string } | null;
   } | null;
 }
 
@@ -49,6 +52,7 @@ const itemVariants: Variants = {
 };
 
 export const StudentDrawer = ({ isOpen, onClose, student }: StudentDrawerProps) => {
+  const navigate = useNavigate();
   if (!student) return null;
 
   return (
@@ -152,16 +156,27 @@ export const StudentDrawer = ({ isOpen, onClose, student }: StudentDrawerProps) 
                 </div>
               </motion.div>
 
-              {/* Status Insight Section */}
+              {/* Behavioral Audit Log Section */}
               <motion.div variants={itemVariants} className="space-y-4">
-                  <h4 className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-[0.2em] border-b border-slate-50 pb-2">Administrative Note</h4>
+                  <h4 className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-[0.2em] border-b border-slate-50 pb-2">Behavioral Audit Log</h4>
                   <div className="bg-[#F7F8F4] p-5 rounded-2xl border border-slate-100/50">
-                    <p className="text-[13px] font-medium text-foreground leading-relaxed">
-                        {student.auraScore >= 80 
-                            ? `${student.name} is a top-tier candidate for leadership roles. Excellent institutional fit.`
-                            : `${student.name} shows minor participation decline. Monitor closely for next session.`
-                        }
-                    </p>
+                    {student.behavioralAuditLog ? (
+                      <div className="flex items-start gap-3">
+                        <div className="size-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0 mt-0.5">
+                          <ShieldCheck size={14} />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[13px] font-medium text-foreground leading-relaxed">
+                            Last audit performed by <span className="font-bold">{student.behavioralAuditLog.auditedBy}</span>
+                          </p>
+                          <p className="text-[11px] text-[#B0AFA8] font-medium">
+                            {new Date(student.behavioralAuditLog.lastAuditDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[12px] text-[#B0AFA8] italic font-medium">No behavioral audits performed yet.</p>
+                    )}
                   </div>
               </motion.div>
 
@@ -170,22 +185,37 @@ export const StudentDrawer = ({ isOpen, onClose, student }: StudentDrawerProps) 
                   <h4 className="text-[10px] font-bold text-[#B0AFA8] uppercase tracking-[0.2em] mb-4">Direct Actions</h4>
                   
                   {[
-                      { label: "Contact Guardian", icon: Phone, detail: student.phone, color: "text-blue-600", bg: "bg-blue-50" },
-                      { label: "View Academic Records", icon: FileText, detail: "Full transcript", color: "text-amber-600", bg: "bg-amber-50" },
-                      { label: "Message Student", icon: MessageSquare, detail: "Direct portal", color: "text-emerald-600", bg: "bg-emerald-50" },
+                      { label: "Contact Guardian", icon: Phone, detail: student.phone, color: "text-blue-600", bg: "bg-blue-50", href: `tel:${student.phone}` },
+                      { label: "View Academic Records", icon: FileText, detail: "Full transcript", color: "text-amber-600", bg: "bg-amber-50", onClick: () => { onClose(); navigate(`/students/${student.uid}`); } },
+                      { label: "Message Student", icon: MessageSquare, detail: "Direct portal", color: "text-emerald-600", bg: "bg-emerald-50", onClick: () => { onClose(); navigate(`/students/${student.uid}`); } },
                   ].map((action, i) => (
-                      <button key={i} className="w-full flex items-center justify-between p-3.5 rounded-xl hover:bg-[#F7F8F4] transition-all group">
-                          <div className="flex items-center gap-4">
-                              <div className={cn("size-9 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110", action.bg, action.color)}>
-                                  <action.icon size={16} />
+                      action.href ? (
+                          <a key={i} href={action.href} className="w-full flex items-center justify-between p-3.5 rounded-xl hover:bg-[#F7F8F4] transition-all group">
+                              <div className="flex items-center gap-4">
+                                  <div className={cn("size-9 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110", action.bg, action.color)}>
+                                      <action.icon size={16} />
+                                  </div>
+                                  <div className="flex flex-col text-left">
+                                      <span className="text-[13px] font-bold text-foreground">{action.label}</span>
+                                      <span className="text-[10px] text-[#B0AFA8] font-medium">{action.detail}</span>
+                                  </div>
                               </div>
-                              <div className="flex flex-col text-left">
-                                  <span className="text-[13px] font-bold text-foreground">{action.label}</span>
-                                  <span className="text-[10px] text-[#B0AFA8] font-medium">{action.detail}</span>
+                              <ChevronRight size={14} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
+                          </a>
+                      ) : (
+                          <button key={i} onClick={action.onClick} className="w-full flex items-center justify-between p-3.5 rounded-xl hover:bg-[#F7F8F4] transition-all group">
+                              <div className="flex items-center gap-4">
+                                  <div className={cn("size-9 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110", action.bg, action.color)}>
+                                      <action.icon size={16} />
+                                  </div>
+                                  <div className="flex flex-col text-left">
+                                      <span className="text-[13px] font-bold text-foreground">{action.label}</span>
+                                      <span className="text-[10px] text-[#B0AFA8] font-medium">{action.detail}</span>
+                                  </div>
                               </div>
-                          </div>
-                          <ChevronRight size={14} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
-                      </button>
+                              <ChevronRight size={14} className="text-slate-300 group-hover:translate-x-1 transition-transform" />
+                          </button>
+                      )
                   ))}
               </motion.div>
 

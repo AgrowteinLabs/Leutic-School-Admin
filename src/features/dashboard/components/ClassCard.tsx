@@ -78,18 +78,36 @@ export const ClassCard = ({
 
         {/* Circular Performance Gauge replaces the letter box avatar */}
         <div className="relative size-14 shrink-0">
-          <svg className="size-full -rotate-90">
-            <circle cx="28" cy="28" r="24" fill="none" strokeWidth="3.5" stroke="#F7F8F4" />
-            <circle cx="28" cy="28" r="24" fill="none" strokeWidth="3.5"
-              strokeDasharray={2 * Math.PI * 24}
-              strokeDashoffset={2 * Math.PI * 24 * (1 - participation / 100)}
-              stroke={participation > 80 ? "#2E7D32" : participation > 60 ? "#EF9800" : "#E63535"}
-              strokeLinecap="round"
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-[10px] font-black text-foreground">{participation}%</span>
-          </div>
+          {participation === -1 ? (
+            <div className="size-full flex items-center justify-center">
+              <svg className="size-full -rotate-90">
+                <circle cx="28" cy="28" r="24" fill="none" strokeWidth="3.5" stroke="#F0F0EC" />
+                <circle cx="28" cy="28" r="24" fill="none" strokeWidth="3.5"
+                  stroke="#D0D0CC"
+                  strokeLinecap="round"
+                  strokeDasharray="3 6"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[10px] font-black text-[#B0AFA8]">—</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <svg className="size-full -rotate-90">
+                <circle cx="28" cy="28" r="24" fill="none" strokeWidth="3.5" stroke="#F7F8F4" />
+                <circle cx="28" cy="28" r="24" fill="none" strokeWidth="3.5"
+                  strokeDasharray={2 * Math.PI * 24}
+                  strokeDashoffset={2 * Math.PI * 24 * (1 - participation / 100)}
+                  stroke={participation > 80 ? "#2E7D32" : participation > 60 ? "#EF9800" : "#E63535"}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[10px] font-black text-foreground">{participation}%</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

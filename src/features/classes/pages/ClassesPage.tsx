@@ -93,9 +93,8 @@ export const ClassesPage = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [classes, setClasses] = useState<ClassData[]>([]);
-  const [teachers, setTeachers] = useState<GraphQLUser[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [teachers, setTeachers] = useState<GraphQLUser[]>([]);    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
   // Bulk Import State
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -169,18 +168,43 @@ export const ClassesPage = () => {
       
       const teacherMap = new Map(loadedTeachers.map(t => [t.id, t.name]));
       
+      // Fetch real attendance data for each class in parallel
+      const today = new Date().toISOString().split("T")[0];
+      const attendanceSummaryQuery = `
+        query ClassAttendanceSummary($classId: ID!, $date: String!) {
+          classAttendanceSummary(classId: $classId, date: $date) {
+            averageAttendancePercentage
+          }
+        }
+      `;
+      
+      const attendanceResults = await Promise.allSettled(
+        loadedClasses.map(c =>
+          graphqlRequest<{ classAttendanceSummary: { averageAttendancePercentage: number } }>(
+            attendanceSummaryQuery,
+            { classId: c.id, date: today }
+          )
+        )
+      );
+      
+      const attMap = new Map<string, number>();
+      attendanceResults.forEach((result, index) => {
+        if (result.status === "fulfilled" && result.value?.classAttendanceSummary) {
+          attMap.set(loadedClasses[index].id, result.value.classAttendanceSummary.averageAttendancePercentage);
+        }
+      });
+
       const mappedClasses = loadedClasses.map((c: GraphQLClass) => {
         const room = c.roomNumber || "Room TBD";
         const teacherName = c.classTeacherId ? (teacherMap.get(c.classTeacherId) || "No Teacher Assigned") : "No Teacher Assigned";
         const studentCount = c.studentCount || 0;
         
-        // Compute a unique hash of the class ID to get deterministic varied attendance
-        const idHash = c.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const participation = 83 + (idHash % 16); // ranges from 83% to 98%
+        // Use real attendance data from backend, -1 means no data available yet
+        const participation = attMap.get(c.id) ?? -1;
         
         // Dynamically assign status level based on attendance percentage
-        const statusType = participation < 86 ? "risk" as const : participation < 91 ? "attention" as const : "normal" as const;
-        const status = statusType === "risk" ? "At Risk" : statusType === "attention" ? "Attention" : "Normal";
+        const statusType = participation === -1 ? "normal" as const : participation < 70 ? "risk" as const : participation < 85 ? "attention" as const : "normal" as const;
+        const status = participation === -1 ? "No Data" : statusType === "risk" ? "At Risk" : statusType === "attention" ? "Need Attention" : "Normal";
         
         return {
           id: c.id,
