@@ -57,6 +57,14 @@ export const DashboardPage = () => {
     const [classesList, setClassesList] = useState<DashboardClass[]>([]);
     const [summary, setSummary] = useState<any>(null);
     const [alerts, setAlerts] = useState<any[]>([]);
+    const [attendanceStats, setAttendanceStats] = useState<{
+        totalStudents: number;
+        presentCount: number;
+        absentCount: number;
+        lateCount: number;
+        attendancePercentage: number;
+    } | null>(null);
+    const [attendanceStatsError, setAttendanceStatsError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -82,6 +90,13 @@ export const DashboardPage = () => {
                         pendingActionsCount
                         urgentActionsCount
                     }
+                    todayAttendanceStats(schoolId: $schoolIdForClasses) {
+                        totalStudents
+                        presentCount
+                        absentCount
+                        lateCount
+                        attendancePercentage
+                    }
                     classMonitorAlerts(schoolId: $schoolIdForClasses) {
                         items {
                             classId
@@ -96,29 +111,35 @@ export const DashboardPage = () => {
                     }
                 }
             `;
-            try {
-                interface DashboardDataResponse {
-                    students: { total: number };
-                    teachers: { total: number };
-                    classes: { items: DashboardClass[] };
-                    dashboardStatSummary: {
-                        todayAttendanceRate: number;
-                        pendingActionsCount: number;
-                        urgentActionsCount: number;
-                    };
-                    classMonitorAlerts: {
-                        items: Array<{
-                            classId: string;
-                            grade: string;
-                            section: string;
-                            classTeacherName: string;
-                            issueType: string;
-                            issueDetails: string;
-                            scorePercentage: number;
-                            severityStatus: string;
-                        }>;
-                    };
-                }
+            try {                    interface DashboardDataResponse {
+                        students: { total: number };
+                        teachers: { total: number };
+                        classes: { items: DashboardClass[] };
+                        dashboardStatSummary: {
+                            todayAttendanceRate: number;
+                            pendingActionsCount: number;
+                            urgentActionsCount: number;
+                        };
+                        todayAttendanceStats: {
+                            totalStudents: number;
+                            presentCount: number;
+                            absentCount: number;
+                            lateCount: number;
+                            attendancePercentage: number;
+                        };
+                        classMonitorAlerts: {
+                            items: Array<{
+                                classId: string;
+                                grade: string;
+                                section: string;
+                                classTeacherName: string;
+                                issueType: string;
+                                issueDetails: string;
+                                scorePercentage: number;
+                                severityStatus: string;
+                            }>;
+                        };
+                    }
                 const res = await graphqlRequest<DashboardDataResponse>(query, { 
                     schoolIdForClasses: schoolId,
                     schoolIdForUsers: schoolId
@@ -127,9 +148,17 @@ export const DashboardPage = () => {
                 setTeachersCount(res.teachers?.total ?? 0);
                 setClassesList(res.classes?.items ?? []);
                 setSummary(res.dashboardStatSummary || null);
+                if (res.todayAttendanceStats) {
+                    setAttendanceStats(res.todayAttendanceStats);
+                    setAttendanceStatsError(null);
+                } else {
+                    setAttendanceStats(null);
+                    setAttendanceStatsError("No attendance data returned from backend.");
+                }
                 setAlerts(res.classMonitorAlerts?.items || []);
             } catch (err) {
                 console.error("Error loading dashboard counts:", err);
+                setAttendanceStatsError("Failed to load attendance data.");
             }
         };
         fetchDashboardData();
@@ -376,13 +405,11 @@ export const DashboardPage = () => {
                         <StatCard
                             label="Attendance Today"
                             value={
-                                summary 
-                                    ? (String(summary.todayAttendanceRate).endsWith("%") 
-                                        ? summary.todayAttendanceRate 
-                                        : `${summary.todayAttendanceRate}%`) 
+                                attendanceStats
+                                    ? `${attendanceStats.attendancePercentage}%`
                                     : "..."
                             }
-                            trend="+1.2%"
+                            trend={`${attendanceStats ? attendanceStats.presentCount.toLocaleString() : "..."} present`}
                             trendType="up"
                             icon="fact_check"
                         />
@@ -554,7 +581,11 @@ export const DashboardPage = () => {
 
                             {/* Attendance + Upcoming */}
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                <ParticipationOverview />
+                                <ParticipationOverview
+                                    stats={attendanceStats}
+                                    isLoading={!attendanceStats && !attendanceStatsError}
+                                    error={attendanceStatsError}
+                                />
 
                                 <div className="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col">
                                     <div className="flex items-center justify-between mb-5">

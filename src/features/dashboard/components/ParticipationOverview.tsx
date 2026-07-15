@@ -1,50 +1,21 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { graphqlRequest } from "../../../lib/graphqlClient";
 
-export const ParticipationOverview = () => {
+interface AttendanceStats {
+    totalStudents: number;
+    presentCount: number;
+    absentCount: number;
+    lateCount: number;
+    attendancePercentage: number;
+}
+
+interface ParticipationOverviewProps {
+    stats: AttendanceStats | null;
+    isLoading?: boolean;
+    error?: string | null;
+}
+
+export const ParticipationOverview = ({ stats, isLoading = false, error = null }: ParticipationOverviewProps) => {
     const navigate = useNavigate();
-    const [stats, setStats] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchStats = async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const schoolId = localStorage.getItem("school_id") || "";
-                if (!schoolId) {
-                    setError("No school ID found in session. Please log in.");
-                    setIsLoading(false);
-                    return;
-                }
-                const res = await graphqlRequest<any>(`
-                    query GetTodayAttendanceStats($schoolId: String!) {
-                        todayAttendanceStats(schoolId: $schoolId) {
-                            totalStudents
-                            presentCount
-                            absentCount
-                            lateCount
-                            attendancePercentage
-                        }
-                    }
-                `, { schoolId });
-                
-                if (res && res.todayAttendanceStats) {
-                    setStats(res.todayAttendanceStats);
-                } else {
-                    setError("No attendance data returned from backend.");
-                }
-            } catch (e: any) {
-                console.error("Failed to fetch today's attendance stats:", e);
-                setError(e.message || "Failed to fetch today's attendance stats.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchStats();
-    }, []);
 
     if (isLoading) {
         return (
