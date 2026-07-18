@@ -31,6 +31,7 @@ interface GraphQLClass {
   shift?: string;
   capacity?: number;
   studentCount?: number;
+  attendanceRate?: number;
 }
 
 interface GraphQLUser {
@@ -125,6 +126,7 @@ export const ClassesPage = () => {
             shift
             capacity
             studentCount
+            attendanceRate
           }
         }
       }
@@ -167,40 +169,14 @@ export const ClassesPage = () => {
       }
       
       const teacherMap = new Map(loadedTeachers.map(t => [t.id, t.name]));
-      
-      // Fetch real attendance data for each class in parallel
-      const today = new Date().toISOString().split("T")[0];
-      const attendanceSummaryQuery = `
-        query ClassAttendanceSummary($classId: ID!, $date: String!) {
-          classAttendanceSummary(classId: $classId, date: $date) {
-            averageAttendancePercentage
-          }
-        }
-      `;
-      
-      const attendanceResults = await Promise.allSettled(
-        loadedClasses.map(c =>
-          graphqlRequest<{ classAttendanceSummary: { averageAttendancePercentage: number } }>(
-            attendanceSummaryQuery,
-            { classId: c.id, date: today }
-          )
-        )
-      );
-      
-      const attMap = new Map<string, number>();
-      attendanceResults.forEach((result, index) => {
-        if (result.status === "fulfilled" && result.value?.classAttendanceSummary) {
-          attMap.set(loadedClasses[index].id, result.value.classAttendanceSummary.averageAttendancePercentage);
-        }
-      });
 
       const mappedClasses = loadedClasses.map((c: GraphQLClass) => {
         const room = c.roomNumber || "Room TBD";
         const teacherName = c.classTeacherId ? (teacherMap.get(c.classTeacherId) || "No Teacher Assigned") : "No Teacher Assigned";
         const studentCount = c.studentCount || 0;
         
-        // Use real attendance data from backend, -1 means no data available yet
-        const participation = attMap.get(c.id) ?? -1;
+        // Use overall attendance rate from backend classes query, -1 if not available
+        const participation = c.attendanceRate !== undefined && c.attendanceRate !== null ? c.attendanceRate : -1;
         
         // Dynamically assign status level based on attendance percentage
         const statusType = participation === -1 ? "normal" as const : participation < 70 ? "risk" as const : participation < 85 ? "attention" as const : "normal" as const;
