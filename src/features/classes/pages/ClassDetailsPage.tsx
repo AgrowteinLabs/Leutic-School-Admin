@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 const STUDENT_CLASS_CSV_TEMPLATE = `FullName,AdmissionNumber,RollNumber,Gender,BloodGroup,Address,MobileNo,Email,Password,FatherName,FatherMobile,FatherOccupation,MotherName,MotherMobile,MotherOccupation,GuardianName,GuardianRelationship,GuardianMobile
 John Doe,ADM-001,1,Male,O+,123 Main St,9876543210,john@example.com,JohnPass1!,Robert Doe,9876543211,Engineer,Jane Doe,9876543212,Teacher,Robert Doe,Father,9876543211
@@ -77,6 +78,7 @@ interface ClassDetails {
   activePrograms: number;
   behaviorFlags: number;
   students: StudentUI[];
+  rawRoom?: string;
 }
 
 const ParentMessageModal = ({
@@ -685,7 +687,7 @@ const ManageClassDrawer = ({
                           >
                             <div className="flex flex-col">
                               <span className="text-[13px] font-bold text-foreground">{student.name}</span>
-                              <span className="text-[10px] font-medium text-[#B0AFA8] uppercase tracking-wider">{student.admissionNumber || student.id.slice(0, 8)}</span>
+                              <span className="text-[10px] font-medium text-[#B0AFA8] uppercase tracking-wider">{formatDisplayId(student.admissionNumber || student.id, 'STU')}</span>
                             </div>
                             <span className="material-symbols-outlined text-[18px] text-primary">add_circle</span>
                           </button>
@@ -769,6 +771,7 @@ interface GraphQLClassActivity {
 export const ClassDetailsPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { showToast } = useToast();
   const [showParentMessageModal, setShowParentMessageModal] = useState(false);
   const [showManageDrawer, setShowManageDrawer] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -782,6 +785,7 @@ export const ClassDetailsPage = () => {
   const [studentSearch, setStudentSearch] = useState("");
 
   const [showBulkModal, setShowBulkModal] = useState(false);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parsedRecords, setParsedRecords] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
@@ -912,7 +916,7 @@ export const ClassDetailsPage = () => {
       const teacherMap = new Map(teachers.map(t => [t.id, t.name]));
       const teacherName = cls.classTeacherId ? (teacherMap.get(cls.classTeacherId) || "No Teacher Assigned") : "No Teacher Assigned";
 
-      const parsedRoom = cls.roomNumber || "Room TBD";
+      const parsedRoom = cls.roomNumber ? cls.roomNumber.split("|")[0] : "Room TBD";
       const parsedShift = cls.shift || "Morning Shift";
 
       // Fetch aura points in parallel for roster students
@@ -1006,7 +1010,7 @@ export const ClassDetailsPage = () => {
         return {
           uid: s.id,
           name: s.name,
-          id: s.admissionNumber || s.id.slice(0, 8),
+          id: formatDisplayId(s.admissionNumber || s.id, 'STU'),
           initials: s.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2),
           participation,
           auraScore,
@@ -1033,7 +1037,8 @@ export const ClassDetailsPage = () => {
         attendanceRate: cls.attendanceRate !== undefined && cls.attendanceRate !== null ? cls.attendanceRate : 0,
         activePrograms: cls.activeProgramsCount !== undefined && cls.activeProgramsCount !== null ? cls.activeProgramsCount : 0,
         behaviorFlags: mappedClassStudents.filter(s => s.statusType === "risk").length,
-        students: mappedClassStudents
+        students: mappedClassStudents,
+        rawRoom: cls.roomNumber
       });
 
     } catch (err: unknown) {
@@ -1302,6 +1307,20 @@ export const ClassDetailsPage = () => {
     const selectedTeacherObj = teachersList.find(t => t.name === updatedFields.teacherName);
     const classTeacherId = selectedTeacherObj ? selectedTeacherObj.id : null;
 
+    let finalRoomNumber = updatedFields.room;
+    if (classDetails?.rawRoom) {
+      const [origName, origId] = classDetails.rawRoom.split("|");
+      if (updatedFields.room === origName) {
+        finalRoomNumber = classDetails.rawRoom;
+      } else {
+        const newId = origId || Math.random().toString(36).substring(2, 6);
+        finalRoomNumber = `${updatedFields.room}|${newId}`;
+      }
+    } else {
+      const newId = Math.random().toString(36).substring(2, 6);
+      finalRoomNumber = `${updatedFields.room}|${newId}`;
+    }
+
     const updateMutation = `
       mutation UpdateClass($id: ID!, $grade: String, $section: String, $classTeacherId: String, $roomNumber: String) {
         updateClass(id: $id, updateClassInput: {
@@ -1327,14 +1346,15 @@ export const ClassDetailsPage = () => {
         grade: updatedFields.grade,
         section: updatedFields.section,
         classTeacherId,
-        roomNumber: updatedFields.room
+        roomNumber: finalRoomNumber
       });
       setShowManageDrawer(false);
+      showToast("success", "Class details updated successfully!");
       await loadData();
     } catch (err: unknown) {
       console.error("Failed to update class details:", err);
       const errMsg = err instanceof Error ? err.message : "Failed to update class details";
-      alert(errMsg);
+      showToast("error", errMsg);
     }
   };
 
@@ -1687,6 +1707,8 @@ export const ClassDetailsPage = () => {
         className={`${classDetails.grade}-${classDetails.section}`}
         onConfirm={handleDeleteClass}
       />
+
+
 
       {/* Bulk Import Modal */}
       {showBulkModal && (

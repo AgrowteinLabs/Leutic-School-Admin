@@ -38,6 +38,7 @@ import { SettingsPage } from "./features/settings/pages/SettingsPage";
 import { GradeConfigurationPage } from "./features/settings/pages/GradeConfigurationPage";
 import { AcademicYearsPage } from "./features/settings/pages/AcademicYearsPage";
 import { AppProvider } from "./lib/AppContext";
+import { ToastProvider } from "./components/Toast";
 
 const DashboardLayout = () => {
   return (
@@ -78,6 +79,7 @@ function App() {
 
   return (
     <AppProvider>
+      <ToastProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         
@@ -121,6 +123,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
+      </ToastProvider>
     </AppProvider>
   );
 }

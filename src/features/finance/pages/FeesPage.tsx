@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
 import { TablePagination } from "../../../components/TablePagination";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 import { useApp } from "../../../lib/AppContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -868,7 +868,7 @@ export const FeesPage = () => {
                                 {student.name}
                               </span>
                               <span className="text-[10.5px] font-bold text-[#B0AFA8] uppercase tracking-wider">
-                                {matchedClass ? `${matchedClass.grade}${matchedClass.section ? `-${matchedClass.section}` : ""}` : "Unassigned"} • {student.admissionNumber || student.id.slice(0, 8)}
+                                {matchedClass ? `${matchedClass.grade}${matchedClass.section ? `-${matchedClass.section}` : ""}` : "Unassigned"} • {formatDisplayId(student.admissionNumber || student.id, 'STU')}
                               </span>
                             </div>
                             <span className="material-symbols-outlined text-[18px] text-[#B0AFA8] group-hover:text-primary transition-colors">

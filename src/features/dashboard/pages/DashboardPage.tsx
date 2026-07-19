@@ -6,7 +6,7 @@ import { ProgramsTable } from "../components/ProgramsTable";
 import { AlertsSection } from "../components/Alerts";
 import { TopBar } from "../../../components/Header";
 import { StudentDrawer } from "../../students/components/StudentDrawer";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 import {
     Users,
@@ -277,7 +277,7 @@ export const DashboardPage = () => {
         setSelectedStudent({
             uid: foundUser.id,
             name: foundUser.name,
-            id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
+            id: formatDisplayId(foundUser.admissionNumber || foundUser.id, 'STU'),
             grade: matchedClass ? matchedClass.grade : "Unassigned",
             section: matchedClass ? (matchedClass.section || "") : "",
             participation: overviewData?.participationRate ?? null,
@@ -443,7 +443,7 @@ export const DashboardPage = () => {
                     setSelectedStudent({
                         uid: foundUser.id,
                         name: foundUser.name,
-                        id: foundUser.admissionNumber || foundUser.id.slice(0, 8),
+                        id: formatDisplayId(foundUser.admissionNumber || foundUser.id, 'STU'),
                         grade: matchedClass.grade,
                         section: matchedClass.section || "",
                         participation: overviewData?.participationRate ?? null,
@@ -566,7 +566,7 @@ export const DashboardPage = () => {
                                                                     {student.name}
                                                                 </span>
                                                                 <span className="text-[10.5px] font-bold text-[#B0AFA8] uppercase tracking-wider">
-                                                                    {matchedClass ? `${matchedClass.grade}${matchedClass.section ? `-${matchedClass.section}` : ""}` : "Unassigned"} • {student.admissionNumber || student.id.slice(0, 8)}
+                                                                    {matchedClass ? `${matchedClass.grade}${matchedClass.section ? `-${matchedClass.section}` : ""}` : "Unassigned"} • {formatDisplayId(student.admissionNumber || student.id, 'STU')}
                                                                 </span>
                                                             </div>
                                                             <span className="material-symbols-outlined text-[18px] text-[#B0AFA8] group-hover:text-primary transition-colors">

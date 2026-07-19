@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 import { useApp } from "../../../lib/AppContext";
+import { useToast } from "../../../components/Toast";
 
 interface StudentRecord {
   name: string;
@@ -29,10 +30,12 @@ const StudentRow = ({
   student,
   onClick,
   onDelete,
+  onEdit,
 }: {
   student: StudentRecord;
   onClick: (student: StudentRecord) => void;
   onDelete: (student: StudentRecord) => void;
+  onEdit: (student: StudentRecord) => void;
 }) => {
   const {
     name,
@@ -142,6 +145,10 @@ const StudentRow = ({
             </span>
           </button>
           <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(student);
+            }}
             className="size-8 flex items-center justify-center rounded-lg text-[#B0AFA8] hover:bg-white hover:text-primary hover:shadow-sm transition-all"
             title="Edit Record"
           >
@@ -332,7 +339,7 @@ export const StudentsPage = ({
           const matchedClass = user.classId ? classMap.get(user.classId) : null;
           return {
             name: user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Student",
-            id: user.admissionNumber || user.id.slice(0, 8),
+            id: formatDisplayId(user.admissionNumber || user.id, 'STU'),
             grade: user.enrollmentGrade || (matchedClass ? matchedClass.grade : "Unassigned"),
             section: matchedClass ? matchedClass.section || "" : "",
             participation: 0,
@@ -365,13 +372,21 @@ export const StudentsPage = ({
     fetchStudents();
   }, [fetchStudents, externalStudents]);
 
-  const [studentToDelete, setStudentToDelete] = useState<StudentRecord | null>(
-    null,
-  );
+  const { showToast } = useToast();
+
+  const [studentToDelete, setStudentToDelete] = useState<StudentRecord | null>(null);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
 
+  const [studentToEdit, setStudentToEdit] = useState<StudentRecord | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editBloodGroup, setEditBloodGroup] = useState("");
+  const [editGuardianName, setEditGuardianName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
   const confirmDelete = async () => {
-    if (deleteConfirmationText === studentToDelete?.name) {
+    if (deleteConfirmationText.toLowerCase() === studentToDelete?.name.toLowerCase()) {
       const deleteMutation = `
         mutation RemoveUser($id: ID!) {
           removeUser(id: $id) {
@@ -385,14 +400,87 @@ export const StudentsPage = ({
           id: studentToDelete.uid || studentToDelete.id,
         });
         setStudents((prev) => prev.filter((s) => s.id !== studentToDelete.id));
+        const deletedName = studentToDelete.name;
         setStudentToDelete(null);
         setDeleteConfirmationText("");
+        showToast("success", `Student "${deletedName}" has been deleted successfully.`);
       } catch (err: unknown) {
         console.error("Delete failed:", err);
         const errMsg =
           err instanceof Error ? err.message : "Failed to delete student.";
-        alert(errMsg);
+        showToast("error", errMsg);
       }
+    }
+  };
+
+  const handleEditClick = (student: StudentRecord) => {
+    setStudentToEdit(student);
+    setEditName(student.name);
+    setEditBloodGroup(student.bloodGroup);
+    setEditGuardianName(student.guardianName);
+    setEditPhone(student.phone);
+    setEditErrors({});
+  };
+
+  const validateEditFields = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!editName.trim()) errors.name = "Full name is required";
+    if (!editGuardianName.trim()) errors.guardianName = "Guardian name is required";
+    if (editPhone && !/^[+]?[\d\s-]{7,15}$/.test(editPhone)) {
+      errors.phone = "Enter a valid mobile number";
+    }
+    setEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const confirmEdit = async () => {
+    if (!studentToEdit) return;
+    if (!validateEditFields()) return;
+    setIsSaving(true);
+    const updateMutation = `
+      mutation UpdateStudent($id: ID!, $updateUserInput: UpdateUserDto!) {
+        updateUser(id: $id, updateUserInput: $updateUserInput) {
+          id
+          name
+          bloodGroup
+          mobileNo
+        }
+      }
+    `;
+    try {
+      const guardians = [{
+        relationship: "Guardian",
+        fullName: editGuardianName,
+        mobileNo: editPhone
+      }];
+      await graphqlRequest(updateMutation, {
+        id: studentToEdit.uid,
+        updateUserInput: {
+          name: editName,
+          bloodGroup: editBloodGroup || undefined,
+          guardians
+        }
+      });
+      setStudents((prev) =>
+        prev.map((s) =>
+          s.uid === studentToEdit.uid
+            ? {
+                ...s,
+                name: editName,
+                bloodGroup: editBloodGroup,
+                guardianName: editGuardianName,
+                phone: editPhone
+              }
+            : s
+        )
+      );
+      showToast("success", `Student "${editName}" updated successfully.`);
+      setStudentToEdit(null);
+    } catch (err: any) {
+      console.error("Update failed:", err);
+      showToast("error", err.message || "Failed to update student.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -626,6 +714,7 @@ export const StudentsPage = ({
                           setStudentToDelete(s);
                           setDeleteConfirmationText("");
                         }}
+                        onEdit={handleEditClick}
                       />
                     ))
                   )}
@@ -705,8 +794,8 @@ export const StudentsPage = ({
                 <div className="space-y-3">
                   <p className="text-[11px] font-bold text-[#B0AFA8] capitalize tracking-normal">
                     Type{" "}
-                    <span className="text-foreground">
-                      {studentToDelete.name}
+                    <span className="text-foreground font-black">
+                      "{studentToDelete.name}"
                     </span>{" "}
                     to confirm
                   </p>
@@ -728,11 +817,133 @@ export const StudentsPage = ({
                   Cancel
                 </button>
                 <button
-                  disabled={deleteConfirmationText !== studentToDelete.name}
+                  disabled={deleteConfirmationText.toLowerCase() !== studentToDelete.name.toLowerCase()}
                   onClick={confirmDelete}
                   className="flex-[2] bg-red-600 text-white h-10 rounded-2xl text-[14px] font-bold shadow-xl shadow-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
                 >
                   Delete Record
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Student Modal */}
+      <AnimatePresence>
+        {studentToEdit && (
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setStudentToEdit(null)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden"
+            >
+              <div className="p-8 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+                  <h3 className="text-[18px] font-bold text-foreground">Edit Student Record</h3>
+                  <button
+                    onClick={() => setStudentToEdit(null)}
+                    className="size-8 rounded-full hover:bg-slate-50 flex items-center justify-center text-[#B0AFA8] transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">close</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-[#8A8A85] px-1">Full Name *</label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => {
+                        setEditName(e.target.value);
+                        setEditErrors((prev) => ({ ...prev, name: "" }));
+                      }}
+                      className={cn(
+                        "w-full h-11 bg-[#F9FAFB] border border-slate-100 rounded-[14px] px-4 text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white outline-none transition-all",
+                        editErrors.name && "border-red-200 bg-red-50/20"
+                      )}
+                    />
+                    {editErrors.name && (
+                      <span className="text-[10px] text-red-500 font-bold block px-1">{editErrors.name}</span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-[#8A8A85] px-1">Blood Group</label>
+                    <select
+                      value={editBloodGroup}
+                      onChange={(e) => setEditBloodGroup(e.target.value)}
+                      className="w-full h-11 bg-[#F9FAFB] border border-slate-100 rounded-[14px] px-4 text-[14px] font-semibold text-foreground focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white outline-none transition-all"
+                    >
+                      <option value="">Select Blood Group</option>
+                      {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map((bg) => (
+                        <option key={bg} value={bg}>{bg}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-[#8A8A85] px-1">Guardian Name *</label>
+                    <input
+                      type="text"
+                      value={editGuardianName}
+                      onChange={(e) => {
+                        setEditGuardianName(e.target.value);
+                        setEditErrors((prev) => ({ ...prev, guardianName: "" }));
+                      }}
+                      className={cn(
+                        "w-full h-11 bg-[#F9FAFB] border border-slate-100 rounded-[14px] px-4 text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white outline-none transition-all",
+                        editErrors.guardianName && "border-red-200 bg-red-50/20"
+                      )}
+                    />
+                    {editErrors.guardianName && (
+                      <span className="text-[10px] text-red-500 font-bold block px-1">{editErrors.guardianName}</span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-[#8A8A85] px-1">Guardian Mobile</label>
+                    <input
+                      type="text"
+                      value={editPhone}
+                      onChange={(e) => {
+                        setEditPhone(e.target.value);
+                        setEditErrors((prev) => ({ ...prev, phone: "" }));
+                      }}
+                      className={cn(
+                        "w-full h-11 bg-[#F9FAFB] border border-slate-100 rounded-[14px] px-4 text-[14px] font-semibold text-foreground placeholder-[#B0AFA8] focus:border-primary/40 focus:ring-4 focus:ring-primary/5 focus:bg-white outline-none transition-all",
+                        editErrors.phone && "border-red-200 bg-red-50/20"
+                      )}
+                    />
+                    {editErrors.phone && (
+                      <span className="text-[10px] text-red-500 font-bold block px-1">{editErrors.phone}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex gap-3">
+                <button
+                  onClick={() => setStudentToEdit(null)}
+                  className="flex-1 h-11 rounded-[14px] text-[14px] font-bold text-[#B0AFA8] hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmEdit}
+                  disabled={isSaving}
+                  className="flex-[2] btn-primary h-11 rounded-[14px] text-[14px] font-bold shadow-xl shadow-primary/10 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isSaving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </motion.div>

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
 import { MenuDropdown } from "../../../components/MenuDropdown";
@@ -291,7 +291,7 @@ export const StaffPage = ({
         return {
           uid: u.id,
           name: u.name,
-          id: u.employeeId || "#ST-1024-0" + (idx + 1).toString().padStart(2, "00"),
+          id: formatDisplayId(u.employeeId || u.id, 'FCL'),
           role: u.role === "ADMIN" ? "Admin" : "Faculty",
           department,
           performance: u.feedbackScore || undefined,
@@ -332,8 +332,20 @@ export const StaffPage = ({
     setEditError(null);
   };
 
+  const [editErrors, setEditErrors] = useState<{ name?: string; email?: string; mobile?: string }>({});
+
+  const validateEditFields = (): boolean => {
+    const errors: { name?: string; email?: string; mobile?: string } = {};
+    if (!editName.trim()) errors.name = "Full name is required";
+    if (editEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail)) errors.email = "Enter a valid email address";
+    if (editMobile && !/^[+]?[\d\s-]{7,15}$/.test(editMobile)) errors.mobile = "Enter a valid mobile number";
+    setEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const confirmEdit = async () => {
     if (!staffToEdit) return;
+    if (!validateEditFields()) return;
     setIsSaving(true);
     setEditError(null);
     const updateMutation = `
@@ -743,10 +755,19 @@ export const StaffPage = ({
                     <input
                       type="text"
                       value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="w-full h-11 bg-[#F7F8F4] border border-slate-100 rounded-[12px] px-4 text-[13px] font-semibold text-foreground focus:border-primary/40 focus:ring-4 focus:ring-primary/5 outline-none transition-all"
+                      onChange={(e) => { setEditName(e.target.value); setEditErrors(prev => ({ ...prev, name: undefined })); }}
+                      className={cn(
+                        "w-full h-11 bg-[#F7F8F4] border border-slate-100 rounded-[12px] px-4 text-[13px] font-semibold text-foreground focus:ring-4 outline-none transition-all",
+                        editErrors.name ? "border-red-300 focus:border-red-500 focus:ring-red-500/10" : "focus:border-primary/40 focus:ring-primary/5"
+                      )}
                       placeholder="Full legal name"
                     />
+                    {editErrors.name && (
+                      <p className="text-[11px] font-medium text-red-500 mt-1.5 px-1 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">error</span>
+                        {editErrors.name}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-2">
@@ -755,10 +776,19 @@ export const StaffPage = ({
                     <input
                       type="email"
                       value={editEmail}
-                      onChange={(e) => setEditEmail(e.target.value)}
-                      className="w-full h-11 bg-[#F7F8F4] border border-slate-100 rounded-[12px] px-4 text-[13px] font-semibold text-foreground focus:border-primary/40 focus:ring-4 focus:ring-primary/5 outline-none transition-all"
+                      onChange={(e) => { setEditEmail(e.target.value); setEditErrors(prev => ({ ...prev, email: undefined })); }}
+                      className={cn(
+                        "w-full h-11 bg-[#F7F8F4] border border-slate-100 rounded-[12px] px-4 text-[13px] font-semibold text-foreground focus:ring-4 outline-none transition-all",
+                        editErrors.email ? "border-red-300 focus:border-red-500 focus:ring-red-500/10" : "focus:border-primary/40 focus:ring-primary/5"
+                      )}
                       placeholder="staff@school.edu"
                     />
+                    {editErrors.email && (
+                      <p className="text-[11px] font-medium text-red-500 mt-1.5 px-1 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">error</span>
+                        {editErrors.email}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-2">
@@ -767,10 +797,19 @@ export const StaffPage = ({
                     <input
                       type="tel"
                       value={editMobile}
-                      onChange={(e) => setEditMobile(e.target.value)}
-                      className="w-full h-11 bg-[#F7F8F4] border border-slate-100 rounded-[12px] px-4 text-[13px] font-semibold text-foreground focus:border-primary/40 focus:ring-4 focus:ring-primary/5 outline-none transition-all"
+                      onChange={(e) => { setEditMobile(e.target.value); setEditErrors(prev => ({ ...prev, mobile: undefined })); }}
+                      className={cn(
+                        "w-full h-11 bg-[#F7F8F4] border border-slate-100 rounded-[12px] px-4 text-[13px] font-semibold text-foreground focus:ring-4 outline-none transition-all",
+                        editErrors.mobile ? "border-red-300 focus:border-red-500 focus:ring-red-500/10" : "focus:border-primary/40 focus:ring-primary/5"
+                      )}
                       placeholder="+91 XXXXX XXXXX"
                     />
+                    {editErrors.mobile && (
+                      <p className="text-[11px] font-medium text-red-500 mt-1.5 px-1 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">error</span>
+                        {editErrors.mobile}
+                      </p>
+                    )}
                   </div>
                   <div className="col-span-2">
                     <label className="block text-[10px] font-bold text-[#B0AFA8] uppercase tracking-widest mb-2">
