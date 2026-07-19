@@ -67,6 +67,7 @@ export const AddStaffPage = () => {
   const [subjectsList, setSubjectsList] = useState<SubjectItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const specializationOptions = subjectsList.length > 0
     ? Array.from(new Set(subjectsList.map((s) => s.name)))
@@ -108,9 +109,18 @@ export const AddStaffPage = () => {
     loadOnboardingData();
   }, []);
 
+  const validateFields = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!fullName.trim()) errors.fullName = "Full name is required";
+    if (mobile && !/^[+]?[\d\s-]{7,15}$/.test(mobile)) errors.mobile = "Enter a valid mobile number";
+    if (personalEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalEmail)) errors.personalEmail = "Enter a valid email address";
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleFinalize = async () => {
-    if (!fullName) {
-      setError("Please fill in the required fields: Full Name.");
+    if (!validateFields()) {
+      setError("Please fix the highlighted fields before submitting.");
       setActiveStep(1);
       return;
     }
@@ -263,7 +273,16 @@ export const AddStaffPage = () => {
               return (
                 <div key={step.id} className="flex flex-col">
                   <button
-                    onClick={() => setActiveStep(step.id)}
+                    onClick={() => {
+                      if (step.id > 1 && activeStep === 1) {
+                        if (!validateFields()) {
+                          setError("Please fix the highlighted fields on Step 1 before proceeding.");
+                          return;
+                        }
+                      }
+                      setError(null);
+                      setActiveStep(step.id);
+                    }}
                     className={cn(
                       "w-full text-left p-10 flex items-center justify-between transition-all outline-none group",
                       isExpanded ? "bg-slate-50/40" : "hover:bg-slate-50/50",
@@ -339,10 +358,11 @@ export const AddStaffPage = () => {
                               </div>
                               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                                 <PDSFormGroup
-                                  label="Full Name"
+                                  label="Full Name *"
                                   placeholder="Enter staff name"
                                   value={fullName}
-                                  onChange={setFullName}
+                                  onChange={(val) => { setFullName(val); setFieldErrors(prev => ({ ...prev, fullName: '' })); }}
+                                  error={fieldErrors.fullName}
                                 />
                                 <PDSFormGroup
                                   label="Date of Birth"
@@ -382,14 +402,16 @@ export const AddStaffPage = () => {
                                   placeholder="personal@example.com"
                                   icon="mail"
                                   value={personalEmail}
-                                  onChange={setPersonalEmail}
+                                  onChange={(val) => { setPersonalEmail(val); setFieldErrors(prev => ({ ...prev, personalEmail: '' })); }}
+                                  error={fieldErrors.personalEmail}
                                 />
                                 <PDSFormGroup
                                   label="Mobile Number"
                                   placeholder="+91 XXXX"
                                   icon="call"
                                   value={mobile}
-                                  onChange={setMobile}
+                                  onChange={(val) => { setMobile(val); setFieldErrors(prev => ({ ...prev, mobile: '' })); }}
+                                  error={fieldErrors.mobile}
                                 />
                                 <PDSFormGroup
                                   label="Residential Address"
@@ -629,7 +651,16 @@ export const AddStaffPage = () => {
                               <PDSButton
                                 variant="primary"
                                 className="px-12 h-10"
-                                onClick={() => setActiveStep(step.id + 1)}
+                                onClick={() => {
+                                  if (step.id === 1) {
+                                    if (!validateFields()) {
+                                      setError("Please fix the highlighted fields on Step 1 before proceeding.");
+                                      return;
+                                    }
+                                  }
+                                  setError(null);
+                                  setActiveStep(step.id + 1);
+                                }}
                               >
                                 Save & Continue
                               </PDSButton>

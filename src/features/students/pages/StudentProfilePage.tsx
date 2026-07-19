@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 import { useApp } from "../../../lib/AppContext";
@@ -363,7 +363,7 @@ export const StudentProfilePage = () => {
 
         setStudent({
           name: profileObj.name,
-          id: profileObj.admissionNumber || profileObj.id.slice(0, 8),
+          id: formatDisplayId(profileObj.admissionNumber || profileObj.id, 'STU'),
           grade: classDetail?.grade || "—",
           section: classDetail?.section || "—",
           participation: progressDetail?.overallAverage ?? -1,

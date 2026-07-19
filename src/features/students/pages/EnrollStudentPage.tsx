@@ -43,6 +43,7 @@ export const EnrollStudentPage = () => {
 
   // Step 3 State
   const [admissionGrade, setAdmissionGrade] = useState("");
+  const [admissionGradeError, setAdmissionGradeError] = useState<string | null>(null);
   const [academicYearId, setAcademicYearId] = useState("");
   const [busRoute, setBusRoute] = useState("Not Required");
   const [admissionNo, setAdmissionNo] = useState("");
@@ -99,11 +100,7 @@ export const EnrollStudentPage = () => {
               (c) => `${c.grade} - ${c.section}`,
             );
             setClassOptions(options);
-            if (options.length > 0) {
-              setAdmissionGrade(options[0]);
-            } else {
-              setAdmissionGrade("");
-            }
+            // Leave admissionGrade empty so user must intentionally select a class
           }
         } catch (classErr) {
           console.error("Failed to load classes from supergraph:", classErr);
@@ -131,8 +128,19 @@ export const EnrollStudentPage = () => {
       const selectedClass = dbClasses.find(
         (c) => `${c.grade} - ${c.section}` === admissionGrade,
       );
+      // Validate required fields before submission
+      let hasError = false;
+      if (!admissionGrade) {
+        setAdmissionGradeError("Please select an admission grade");
+        hasError = true;
+      }
+      if (hasError) {
+        setActiveStep(3);
+        setIsSubmitting(false);
+        return;
+      }
       const resolvedClassId = selectedClass ? selectedClass.id : undefined;
-      const finalAdmissionNo = rollNo || undefined;
+      const finalAdmissionNo = admissionNo || undefined;
 
       const studentPassword = `Student${Math.random().toString(36).substring(2, 8)}${Math.floor(Math.random() * 10)}!`;
 
@@ -371,7 +379,7 @@ export const EnrollStudentPage = () => {
                                 />
                                 <PDSFormGroup
                                   label="Roll Number"
-                                  placeholder="e.g. 1024"
+                                  placeholder="e.g. 12"
                                   value={rollNo}
                                   onChange={setRollNo}
                                 />
@@ -576,13 +584,19 @@ export const EnrollStudentPage = () => {
                             <div className="space-y-12">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                                 <PDSFormGroup
-                                  label="Admission Grade"
+                                  label="Admission Grade *"
                                   type="select"
                                   options={classOptions}
                                   value={admissionGrade}
-                                  onChange={setAdmissionGrade}
+                                  onChange={(val) => { setAdmissionGrade(val); setAdmissionGradeError(null); }}
                                   searchable
                                 />
+                                {admissionGradeError && (
+                                  <p className="text-[11px] font-medium text-red-500 mt-0.5 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[14px]">error</span>
+                                    {admissionGradeError}
+                                  </p>
+                                )}
                                 <PDSFormGroup
                                   label="Academic Year"
                                   type="select"
@@ -595,10 +609,9 @@ export const EnrollStudentPage = () => {
                                 />
                                 <PDSFormGroup
                                   label="Admission Number"
-                                  placeholder="Auto-generated: OA-2024-XXX"
+                                  placeholder="e.g. ADM-2024-001"
                                   value={admissionNo}
                                   onChange={setAdmissionNo}
-                                  disabled
                                 />
                                 <PDSFormGroup
                                   label="Bus Transportation"

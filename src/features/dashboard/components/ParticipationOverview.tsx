@@ -42,15 +42,34 @@ export const ParticipationOverview = ({ stats, isLoading = false, error = null }
     const percent = stats.attendancePercentage;
 
     const C = 351.86; // circumference at r=56: 2 × π × 56 ≈ 351.86
-    const presentArc = total > 0 ? (present / total) * C : 0;
-    const absentArc = total > 0 ? (absent / total) * C : 0;
-    const lateArc = total > 0 ? (late / total) * C : 0;
 
+    // Determine active segments
+    const activeSegments = [
+        { label: "Present", count: present },
+        { label: "Absent", count: absent },
+        { label: "Late", count: late }
+    ].filter(s => s.count > 0);
+
+    const numActive = activeSegments.length;
+    const gap = numActive > 1 ? 4 : 0;
+    const totalGap = numActive * gap;
+    const C_usable = total > 0 && C > totalGap ? C - totalGap : C;
+
+    let currentOffset = -2; // Start offset to visually center slightly
     const attendanceData = [
-        { label: "Present", count: present, color: "bg-[#2E7D32]", arc: presentArc, offset: -2, stroke: "#2E7D32" },
-        { label: "Absent", count: absent, color: "bg-[#E63535]", arc: absentArc, offset: -(presentArc + 6), stroke: "#E63535" },
-        { label: "Late", count: late, color: "bg-[#EF9800]", arc: lateArc, offset: -(presentArc + absentArc + 10), stroke: "#EF9800" },
+        { label: "Present", count: present, color: "bg-[#2E7D32]", arc: 0, offset: 0, stroke: "#2E7D32" },
+        { label: "Absent", count: absent, color: "bg-[#E63535]", arc: 0, offset: 0, stroke: "#E63535" },
+        { label: "Late", count: late, color: "bg-[#EF9800]", arc: 0, offset: 0, stroke: "#EF9800" }
     ];
+
+    attendanceData.forEach(item => {
+        if (item.count > 0 && total > 0) {
+            const arc = (item.count / total) * C_usable;
+            item.arc = arc;
+            item.offset = currentOffset;
+            currentOffset = currentOffset - arc - gap;
+        }
+    });
 
     return (
         <div className="bg-white rounded-2xl border border-slate-100 p-6 h-full flex flex-col">

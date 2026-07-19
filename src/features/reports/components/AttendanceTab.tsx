@@ -53,7 +53,13 @@ export const AttendanceTab = () => {
         ]);
 
         if (dailyRes.status === "fulfilled" && dailyRes.value?.dailyAttendance) {
-          setDailyData(dailyRes.value.dailyAttendance);
+          const mapped = dailyRes.value.dailyAttendance.map(d => ({
+            ...d,
+            percentage: d.percentage <= 1 && d.percentage > 0 && d.total > 0
+              ? d.percentage * 100
+              : d.percentage
+          }));
+          setDailyData(mapped);
         }
         if (absenteesRes.status === "fulfilled" && absenteesRes.value?.chronicAbsentees) {
           setAbsentees(absenteesRes.value.chronicAbsentees);

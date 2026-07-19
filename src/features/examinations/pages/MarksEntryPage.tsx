@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import { AppDropdown } from "../../../components/AppDropdown";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
@@ -242,7 +242,7 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
         return {
           id: student.id,
           name: student.name,
-          rollNo: student.admissionNumber || student.id.slice(0, 8),
+          rollNo: formatDisplayId(student.admissionNumber || student.id, 'STU'),
           marks: studentMarksObj,
           markIds: studentMarkIdsObj
         };

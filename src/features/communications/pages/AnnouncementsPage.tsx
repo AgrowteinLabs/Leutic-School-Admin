@@ -469,7 +469,7 @@ export const AnnouncementsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                               <p className="text-[13px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{ann.title}</p>
                               <p className="text-[11px] text-slate-500 line-clamp-1 font-medium">{ann.content}</p>
                               <div className="flex items-center gap-3 pt-0.5">
-                                <span className="text-[10px] font-bold text-slate-400 tracking-tight">{ann.id.slice(0, 8)}</span>
+                                <span className="text-[10px] font-bold text-slate-400 tracking-tight">{`ANN-${ann.id.slice(-6).toUpperCase()}`}</span>
                                 <div className="size-1 rounded-full bg-slate-200" />
                                 <span className="text-[10px] font-bold text-slate-400 tracking-tight">
                                   {new Date(ann.createdAt).toLocaleDateString("en-IN", { month: "short", day: "2-digit", year: "numeric" })}

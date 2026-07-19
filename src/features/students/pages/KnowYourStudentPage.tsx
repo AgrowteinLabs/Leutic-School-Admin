@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import { Search, Users, ShieldCheck, ChevronRight, GraduationCap } from "lucide-react";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
@@ -314,7 +314,7 @@ export const KnowYourStudentPage = () => {
                                                     )} />
                                                 </div>
                                                 <div className="bg-[#F7F8F4] px-2 py-1 rounded-lg border border-slate-100 text-[9px] font-bold text-[#B0AFA8] group-hover:text-primary transition-colors">
-                                                    {s.admissionNumber || s.id.slice(0, 8)}
+                                                    {formatDisplayId(s.admissionNumber || s.id, 'STU')}
                                                 </div>
                                             </div>
 

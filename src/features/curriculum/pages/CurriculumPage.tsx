@@ -1635,6 +1635,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const [initialMappings, setInitialMappings] = useState<Mapping[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
 
@@ -2042,7 +2043,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       setSubjectToDelete(null);
     } catch (err) {
       console.error("Failed to delete subject:", err);
-      alert(err instanceof Error ? err.message : "Failed to delete subject.");
+      setErrorMsg(err instanceof Error ? err.message : "Failed to delete subject.");
     }
   };
 
@@ -2144,7 +2145,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       setEditingSubject(null);
     } catch (err) {
       console.error("Failed to save subject:", err);
-      alert(err instanceof Error ? err.message : "Failed to save subject.");
+      setErrorMsg(err instanceof Error ? err.message : "Failed to save subject.");
     }
   };
 
@@ -2201,6 +2202,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         ...prev,
       ]);
     }
+    setHasUnsavedChanges(true);
     setShowMappingDrawer(false);
     setEditingMapping(null);
   };
@@ -2213,7 +2215,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const handleSaveChanges = async () => {
     const schoolId = localStorage.getItem("school_id") || "";
     if (!schoolId) {
-      alert("No school ID found.");
+      setErrorMsg("No school ID found.");
       return;
     }
 
@@ -2278,7 +2280,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       setHasUnsavedChanges(false);
     } catch (err) {
       console.error("Error saving curriculum mappings:", err);
-      alert("Failed to save curriculum mapping changes.");
+      setErrorMsg("Failed to save curriculum mapping changes.");
     } finally {
       setIsSaving(false);
     }
@@ -2670,7 +2672,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       setHasUnsavedChanges(false);
     } catch (err) {
       console.error("Failed to save schedule:", err);
-      alert(err instanceof Error ? err.message : "Failed to save schedule.");
+      setErrorMsg(err instanceof Error ? err.message : "Failed to save schedule.");
     } finally {
       setIsSaving(false);
     }
@@ -2713,6 +2715,18 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   return (
     <CurriculumErrorBoundary>
       <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#FDFCFB]">
+        {errorMsg && (
+          <div className="mx-6 mt-4 p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-700 text-[13px] font-semibold flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+            <span className="material-symbols-outlined text-lg shrink-0">error</span>
+            <span className="flex-1">{errorMsg}</span>
+            <button
+              onClick={() => setErrorMsg(null)}
+              className="size-6 rounded-lg hover:bg-rose-100/50 flex items-center justify-center shrink-0 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </div>
+        )}
         {!isHubChild && (
           <>
             <TopBar
@@ -4652,6 +4666,16 @@ const SubjectForm = ({
   const [code, setCode] = useState(initialData?.code || "");
   const [department, setDepartment] = useState(initialData?.department || "");
   const [category, setCategory] = useState(initialData?.category || "Core");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    if (!name.trim()) newErrors.name = "Subject name is required";
+    if (!code.trim()) newErrors.code = "Subject code is required";
+    if (!department) newErrors.department = "Subject area is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -4660,7 +4684,11 @@ const SubjectForm = ({
           label="Subject Name"
           placeholder="e.g. Political Science"
           value={name}
-          onChange={setName}
+          onChange={(val) => {
+            setName(val);
+            setErrors((prev) => ({ ...prev, name: "" }));
+          }}
+          error={errors.name}
         />
 
         <div className="grid grid-cols-2 gap-4">
@@ -4668,7 +4696,11 @@ const SubjectForm = ({
             label="Subject Code"
             placeholder="e.g. POL-101"
             value={code}
-            onChange={setCode}
+            onChange={(val) => {
+              setCode(val);
+              setErrors((prev) => ({ ...prev, code: "" }));
+            }}
+            error={errors.code}
           />
           <div className="space-y-2.5 group">
             <span className="text-[length:var(--font-size-label)] font-[var(--font-weight-label)] text-[var(--text-color-label)] px-1 group-focus-within:text-foreground transition-colors block">
@@ -4677,10 +4709,18 @@ const SubjectForm = ({
             <AppDropdown
               options={ACADEMIC_AREAS}
               value={department}
-              onChange={setDepartment}
+              onChange={(val) => {
+                setDepartment(val);
+                setErrors((prev) => ({ ...prev, department: "" }));
+              }}
               placeholder="e.g. Science"
               searchable
             />
+            {errors.department && (
+              <span className="text-[10px] text-red-500 font-bold block px-1">
+                {errors.department}
+              </span>
+            )}
             {department && (
               <div className="flex gap-2 mt-2 px-1 items-start">
                 <span className="material-symbols-outlined text-[14px] text-primary mt-0.5">
@@ -4746,7 +4786,11 @@ const SubjectForm = ({
           Cancel
         </button>
         <button
-          onClick={() => onSubmit({ name, code, department, category })}
+          onClick={() => {
+            if (validate()) {
+              onSubmit({ name, code, department, category });
+            }
+          }}
           className="flex-[2] btn-primary h-12 rounded-xl text-[length:var(--font-size-input)] font-[var(--font-weight-input)] shadow-lg shadow-primary/20 transition-all active:scale-95"
         >
           {initialData ? "Update Subject" : "Create Subject"}
@@ -5084,7 +5128,9 @@ const MappingForm = ({
           type="select"
           options={[
             { val: "", label: "Choose a Teacher", disabled: true },
-            ...teachers.map((t) => ({ val: t.id, label: t.name })),
+            ...teachers
+              .filter((t) => !subjectId || t.specializations.includes(subjectId))
+              .map((t) => ({ val: t.id, label: t.name })),
           ]}
           value={teacherId}
           onChange={setTeacherId}
@@ -5431,6 +5477,7 @@ const FormGroup = ({
   value,
   onChange,
   icon,
+  error,
 }: {
   label: string;
   type?: string;
@@ -5439,6 +5486,7 @@ const FormGroup = ({
   value?: string;
   onChange?: (val: string) => void;
   icon?: string;
+  error?: string;
 }) => {
   let inputElement = null;
 
@@ -5449,14 +5497,14 @@ const FormGroup = ({
           typeof o === "string" ? o : o.label,
         )}
         value={
-          typeof value === "string"
-            ? value
-            : (options ?? []).find(
-                (
-                  o,
-                ): o is { val: string; label: string; disabled?: boolean } =>
-                  typeof o !== "string" && o.val === value,
-              )?.label || ""
+          (() => {
+            const foundOption = (options ?? []).find(
+              (o): o is { val: string; label: string; disabled?: boolean } =>
+                typeof o !== "string" && o.val === value
+            );
+            if (foundOption) return foundOption.label;
+            return typeof value === "string" ? value : "";
+          })()
         }
         onChange={(val: string) => {
           const opts = options ?? [];
@@ -5500,6 +5548,7 @@ const FormGroup = ({
           className={cn(
             "w-full h-12 bg-[#F7F8F4] border border-slate-100 rounded-[10px] outline-none text-[length:var(--font-size-body)] font-[var(--font-weight-input)] text-foreground placeholder-[var(--text-color-label)] transition-all focus:border-primary/50 focus:ring-4 focus:ring-primary/5 focus:bg-white",
             icon ? "pl-12 pr-6" : "px-6",
+            error && "border-red-200 bg-red-50/20"
           )}
         />
       </div>
@@ -5514,6 +5563,11 @@ const FormGroup = ({
       <div className="relative">
         {inputElement}
       </div>
+      {error && (
+        <span className="text-[10px] text-red-500 font-bold block px-1">
+          {error}
+        </span>
+      )}
     </div>
   );
 };
