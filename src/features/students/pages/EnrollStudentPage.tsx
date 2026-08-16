@@ -41,6 +41,14 @@ export const EnrollStudentPage = () => {
   const [specifyRelation, setSpecifyRelation] = useState("");
   const [guardianContact, setGuardianContact] = useState("");
 
+  const [parentPortalAccess, setParentPortalAccess] = useState("Father");
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    studentUsername: string;
+    studentPassword: string;
+    parentMobile: string;
+    parentName: string;
+  } | null>(null);
+
   // Step 3 State
   const [admissionGrade, setAdmissionGrade] = useState("");
   const [admissionGradeError, setAdmissionGradeError] = useState<string | null>(null);
@@ -146,31 +154,47 @@ export const EnrollStudentPage = () => {
 
       // Construct guardians array
       const guardiansList = [];
-      if (fatherName) {
-        guardiansList.push({
-          relationship: "Father",
-          fullName: fatherName,
-          mobileNo: fatherMobile,
-          email: fatherEmail || undefined,
-          occupation: fatherOccupation || undefined,
-        });
+      const fatherObj = fatherName ? {
+        relationship: "Father",
+        fullName: fatherName,
+        mobileNo: fatherMobile,
+        email: fatherEmail || undefined,
+        occupation: fatherOccupation || undefined,
+      } : null;
+      const motherObj = motherName ? {
+        relationship: "Mother",
+        fullName: motherName,
+        mobileNo: motherMobile,
+        email: motherEmail || undefined,
+        occupation: motherOccupation || undefined,
+      } : null;
+      const guardianObj = guardianName ? {
+        relationship: guardianRelation || specifyRelation || "Guardian",
+        fullName: guardianName,
+        mobileNo: guardianContact,
+        specifyRelationship: specifyRelation || undefined,
+      } : null;
+
+      if (parentPortalAccess === "Mother" && motherObj) {
+        guardiansList.push(motherObj);
+        if (fatherObj) guardiansList.push(fatherObj);
+        if (guardianObj) guardiansList.push(guardianObj);
+      } else if (parentPortalAccess === "Guardian" && guardianObj) {
+        guardiansList.push(guardianObj);
+        if (fatherObj) guardiansList.push(fatherObj);
+        if (motherObj) guardiansList.push(motherObj);
+      } else {
+        if (fatherObj) guardiansList.push(fatherObj);
+        if (motherObj) guardiansList.push(motherObj);
+        if (guardianObj) guardiansList.push(guardianObj);
       }
-      if (motherName) {
-        guardiansList.push({
-          relationship: "Mother",
-          fullName: motherName,
-          mobileNo: motherMobile,
-          email: motherEmail || undefined,
-          occupation: motherOccupation || undefined,
-        });
-      }
-      if (guardianName) {
-        guardiansList.push({
-          relationship: guardianRelation || specifyRelation || "Guardian",
-          fullName: guardianName,
-          mobileNo: guardianContact,
-          specifyRelationship: specifyRelation || undefined,
-        });
+
+      let primaryParentName = "";
+      let primaryParentMobile = "";
+      const primaryGuardian = guardiansList[0];
+      if (primaryGuardian) {
+        primaryParentName = primaryGuardian.fullName;
+        primaryParentMobile = primaryGuardian.mobileNo;
       }
 
       const studentMutation = `
@@ -207,6 +231,12 @@ export const EnrollStudentPage = () => {
         }
       });
 
+      setCreatedCredentials({
+        studentUsername: finalAdmissionNo || studentUsername,
+        studentPassword,
+        parentMobile: primaryParentMobile,
+        parentName: primaryParentName,
+      });
       setShowSuccess(true);
     } catch (err: unknown) {
       console.error("Student registration failed:", err);
@@ -575,6 +605,18 @@ export const EnrollStudentPage = () => {
                                     onChange={setGuardianContact}
                                   />
                                 </div>
+                                <div className="space-y-4 pt-10 border-t border-slate-100">
+                                  <PDSFormGroup
+                                    label="Parent Portal Access (Primary Parent)"
+                                    type="chips"
+                                    options={["Father", "Mother", "Guardian"]}
+                                    value={parentPortalAccess}
+                                    onChange={setParentPortalAccess}
+                                  />
+                                  <p className="text-[11.5px] text-[#B0AFA8] font-medium leading-relaxed px-1">
+                                    The selected parent's mobile number will be used for logging into the Parent Portal via OTP verification.
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           )}
@@ -687,7 +729,7 @@ export const EnrollStudentPage = () => {
       <PDSSuccessModal
         show={showSuccess}
         title="Student Enrolled!"
-        description="Registration for the new academic session has been completed successfully."
+        description={createdCredentials ? `Registration completed successfully.\n\nStudent Login Credentials:\nAdmission No/Username: ${createdCredentials.studentUsername}\nPassword: ${createdCredentials.studentPassword}${createdCredentials.parentMobile ? `\n\nParent Portal Credentials:\nParent Name: ${createdCredentials.parentName}\nMobile Number: ${createdCredentials.parentMobile}\n(Login Method: OTP verification on Parent Portal)` : ""}` : "Registration completed successfully."}
         buttonText="View Student Records"
         onClose={() => navigate("/directory/students")}
       />
