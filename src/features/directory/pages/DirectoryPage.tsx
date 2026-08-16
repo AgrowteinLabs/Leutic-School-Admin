@@ -9,9 +9,9 @@ import { DriversPage } from "../../transportation/pages/DriversPage";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
 // CSV Templates
-const STUDENT_CSV_TEMPLATE = `FullName,AdmissionNumber,RollNumber,EnrollmentGrade,EnrollmentSection,Gender,BloodGroup,Address,MobileNo,Email,Password,FatherName,FatherMobile,FatherOccupation,MotherName,MotherMobile,MotherOccupation,GuardianName,GuardianRelationship,GuardianMobile
-John Doe,ADM-001,1,Grade 9,A,Male,O+,123 Main St,9876543210,john@example.com,JohnPass1!,Robert Doe,9876543211,Engineer,Jane Doe,9876543212,Teacher,Robert Doe,Father,9876543211
-Alice Smith,ADM-002,2,Grade 10,B,Female,A-,456 Elm St,9876543220,alice@example.com,AlicePass2!,Tom Smith,9876543221,Doctor,Mary Smith,9876543222,Writer,Mary Smith,Mother,9876543222`;
+const STUDENT_CSV_TEMPLATE = `FullName,AdmissionNumber,RollNumber,EnrollmentGrade,EnrollmentSection,Gender,BloodGroup,Address,MobileNo,Email,Password,FatherName,FatherMobile,FatherOccupation,MotherName,MotherMobile,MotherOccupation,GuardianName,GuardianRelationship,GuardianMobile,ParentPortalAccess
+John Doe,ADM-001,1,Grade 9,A,Male,O+,123 Main St,9876543210,john@example.com,JohnPass1!,Robert Doe,9876543211,Engineer,Jane Doe,9876543212,Teacher,Robert Doe,Father,9876543211,Father
+Alice Smith,ADM-002,2,Grade 10,B,Female,A-,456 Elm St,9876543220,alice@example.com,AlicePass2!,Tom Smith,9876543221,Doctor,Mary Smith,9876543222,Writer,Mary Smith,Mother,9876543222,Mother`;
 
 const STAFF_CSV_TEMPLATE = `FullName,Email,MobileNo,Role,Password,EmployeeId,Designation,Department,Qualifications,YearsExperience,WorkShift,BusRouteLabel,Address,QualifiedGrades,SubjectSpecializations,EnrollmentGrade,EnrollmentSection
 Dr. Alan Turing,alan.turing@school.edu,9876543210,TEACHER,Turing123!,EMP-001,Senior Lecturer,Mathematics,PhD Computer Science,10,Morning (8:00 - 15:00),Yes - Route A,123 Science Way,Grade 9;Grade 10,Mathematics;Information Technology,Grade 9,A
@@ -284,28 +284,38 @@ export const DirectoryPage = () => {
 
         if (activeTab === "students") {
           const guardians = [];
-          if (r.fathername) {
-            guardians.push({
-              relationship: "Father",
-              fullName: r.fathername,
-              mobileNo: r.fathermobile || undefined,
-              occupation: r.fatheroccupation || undefined,
-            });
-          }
-          if (r.mothername) {
-            guardians.push({
-              relationship: "Mother",
-              fullName: r.mothername,
-              mobileNo: r.mothermobile || undefined,
-              occupation: r.motheroccupation || undefined,
-            });
-          }
-          if (r.guardianname) {
-            guardians.push({
-              relationship: r.guardianrelationship || "Guardian",
-              fullName: r.guardianname,
-              mobileNo: r.guardianmobile || undefined,
-            });
+          const fatherObj = r.fathername ? {
+            relationship: "Father",
+            fullName: r.fathername,
+            mobileNo: r.fathermobile || undefined,
+            occupation: r.fatheroccupation || undefined,
+          } : null;
+          const motherObj = r.mothername ? {
+            relationship: "Mother",
+            fullName: r.mothername,
+            mobileNo: r.mothermobile || undefined,
+            occupation: r.motheroccupation || undefined,
+          } : null;
+          const guardianObj = r.guardianname ? {
+            relationship: r.guardianrelationship || "Guardian",
+            fullName: r.guardianname,
+            mobileNo: r.guardianmobile || undefined,
+          } : null;
+
+          const accessPreference = (r.parentportalaccess || "").trim().toLowerCase();
+
+          if (accessPreference === "mother" && motherObj) {
+            guardians.push(motherObj);
+            if (fatherObj) guardians.push(fatherObj);
+            if (guardianObj) guardians.push(guardianObj);
+          } else if (accessPreference === "guardian" && guardianObj) {
+            guardians.push(guardianObj);
+            if (fatherObj) guardians.push(fatherObj);
+            if (motherObj) guardians.push(motherObj);
+          } else {
+            if (fatherObj) guardians.push(fatherObj);
+            if (motherObj) guardians.push(motherObj);
+            if (guardianObj) guardians.push(guardianObj);
           }
 
           payload = {
@@ -453,14 +463,60 @@ export const DirectoryPage = () => {
     const succeededResults = importResults.filter((res) => res.status === "success");
     if (succeededResults.length === 0) return;
 
-    const csvRows = [["FullName", "Email", "Password"].join(",")];
+    const csvRows = [];
+    if (activeTab === "students") {
+      csvRows.push([
+        "StudentName", "StudentEmail/Username", "StudentPassword",
+        "ParentName", "ParentRelation", "ParentMobile", "ParentLoginMethod"
+      ].join(","));
 
-    succeededResults.forEach((res) => {
-      const fullName = res.originalRow.fullname || "";
-      const email = res.originalRow.email || res.identifier;
-      const password = res.tempPassword || res.originalRow.password || "Autogenerated by Backend";
-      csvRows.push([escapeCSV(fullName), escapeCSV(email), escapeCSV(password)].join(","));
-    });
+      succeededResults.forEach((res) => {
+        const r = res.originalRow;
+        const studentName = r.fullname || "";
+        const studentUsername = r.email || res.identifier;
+        const studentPassword = res.tempPassword || r.password || "Autogenerated by Backend";
+
+        const preference = (r.parentportalaccess || "").trim().toLowerCase();
+        let parentName = "";
+        let parentRelation = "";
+        let parentMobile = "";
+
+        if (preference === "mother") {
+          parentName = r.mothername || "";
+          parentRelation = "Mother";
+          parentMobile = r.mothermobile || "";
+        } else if (preference === "guardian") {
+          parentName = r.guardianname || "";
+          parentRelation = r.guardianrelationship || "Guardian";
+          parentMobile = r.guardianmobile || "";
+        } else {
+          parentName = r.fathername || "";
+          parentRelation = "Father";
+          parentMobile = r.fathermobile || "";
+        }
+
+        const loginMethod = "OTP via Mobile Number";
+
+        csvRows.push([
+          escapeCSV(studentName),
+          escapeCSV(studentUsername),
+          escapeCSV(studentPassword),
+          escapeCSV(parentName),
+          escapeCSV(parentRelation),
+          escapeCSV(parentMobile),
+          escapeCSV(loginMethod)
+        ].join(","));
+      });
+    } else {
+      csvRows.push(["FullName", "Email", "Password"].join(","));
+
+      succeededResults.forEach((res) => {
+        const fullName = res.originalRow.fullname || "";
+        const email = res.originalRow.email || res.identifier;
+        const password = res.tempPassword || res.originalRow.password || "Autogenerated by Backend";
+        csvRows.push([escapeCSV(fullName), escapeCSV(email), escapeCSV(password)].join(","));
+      });
+    }
 
     const csvContent = csvRows.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

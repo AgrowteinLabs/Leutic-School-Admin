@@ -11,31 +11,44 @@ import { graphqlRequest } from "../../../lib/graphqlClient";
 const GET_COMMUNITY_POSTS = `
   query GetCommunityPosts($schoolId: String!, $targetClassId: String) {
     communityPosts(schoolId: $schoolId, targetClassId: $targetClassId) {
-      id
-      title
-      category
-      audience
-      targetClassIds
-      content
-      assetUrl
-      documentUrl
-      locationPin
-      eventTitle
-      eventVenue
-      eventDate
-      eventStartTime
-      eventIsRSVP
-      eventCTAText
-      eventCTALink
-      pollQuestion
-      pollOptions
-      status
-      views
-      hasAcceptedAnswer
-      createdAt
-      authorId
-      replies
-      eventCalendarId
+      items {
+        id
+        title
+        category
+        audience
+        targetClassIds
+        content
+        assetUrl
+        documentUrl
+        locationPin
+        eventTitle
+        eventVenue
+        eventDate
+        eventStartTime
+        eventIsRSVP
+        eventCTAText
+        eventCTALink
+        pollQuestion
+        pollOptions
+        status
+        views
+        hasAcceptedAnswer
+        createdAt
+        authorId
+        replies {
+          id
+          postId
+          parentId
+          authorId
+          content
+          isUpvoted
+          isVerified
+          createdAt
+          updatedAt
+        }
+        eventCalendarId
+      }
+      total
     }
   }
 `;
@@ -77,7 +90,17 @@ const VERIFY_REPLY = `
     verifyReply(replyId: $replyId) {
       id
       hasAcceptedAnswer
-      replies
+      replies {
+        id
+        postId
+        parentId
+        authorId
+        content
+        isUpvoted
+        isVerified
+        createdAt
+        updatedAt
+      }
     }
   }
 `;
@@ -518,6 +541,15 @@ export const CommunityPost = ({ post }: { post: Post }) => {
     );
 };
 
+const readFileAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(file);
+    });
+};
+
 export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const { tab } = useParams();
     const navigate = useNavigate();
@@ -531,7 +563,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const [audienceSearch, setAudienceSearch] = useState("");
     const [selectedAudiences, setSelectedAudiences] = useState<string[]>(["School-wide"]);
     const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
-    const [attachments, setAttachments] = useState<{ id: string, type: 'image' | 'file' | 'location' | 'event' | 'poll', name: string, url?: string, detail?: string }[]>([]);
+    const [attachments, setAttachments] = useState<{ id: string, type: 'image' | 'file' | 'location' | 'event' | 'poll', name: string, url?: string, detail?: string, file?: File }[]>([]);
 
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
     const [dbClasses, setDbClasses] = useState<{ id: string; grade: string; section: string | null }[]>([]);
@@ -553,7 +585,8 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 id: Math.random().toString(36).substr(2, 9),
                 type,
                 name: file.name,
-                url: URL.createObjectURL(file)
+                url: URL.createObjectURL(file),
+                file: file
             };
             setAttachments([...attachments, newAttachment]);
         }
@@ -624,7 +657,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             const userList = usersData.users?.items || [];
             const newMap = new Map<string, any>(userList.map((u: any) => [u.id as string, u]));
 
-            const rawPosts = postsData.communityPosts || [];
+            const rawPosts = postsData.communityPosts?.items || [];
             const mapped = rawPosts.map((p: any) => {
                 let type: "announcement" | "competition" | "qa" | "poll" = "announcement";
                 let content = p.content || "";
@@ -1687,6 +1720,20 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                 const pollAtt = attachments.find(a => a.type === 'poll');
                                                                                 const imgAtt = attachments.find(a => a.type === 'image');
 
+                                                                                let base64AssetUrl: string | undefined = undefined;
+                                                                                if (imgAtt) {
+                                                                                    if (imgAtt.file) {
+                                                                                        try {
+                                                                                            base64AssetUrl = await readFileAsBase64(imgAtt.file);
+                                                                                        } catch (err) {
+                                                                                            console.error("Failed to read file as base64:", err);
+                                                                                            base64AssetUrl = imgAtt.url;
+                                                                                        }
+                                                                                    } else {
+                                                                                        base64AssetUrl = imgAtt.url;
+                                                                                    }
+                                                                                }
+
                                                                                 let category = "CAMPUS";
                                                                                 if (postCategory === "Academic") category = "ACADEMIC";
                                                                                 else if (postCategory === "Events" || eventAtt) category = "EVENTS";
@@ -1698,7 +1745,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                     category,
                                                                                     audience: selectedAudiences,
                                                                                     targetClassIds: selectedClasses,
-                                                                                    assetUrl: imgAtt ? imgAtt.url : undefined
+                                                                                    assetUrl: base64AssetUrl
                                                                                 };
 
                                                                                 if (eventAtt) {
