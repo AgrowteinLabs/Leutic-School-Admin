@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { cn } from "../../../lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area
 } from "recharts";
 import { graphqlRequest } from "../../../lib/graphqlClient";
-
 
 interface ClassAttendance {
   class: string;
@@ -12,6 +12,13 @@ interface ClassAttendance {
   present: number;
   absent: number;
   halfDay: number;
+  percentage: number;
+}
+
+interface AttendanceTrendItem {
+  week: string;
+  present: number;
+  absent: number;
   percentage: number;
 }
 
@@ -28,6 +35,8 @@ export const AttendanceTab = () => {
   const schoolId = localStorage.getItem("school_id") || "";
 
   const [dailyData, setDailyData] = useState<ClassAttendance[]>([]);
+  const [trendData, setTrendData] = useState<AttendanceTrendItem[]>([]);
+  const [selectedWeeks, setSelectedWeeks] = useState<number>(8);
   const [absentees, setAbsentees] = useState<ChronicAbsentee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,7 +44,7 @@ export const AttendanceTab = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [dailyRes, absenteesRes] = await Promise.allSettled([
+        const [dailyRes, trendRes, absenteesRes] = await Promise.allSettled([
           graphqlRequest<{ dailyAttendance: ClassAttendance[] }>(`
             query GetDailyAttendance($schoolId: String!, $date: String) {
               dailyAttendance(schoolId: $schoolId, date: $date) {
@@ -43,6 +52,15 @@ export const AttendanceTab = () => {
               }
             }
           `, { schoolId }),
+
+          graphqlRequest<{ attendanceTrend: AttendanceTrendItem[] }>(`
+            query GetAttendanceTrend($schoolId: String!, $weeks: Int) {
+              attendanceTrend(schoolId: $schoolId, weeks: $weeks) {
+                week present absent percentage
+              }
+            }
+          `, { schoolId, weeks: selectedWeeks }),
+
           graphqlRequest<{ chronicAbsentees: ChronicAbsentee[] }>(`
             query GetChronicAbsentees($schoolId: String!, $threshold: Float, $limit: Int) {
               chronicAbsentees(schoolId: $schoolId, threshold: $threshold, limit: $limit) {
@@ -61,6 +79,15 @@ export const AttendanceTab = () => {
           }));
           setDailyData(mapped);
         }
+
+        if (trendRes.status === "fulfilled" && trendRes.value?.attendanceTrend) {
+          const mappedTrend = trendRes.value.attendanceTrend.map(t => ({
+            ...t,
+            percentage: t.percentage <= 1 && t.percentage > 0 ? Number((t.percentage * 100).toFixed(1)) : Number(t.percentage.toFixed(1))
+          }));
+          setTrendData(mappedTrend);
+        }
+
         if (absenteesRes.status === "fulfilled" && absenteesRes.value?.chronicAbsentees) {
           setAbsentees(absenteesRes.value.chronicAbsentees);
         }
@@ -71,7 +98,7 @@ export const AttendanceTab = () => {
       }
     };
     fetchData();
-  }, [schoolId]);
+  }, [schoolId, selectedWeeks]);
 
   // Compute summary stats from live data
   const totals = dailyData.length > 0
@@ -81,7 +108,7 @@ export const AttendanceTab = () => {
       )
     : null;
 
-  const overallPct = totals ? ((totals.present / totals.total) * 100).toFixed(1) : null;
+  const overallPct = totals && totals.total > 0 ? ((totals.present / totals.total) * 100).toFixed(1) : null;
 
   if (isLoading) {
     return (
@@ -91,7 +118,7 @@ export const AttendanceTab = () => {
     );
   }
 
-  if (dailyData.length === 0 && absentees.length === 0) {
+  if (dailyData.length === 0 && absentees.length === 0 && trendData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
         <span className="material-symbols-outlined text-5xl text-[#B0AFA8] mb-4">event_available</span>
@@ -114,7 +141,7 @@ export const AttendanceTab = () => {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {statsCards.map((s, i) => (
-          <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100">
+          <div key={i} className="flex items-center gap-3 rounded-2xl px-5 py-4 bg-white border border-slate-100 shadow-sm shadow-slate-100/50">
             <div className="size-10 rounded-xl flex items-center justify-center bg-accent shrink-0">
               <span className={cn("material-symbols-outlined text-[20px]", s.color || "text-foreground/70")}>{s.icon}</span>
             </div>
@@ -126,9 +153,85 @@ export const AttendanceTab = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Multi-week Attendance Trend */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="text-foreground text-[15px] font-semibold">Attendance Trend Over Time</h3>
+            <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">Weekly school-wide average attendance rate</p>
+          </div>
+          <div className="flex items-center gap-2 bg-[#F7F8F4] p-1 rounded-xl border border-slate-100 self-start sm:self-auto">
+            {[
+              { label: "8 Weeks", val: 8 },
+              { label: "12 Weeks", val: 12 },
+              { label: "24 Weeks", val: 24 }
+            ].map(tab => (
+              <button
+                key={tab.val}
+                onClick={() => setSelectedWeeks(tab.val)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all",
+                  selectedWeeks === tab.val
+                    ? "bg-white text-brand-navy shadow-sm"
+                    : "text-slate-500 hover:text-brand-navy"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {trendData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[260px] text-[#B0AFA8] text-[13px] font-medium">
+            <span className="material-symbols-outlined text-4xl mb-2 text-slate-300">trending_up</span>
+            No trend data available for the selected period
+          </div>
+        ) : (
+          <div className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trendData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="attendanceGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis 
+                  dataKey="week" 
+                  tick={{ fontSize: 11, fill: "#94a3b8" }} 
+                  axisLine={false} 
+                  tickLine={false} 
+                />
+                <YAxis 
+                  domain={[0, 100]} 
+                  tick={{ fontSize: 11, fill: "#94a3b8" }} 
+                  axisLine={false} 
+                  tickLine={false}
+                  tickFormatter={(v) => `${v}%`}
+                />
+                <Tooltip 
+                  contentStyle={{ borderRadius: 12, border: "1px solid #f1f5f9", fontSize: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}
+                  formatter={(value: any) => [`${value}%`, "Attendance Rate"]}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="percentage" 
+                  stroke="#10b981" 
+                  strokeWidth={2.5} 
+                  fillOpacity={1} 
+                  fill="url(#attendanceGradient)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
         {/* Class-wise Attendance */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 lg:col-span-2">
+        <div className="bg-white rounded-2xl border border-slate-100 p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-foreground text-[15px] font-semibold">Class-wise Attendance</h3>
@@ -136,7 +239,7 @@ export const AttendanceTab = () => {
             </div>
           </div>
           {dailyData.length === 0 ? (
-            <div className="flex items-center justify-center h-[320px] text-[#B0AFA8] text-[13px] font-medium">
+            <div className="flex items-center justify-center h-[260px] text-[#B0AFA8] text-[13px] font-medium">
               No attendance data available
             </div>
           ) : (

@@ -69,6 +69,31 @@ const GET_MARKS = `
   }
 `;
 
+const GET_MARKS_FOR_EXAM_CLASS = `
+  query MarksForClass($examId: ID!, $classId: ID!, $subject: String!) {
+    marksForExamClass(examId: $examId, classId: $classId, subject: $subject) {
+      id
+      studentId
+      marksObtained
+      totalMarks
+      subject
+    }
+    markEntry(examId: $examId, classId: $classId, subject: $subject) {
+      status
+      finalizedAt
+    }
+  }
+`;
+
+const GET_MARK_ENTRY = `
+  query GetMarkEntry($examId: ID!, $classId: ID!, $subject: String!) {
+    markEntry(examId: $examId, classId: $classId, subject: $subject) {
+      status
+      finalizedAt
+    }
+  }
+`;
+
 const BULK_SAVE_MARKS = `
   mutation BulkSaveMarks($inputs: [BulkMarkInput!]!) {
     bulkSaveMarks(inputs: $inputs) {
@@ -82,10 +107,24 @@ const BULK_SAVE_MARKS = `
   }
 `;
 
+const FINALIZE_MARKS = `
+  mutation FinalizeMarks($examId: ID!, $classId: ID!, $subject: String!) {
+    finalizeMarks(examId: $examId, classId: $classId, subject: $subject) {
+      status
+      finalizedAt
+    }
+  }
+`;
+
 interface MarksEntryPageProps {
   isHubChild?: boolean;
   triggerBulkUpload?: number;
   onUploadComplete?: () => void;
+}
+
+interface MarkEntryState {
+  status: "DRAFT" | "FINALIZED";
+  finalizedAt?: string | null;
 }
 
 export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete }: MarksEntryPageProps) => {
@@ -97,11 +136,18 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
 
   const [subject, setSubject] = useState("All Subjects");
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [successModalData, setSuccessModalData] = useState<{ title: string; desc: string }>({
+    title: "Marks Recorded Successfully",
+    desc: ""
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
 
   const [studentMarks, setStudentMarks] = useState<any[]>([]);
   const [originalStudentMarks, setOriginalStudentMarks] = useState<any[]>([]);
+  const [markEntryStatus, setMarkEntryStatus] = useState<MarkEntryState | null>(null);
 
   const [dbSubjects, setDbSubjects] = useState<any[]>([]);
   const [dbMappings, setDbMappings] = useState<any[]>([]);
@@ -208,17 +254,59 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
     setIsLoading(true);
     try {
       const schoolId = localStorage.getItem("school_id");
-      const [studentsRes, marksRes] = await Promise.all([
-        graphqlRequest<any>(GET_STUDENTS, { classId: activeClass.id, schoolId }),
-        graphqlRequest<any>(GET_MARKS)
-      ]);
 
-      const studentsList = studentsRes.users?.items || [];
-      const marksList = marksRes.marks?.items || [];
+      let studentsList: any[] = [];
+      let marksList: any[] = [];
+
+      if (subject !== "All Subjects") {
+        try {
+          const [studentsRes, examClassRes] = await Promise.all([
+            graphqlRequest<any>(GET_STUDENTS, { classId: activeClass.id, schoolId }),
+            graphqlRequest<{
+              marksForExamClass?: any[];
+              markEntry?: MarkEntryState;
+            }>(GET_MARKS_FOR_EXAM_CLASS, {
+              examId: activeExam.id,
+              classId: activeClass.id,
+              subject: subject
+            })
+          ]);
+
+          studentsList = studentsRes.users?.items || [];
+          marksList = examClassRes.marksForExamClass || [];
+          if (examClassRes.markEntry) {
+            setMarkEntryStatus(examClassRes.markEntry);
+          } else {
+            setMarkEntryStatus({ status: "DRAFT" });
+          }
+        } catch {
+          // Fallback to general fetch
+          const [studentsRes, marksRes, entryRes] = await Promise.all([
+            graphqlRequest<any>(GET_STUDENTS, { classId: activeClass.id, schoolId }),
+            graphqlRequest<any>(GET_MARKS),
+            graphqlRequest<{ markEntry: MarkEntryState }>(GET_MARK_ENTRY, {
+              examId: activeExam.id,
+              classId: activeClass.id,
+              subject: subject
+            }).catch(() => null)
+          ]);
+          studentsList = studentsRes.users?.items || [];
+          marksList = marksRes.marks?.items || [];
+          setMarkEntryStatus(entryRes?.markEntry || { status: "DRAFT" });
+        }
+      } else {
+        setMarkEntryStatus(null);
+        const [studentsRes, marksRes] = await Promise.all([
+          graphqlRequest<any>(GET_STUDENTS, { classId: activeClass.id, schoolId }),
+          graphqlRequest<any>(GET_MARKS)
+        ]);
+        studentsList = studentsRes.users?.items || [];
+        marksList = marksRes.marks?.items || [];
+      }
 
       const marksMap: Record<string, Record<string, { id: string; marksObtained: number }>> = {};
       marksList.forEach((m: any) => {
-        if (m.examId === activeExam.id) {
+        if (!m.examId || m.examId === activeExam.id) {
           if (!marksMap[m.studentId]) {
             marksMap[m.studentId] = {};
           }
@@ -259,21 +347,26 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
 
   useEffect(() => {
     fetchRegistry();
-  }, [activeClass?.id, activeExam?.id, activeExam?.dates]);
+  }, [activeClass?.id, activeExam?.id, activeExam?.dates, subject]);
 
   const handleMarkChange = (id: string, sub: string, value: string) => {
+    if (isSubjectFinalized) return;
     setStudentMarks((prev) =>
       prev.map((s) => (s.id === id ? { ...s, marks: { ...s.marks, [sub]: value } } : s))
     );
   };
 
+  const isSubjectFinalized = markEntryStatus?.status === "FINALIZED";
+
   const handleSaveMarks = async () => {
-    if (!activeExam?.id) return;
+    if (!activeExam?.id || isSubjectFinalized) return;
     setIsSaving(true);
     try {
       const inputs = [];
+      const subjectsToCheck = subject === "All Subjects" ? activeSubjects : [subject];
+
       for (const student of studentMarks) {
-        for (const sub of activeSubjects) {
+        for (const sub of subjectsToCheck) {
           const valStr = student.marks[sub];
           const originalValStr = originalStudentMarks.find(s => s.id === student.id)?.marks[sub] || "";
           
@@ -297,12 +390,68 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
 
       await graphqlRequest(BULK_SAVE_MARKS, { inputs });
       await fetchRegistry();
+      setSuccessModalData({
+        title: "Marks Saved Successfully",
+        desc: `Student marks for ${subject} — ${selectedExam} have been updated.`
+      });
       setIsSuccessModalOpen(true);
     } catch (err) {
       console.error("Error saving marks:", err);
       alert("Failed to save some marks. Please check your inputs.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleFinalizeMarks = async () => {
+    if (!activeExam?.id || !activeClass?.id || subject === "All Subjects") return;
+    setIsFinalizing(true);
+    try {
+      // 1. Save any pending changes first
+      const inputs = [];
+      for (const student of studentMarks) {
+        const valStr = student.marks[subject];
+        const originalValStr = originalStudentMarks.find(s => s.id === student.id)?.marks[subject] || "";
+        
+        if (valStr !== originalValStr) {
+          const marksVal = valStr === "" ? 0 : parseFloat(valStr);
+          inputs.push({
+            studentId: student.id,
+            examId: activeExam.id,
+            subject: subject,
+            marks: marksVal,
+            totalMarks: 100
+          });
+        }
+      }
+
+      if (inputs.length > 0) {
+        await graphqlRequest(BULK_SAVE_MARKS, { inputs });
+      }
+
+      // 2. Call finalizeMarks mutation
+      const finalizeRes = await graphqlRequest<{ finalizeMarks: MarkEntryState }>(FINALIZE_MARKS, {
+        examId: activeExam.id,
+        classId: activeClass.id,
+        subject: subject
+      });
+
+      if (finalizeRes?.finalizeMarks) {
+        setMarkEntryStatus(finalizeRes.finalizeMarks);
+      }
+
+      await fetchRegistry();
+      setShowFinalizeConfirm(false);
+      setSuccessModalData({
+        title: "Marks Finalized & Locked",
+        desc: `Marks for ${subject} — ${selectedExam} have been officially finalized and locked against future modifications.`
+      });
+      setIsSuccessModalOpen(true);
+    } catch (err) {
+      console.error("Error finalizing marks:", err);
+      alert("Failed to finalize marks. Please try again.");
+    } finally {
+      setIsFinalizing(false);
     }
   };
 
@@ -314,6 +463,10 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
     if (triggerBulkUpload && triggerBulkUpload > 0) {
       setTimeout(() => {
         onUploadComplete?.();
+        setSuccessModalData({
+          title: "Marks Recorded Successfully",
+          desc: `Student performance for ${subject} — ${selectedExam} has been updated in the master registry.`
+        });
         setIsSuccessModalOpen(true);
       }, 1500);
     }
@@ -324,9 +477,9 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
   return (
     <div className={cn("flex-1 flex flex-col bg-white min-h-0", !isHubChild && "h-screen")}>
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24 min-h-0">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8 space-y-8">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8 space-y-6">
           
-          {/* Refinement Engine - Zero Box Aesthetic */}
+          {/* Refinement Engine */}
           <div className="flex items-center gap-3">
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
               <AppDropdown
@@ -362,8 +515,57 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
             </PDSButton>
           </div>
 
+          {/* Status Indicator Banner */}
+          {!isAllSubjects && markEntryStatus && (
+            <div className={cn(
+              "flex items-center justify-between px-5 py-3 rounded-2xl border transition-all",
+              isSubjectFinalized 
+                ? "bg-emerald-50/70 border-emerald-200 text-emerald-900" 
+                : "bg-amber-50/70 border-amber-200 text-amber-900"
+            )}>
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "size-8 rounded-xl flex items-center justify-center shrink-0",
+                  isSubjectFinalized ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                )}>
+                  <span className="material-symbols-outlined text-[18px]">
+                    {isSubjectFinalized ? "lock" : "edit_note"}
+                  </span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-bold">
+                      {isSubjectFinalized ? "Finalized & Locked" : "Draft (In Progress)"}
+                    </span>
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide",
+                      isSubjectFinalized ? "bg-emerald-200 text-emerald-800" : "bg-amber-200 text-amber-800"
+                    )}>
+                      {markEntryStatus.status}
+                    </span>
+                  </div>
+                  <p className="text-[11px] opacity-80 mt-0.5">
+                    {isSubjectFinalized 
+                      ? `Marks for ${subject} were finalized ${markEntryStatus.finalizedAt ? `on ${new Date(markEntryStatus.finalizedAt).toLocaleDateString()}` : ""}. Editing is restricted.`
+                      : `Marks for ${subject} are currently in draft. You can finalize when entry is complete.`}
+                  </p>
+                </div>
+              </div>
+
+              {!isSubjectFinalized && (
+                <button
+                  onClick={() => setShowFinalizeConfirm(true)}
+                  className="px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[12px] font-bold shadow-sm transition-all flex items-center gap-1.5 shrink-0"
+                >
+                  <span className="material-symbols-outlined text-[16px]">lock</span>
+                  Finalize Marks
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Marks Entry Registry */}
-          <div className="bg-white rounded-[24px] border border-slate-100 overflow-hidden flex flex-col min-h-0 relative">
+          <div className="bg-white rounded-[24px] border border-slate-100 overflow-hidden flex flex-col min-h-0 relative shadow-sm">
             {isLoading && (
               <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex items-center justify-center">
                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -439,6 +641,7 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
                               <input
                                 type="text"
                                 inputMode="numeric"
+                                disabled={isSubjectFinalized}
                                 value={marksMap[subject] || ""}
                                 onChange={(e) => {
                                   const val = e.target.value.replace(/[^0-9.]/g, '');
@@ -447,7 +650,12 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
                                   }
                                 }}
                                 placeholder="--"
-                                className="w-full h-11 text-center bg-[#F7F8F4] border border-transparent rounded-xl text-[14px] font-bold text-brand-navy focus:border-primary focus:bg-white transition-all outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className={cn(
+                                  "w-full h-11 text-center rounded-xl text-[14px] font-bold text-brand-navy transition-all outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                                  isSubjectFinalized 
+                                    ? "bg-slate-100/70 border border-slate-200 text-slate-500 cursor-not-allowed" 
+                                    : "bg-[#F7F8F4] border border-transparent focus:border-primary focus:bg-white"
+                                )}
                               />
                             </td>
                           )}
@@ -472,32 +680,93 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
       </div>
 
       {/* Sticky Action Footer */}
-      <div className="shrink-0 bg-white/80 backdrop-blur-md border-t border-slate-100 p-6 flex justify-end gap-4 relative z-20">
+      <div className="shrink-0 bg-white/80 backdrop-blur-md border-t border-slate-100 p-6 flex items-center justify-between gap-4 relative z-20">
+        <div>
+          {isSubjectFinalized && (
+            <p className="text-[12px] font-medium text-slate-500 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px] text-emerald-600">lock</span>
+              This exam subject entry is finalized and locked.
+            </p>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-3">
           <PDSButton 
             variant="outline" 
-            className="px-10"
+            className="px-8"
             onClick={handleDiscardChanges}
-            disabled={isLoading || isSaving}
+            disabled={isLoading || isSaving || isSubjectFinalized}
           >
             Discard Changes
           </PDSButton>
+          
           <PDSButton 
             variant="primary" 
-            className="px-10 shadow-lg shadow-primary/10" 
+            className="px-8 shadow-lg shadow-primary/10" 
             onClick={handleSaveMarks}
             loading={isSaving}
-            disabled={isLoading || isSaving || studentMarks.length === 0}
+            disabled={isLoading || isSaving || studentMarks.length === 0 || isSubjectFinalized}
           >
-            Save Final Marks
+            Save Marks
           </PDSButton>
+
+          {!isAllSubjects && !isSubjectFinalized && (
+            <PDSButton
+              variant="primary"
+              className="px-8 bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/15"
+              onClick={() => setShowFinalizeConfirm(true)}
+              disabled={isLoading || isSaving || studentMarks.length === 0}
+            >
+              Finalize & Lock
+            </PDSButton>
+          )}
+        </div>
       </div>
+
+      {/* Finalize Confirmation Modal */}
+      {showFinalizeConfirm && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-slate-100 shadow-2xl space-y-6">
+            <div className="size-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+              <span className="material-symbols-outlined text-3xl">lock</span>
+            </div>
+            
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-bold text-foreground">Finalize & Lock Marks?</h3>
+              <p className="text-[13px] text-slate-500 font-medium">
+                You are about to finalize marks for <span className="font-bold text-slate-700">{subject}</span> in <span className="font-bold text-slate-700">{selectedClass}</span>. 
+                Once finalized, records will be locked against further changes.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <PDSButton
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowFinalizeConfirm(false)}
+                disabled={isFinalizing}
+              >
+                Cancel
+              </PDSButton>
+              <PDSButton
+                variant="primary"
+                className="flex-1 bg-amber-600 hover:bg-amber-700"
+                onClick={handleFinalizeMarks}
+                loading={isFinalizing}
+              >
+                Confirm Finalize
+              </PDSButton>
+            </div>
+          </div>
+        </div>
+      )}
 
       <PDSSuccessModal
         show={isSuccessModalOpen}
         onClose={() => setIsSuccessModalOpen(false)}
-        title="Marks Recorded Successfully"
-        description={`Student performance for ${subject} — ${selectedExam} has been updated in the master registry.`}
-        buttonText="Back to Academics"
+        title={successModalData.title}
+        description={successModalData.desc}
+        buttonText="Close"
         onAction={() => setIsSuccessModalOpen(false)}
       />
     </div>
