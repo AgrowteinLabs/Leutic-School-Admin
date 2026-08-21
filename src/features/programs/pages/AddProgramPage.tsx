@@ -7,6 +7,7 @@ import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 const DISPLAY_TO_CATEGORY_ENUM: Record<string, string> = {
   "Sports": "SPORTS",
@@ -24,6 +25,7 @@ const CATEGORY_ENUM_TO_DISPLAY: Record<string, string> = {
 
 export const AddProgramPage = () => {
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [searchParams] = useSearchParams();
     const editId = searchParams.get("edit");
     const isEditing = !!editId;
@@ -156,7 +158,7 @@ export const AddProgramPage = () => {
             setShowSuccess(true);
         } catch (err) {
             console.error("Failed to save program:", err);
-            alert(`Failed to ${isEditing ? "update" : "create"} program. Please try again.`);
+            showToast("error", `Failed to ${isEditing ? "update" : "create"} program. Please try again.`);
         } finally {
             setIsSubmitting(false);
         }

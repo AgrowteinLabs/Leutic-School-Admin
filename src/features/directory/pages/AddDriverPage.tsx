@@ -7,9 +7,11 @@ import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 export const AddDriverPage = () => {
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [activeStep, setActiveStep] = useState(1);
     const [showSuccess, setShowSuccess] = useState(false);
 
@@ -66,7 +68,7 @@ export const AddDriverPage = () => {
             setShowSuccess(true);
         } catch (err) {
             console.error("Failed to onboard driver:", err);
-            alert("Failed to onboard driver. Please try again.");
+            showToast("error", "Failed to onboard driver. Please try again.");
         }
     };
 

@@ -4,6 +4,7 @@ import { AppDropdown } from "../../../components/AppDropdown";
 import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 const subjects = [
   "Mathematics", "Physics", "Chemistry", "English", 
@@ -128,6 +129,7 @@ interface MarkEntryState {
 }
 
 export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete }: MarksEntryPageProps) => {
+  const { showToast } = useToast();
   const [classes, setClasses] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("");
   
@@ -384,7 +386,7 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
       }
 
       if (inputs.length === 0) {
-        alert("No changes detected to save.");
+        showToast("info", "No changes detected to save.");
         return;
       }
 
@@ -397,7 +399,7 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
       setIsSuccessModalOpen(true);
     } catch (err) {
       console.error("Error saving marks:", err);
-      alert("Failed to save some marks. Please check your inputs.");
+      showToast("error", "Failed to save some marks. Please check your inputs.");
     } finally {
       setIsSaving(false);
     }
@@ -449,7 +451,7 @@ export const MarksEntryPage = ({ isHubChild, triggerBulkUpload, onUploadComplete
       setIsSuccessModalOpen(true);
     } catch (err) {
       console.error("Error finalizing marks:", err);
-      alert("Failed to finalize marks. Please try again.");
+      showToast("error", "Failed to finalize marks. Please try again.");
     } finally {
       setIsFinalizing(false);
     }

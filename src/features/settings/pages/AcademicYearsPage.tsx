@@ -6,6 +6,7 @@ import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
 import { useApp } from "../../../lib/AppContext";
 import type { AcademicYear } from "../../../lib/AppContext";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -33,6 +34,7 @@ const RUN_ROLLOVER = `
 
 export const AcademicYearsPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { academicYears, refetchAcademicYears, refetchAll } = useApp();
 
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -113,7 +115,7 @@ export const AcademicYearsPage = () => {
       await refetchAcademicYears();
     } catch (err) {
       console.error("Failed to delete draft:", err);
-      alert("Failed to delete draft cycle: " + (err as Error).message);
+      showToast("error", "Failed to delete draft cycle: " + (err as Error).message);
     }
   };
 

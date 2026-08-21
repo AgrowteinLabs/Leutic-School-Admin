@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import {
   Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -380,7 +380,7 @@ export const FinanceTab = () => {
                         </div>
                         <div>
                           <p className="text-[13px] font-semibold text-foreground">{d.name}</p>
-                          <p className="text-[10px] text-[#B0AFA8]">{d.id}</p>
+                          <p className="text-[10px] text-[#B0AFA8]">{formatDisplayId(d.id, 'STU')}</p>
                         </div>
                       </div>
                     </td>

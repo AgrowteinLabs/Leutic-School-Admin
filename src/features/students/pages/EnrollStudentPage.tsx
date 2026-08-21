@@ -408,8 +408,8 @@ export const EnrollStudentPage = () => {
                                   onChange={setUsername}
                                 />
                                 <PDSFormGroup
-                                  label="Roll Number"
-                                  placeholder="e.g. 12"
+                                  label="Admission Number"
+                                  placeholder="e.g. ADM-2024-001"
                                   value={rollNo}
                                   onChange={setRollNo}
                                 />

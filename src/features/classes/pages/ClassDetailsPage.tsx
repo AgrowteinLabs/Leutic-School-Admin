@@ -132,7 +132,7 @@ const ParentMessageModal = ({
     } catch (err: unknown) {
       console.error("Broadcast announcement failed:", err);
       const errMsg = err instanceof Error ? err.message : "Failed to broadcast message to parents.";
-      alert(errMsg);
+      showToast("error", errMsg);
     } finally {
       setIsSending(false);
     }
@@ -438,7 +438,7 @@ interface DeleteModalProps {
 
 const DeleteConfirmationModal = ({ isOpen, onClose, className, onConfirm }: DeleteModalProps) => {
   const [confirmText, setConfirmText] = useState("");
-  const isMatched = confirmText === className;
+  const isMatched = confirmText.toLowerCase() === className.toLowerCase();
 
   if (!isOpen) return null;
 
@@ -548,6 +548,16 @@ const ManageClassDrawer = ({
   const [teacher, setTeacher] = useState(classData?.teacher || "");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Re-sync state when drawer opens with new data
+  useEffect(() => {
+    if (isOpen && classData) {
+      setGrade(classData.grade || "");
+      setSection(classData.section || "");
+      setRoom(classData.room || "");
+      setTeacher(classData.teacher || "");
+    }
+  }, [isOpen, classData]);
 
   if (!isOpen) return null;
 
@@ -1343,7 +1353,7 @@ export const ClassDetailsPage = () => {
     } catch (err: unknown) {
       console.error("Failed to delete class:", err);
       const errMsg = err instanceof Error ? err.message : "Failed to delete class";
-      alert(errMsg);
+      showToast("error", errMsg);
     }
   };
 
@@ -1416,7 +1426,7 @@ export const ClassDetailsPage = () => {
     } catch (err: unknown) {
       console.error("Failed to remove student from class:", err);
       const errMsg = err instanceof Error ? err.message : "Failed to remove student";
-      alert(errMsg);
+      showToast("error", errMsg);
     }
   };
 
@@ -1434,7 +1444,7 @@ export const ClassDetailsPage = () => {
     } catch (err: unknown) {
       console.error("Failed to add student to class:", err);
       const errMsg = err instanceof Error ? err.message : "Failed to add student";
-      alert(errMsg);
+      showToast("error", errMsg);
     }
   };
 

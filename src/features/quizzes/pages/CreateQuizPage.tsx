@@ -2,6 +2,7 @@ import React, { useState, useCallback, memo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { PDSFormGroup } from "../../../components/pds/PDSFormGroup";
@@ -743,6 +744,7 @@ const Step3Review = memo(({
 // ----------------------------------------------------------------------
 export const CreateQuizPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [activeStep, setActiveStep] = useState(1);
   const [activeQuestionId, setActiveQuestionId] = useState<string>("");
   const [isPublishing, setIsPublishing] = useState(false);
@@ -825,7 +827,7 @@ export const CreateQuizPage = () => {
       setShowSuccess(true);
     } catch (err: any) {
       console.error("Failed to publish quiz:", err);
-      alert("Failed to publish quiz: " + err.message);
+      showToast("error", "Failed to publish quiz: " + err.message);
     } finally {
       setIsPublishing(false);
     }

@@ -8,6 +8,7 @@ import { PDSButton } from "../../../components/pds/PDSButton";
 import Lottie from "lottie-react";
 import successAnimation from "../../../assets/animations/success.json";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 interface DBClass {
   id: string;
@@ -19,6 +20,7 @@ type PublishMode = "now" | "draft" | "schedule";
 
 export const AddNoticePage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [noticeData, setNoticeData] = useState({
     title: "",
@@ -128,7 +130,7 @@ export const AddNoticePage = () => {
       console.error("Failed to create announcement:", err);
       setIsPublishing(false);
       const errMsg = err instanceof Error ? err.message : "Failed to publish notice.";
-      alert("Failed to publish notice: " + errMsg);
+      showToast("error", "Failed to publish notice: " + errMsg);
     }
   };
 

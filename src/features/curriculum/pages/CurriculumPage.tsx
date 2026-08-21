@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { cn } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
+import { useToast } from "../../../components/Toast";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
 import { SideDrawer } from "../../../components/SideDrawer";
@@ -1384,6 +1385,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
   const { tab } = useParams();
   const { schoolProfile, activeAcademicYear } = useApp();
+  const { showToast } = useToast();
   const activeGrades = schoolProfile?.activeGrades || ["Grade 9", "Grade 10", "Grade 11", "Grade 12"];
   const activeTab =
     (tab as "master" | "grades" | "mapping" | "timetable") || "master";
@@ -2066,7 +2068,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       setGradeToDelete(null);
     } catch (err) {
       console.error("Failed to delete grade config:", err);
-      alert(err instanceof Error ? err.message : "Failed to delete grade config.");
+      showToast("error", err instanceof Error ? err.message : "Failed to delete grade config.");
     }
   };
 
@@ -2563,7 +2565,7 @@ export const CurriculumPage = ({ isHubChild }: { isHubChild?: boolean }) => {
         `${s.grade}-${s.id}` === selectedTimetableSection,
     );
     if (!section?.classId) {
-      alert("Could not find class ID for the selected section.");
+      showToast("error", "Could not find class ID for the selected section.");
       return;
     }
     const classId = section.classId;

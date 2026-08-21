@@ -8,6 +8,7 @@ import { TopBar } from "../../../components/Header";
 import { StudentDrawer } from "../../students/components/StudentDrawer";
 import { cn, formatDisplayId } from "../../../lib/utils";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 import {
     Users,
     UserPlus,
@@ -48,6 +49,7 @@ interface DashboardClass {
 
 export const DashboardPage = () => {
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [selectedStudent, setSelectedStudent] = useState<DashboardStudent | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -331,7 +333,7 @@ export const DashboardPage = () => {
             if (foundUser) {
                 handleSelectStudent(foundUser);
             } else {
-                alert("No student found with that name.");
+                showToast("error", "No student found with that name.");
             }
         } catch (err) {
             console.error("Error searching student:", err);
@@ -462,7 +464,7 @@ export const DashboardPage = () => {
                 console.error(e);
             }
         }
-        alert(`No student records are currently registered under class section "${gradeCode}".`);
+        showToast("info", `No student records are currently registered under class section "${gradeCode}".`);
     };
 
     return (

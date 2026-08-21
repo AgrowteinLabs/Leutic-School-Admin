@@ -2,9 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
+import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 export const AddVehiclePage = () => {
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [step, setStep] = useState(1);
 
     const steps = [

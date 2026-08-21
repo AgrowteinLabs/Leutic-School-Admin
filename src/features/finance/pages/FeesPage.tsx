@@ -5,6 +5,7 @@ import { TablePagination } from "../../../components/TablePagination";
 import { cn, formatDisplayId } from "../../../lib/utils";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 import { useApp } from "../../../lib/AppContext";
+import { useToast } from "../../../components/Toast";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface FeeSummary {
@@ -42,6 +43,7 @@ type FeeStatusFilter = "all" | "PAID" | "PENDING" | "OVERDUE";
 export const FeesPage = () => {
   const { activeAcademicYear } = useApp();
   const schoolId = localStorage.getItem("school_id") || "";
+  const { showToast } = useToast();
 
   const [summary, setSummary] = useState<FeeSummary | null>(null);
   const [feeRecords, setFeeRecords] = useState<FeeRecord[]>([]);
@@ -277,7 +279,7 @@ export const FeesPage = () => {
       refreshData();
     } catch (err) {
       console.error("Failed to record payment:", err);
-      alert("Failed to record payment. Please try again.");
+      showToast("error", "Failed to record payment. Please try again.");
     } finally {
       setIsRecording(false);
     }
@@ -286,7 +288,7 @@ export const FeesPage = () => {
   // ── Create Fee ──────────────────────────────────────────
   const handleCreateFee = async () => {
     if (!selectedStudentId || !createAmount || !createDueDate) {
-      alert("Please fill in all required fields: select a student, enter Amount and Due Date.");
+      showToast("error", "Please fill in all required fields: select a student, enter Amount and Due Date.");
       return;
     }
     setIsCreating(true);
@@ -322,7 +324,7 @@ export const FeesPage = () => {
       refreshData();
     } catch (err) {
       console.error("Failed to create fee:", err);
-      alert("Failed to create fee record. Please try again.");
+      showToast("error", "Failed to create fee record. Please try again.");
     } finally {
       setIsCreating(false);
     }
@@ -351,7 +353,7 @@ export const FeesPage = () => {
       refreshData();
     } catch (err) {
       console.error("Failed to update fee:", err);
-      alert("Failed to update fee record. Please try again.");
+      showToast("error", "Failed to update fee record. Please try again.");
     } finally {
       setIsUpdating(false);
     }
@@ -371,7 +373,7 @@ export const FeesPage = () => {
       refreshData();
     } catch (err) {
       console.error("Failed to delete fee:", err);
-      alert("Failed to delete fee record. Please try again.");
+      showToast("error", "Failed to delete fee record. Please try again.");
     } finally {
       setIsDeleting(false);
     }
@@ -384,7 +386,7 @@ export const FeesPage = () => {
       : feeRecords.filter(r => r.status === "PENDING" || r.status === "OVERDUE").map(r => r.id);
 
     if (idsToRemind.length === 0) {
-      alert("No pending or overdue records to remind.");
+      showToast("info", "No pending or overdue records to remind.");
       return;
     }
 
@@ -399,10 +401,10 @@ export const FeesPage = () => {
       setShowReminderModal(false);
       setSelectedIds([]);
       refreshData();
-      alert(`Reminders sent to ${count} record(s).`);
+      showToast("success", `Reminders sent to ${count} record(s).`);
     } catch (err) {
       console.error("Failed to send reminders:", err);
-      alert("Failed to send reminders. Please try again.");
+      showToast("error", "Failed to send reminders. Please try again.");
     } finally {
       setIsSendingReminders(false);
     }

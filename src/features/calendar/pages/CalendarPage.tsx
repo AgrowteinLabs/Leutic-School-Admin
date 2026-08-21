@@ -4,6 +4,7 @@ import { cn } from "../../../lib/utils";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
+import { useToast } from "../../../components/Toast";
 
 type CalendarView = "teacher" | "class" | "parent";
 
@@ -26,6 +27,7 @@ interface DBCalendar {
 
 
 export const CalendarPage = () => {
+  const { showToast } = useToast();
   const [activeView, setActiveView] = useState<CalendarView>("teacher");
   
   // Dynamic Month & Selection
@@ -426,7 +428,7 @@ export const CalendarPage = () => {
       fetchEvents();
     } catch (e) {
       console.error("Failed to save calendar event:", e);
-      alert("Failed to save event. Check fields and try again.");
+      showToast("error", "Failed to save event. Check fields and try again.");
     } finally {
       setIsSaving(false);
     }
@@ -472,7 +474,7 @@ export const CalendarPage = () => {
       fetchEvents();
     } catch (e) {
       console.error("Failed to update event:", e);
-      alert("Failed to update event. Please try again.");
+      showToast("error", "Failed to update event. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -495,7 +497,7 @@ export const CalendarPage = () => {
       fetchEvents();
     } catch (e) {
       console.error("Failed to delete event:", e);
-      alert("Failed to delete event. Please try again.");
+      showToast("error", "Failed to delete event. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -585,7 +587,7 @@ export const CalendarPage = () => {
       setShowSuccess(true);
     } catch (e) {
       console.error(e);
-      alert("Failed to mark holiday.");
+      showToast("error", "Failed to mark holiday.");
     } finally {
       setIsSaving(false);
     }
@@ -638,7 +640,7 @@ export const CalendarPage = () => {
       setShowSuccess(true);
     } catch (e) {
       console.error("Failed to assign substitute:", e);
-      alert("Failed to assign substitute. The backend may need the leaveRequest mutation added. See docs/TEACHER_SUBSTITUTION_BACKEND_SPEC.md");
+      showToast("error", "Failed to assign substitute. The backend may need the leaveRequest mutation added.");
     } finally {
       setIsSavingLeave(false);
     }

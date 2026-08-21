@@ -4,6 +4,7 @@ import { TopBar } from "../../../components/Header";
 import { cn } from "../../../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 import { TablePagination } from "../../../components/TablePagination";
 
 interface AnnouncementRecord {
@@ -38,6 +39,7 @@ const STATUS_MAP: Record<StatusFilter, string | undefined> = {
 
 export const AnnouncementsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const schoolId = localStorage.getItem("school_id") || "";
 
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all");
@@ -245,7 +247,7 @@ export const AnnouncementsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       handleCloseEdit();
     } catch (err) {
       console.error("Failed to update announcement:", err);
-      alert("Failed to update notice. Please try again.");
+      showToast("error", "Failed to update notice. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -288,7 +290,7 @@ export const AnnouncementsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       if (statsRes?.announcementStats) setStats(statsRes.announcementStats);
     } catch (err) {
       console.error("Failed to archive announcement:", err);
-      alert("Failed to delete notice. Please try again.");
+      showToast("error", "Failed to delete notice. Please try again.");
     } finally {
       setIsDeleting(false);
     }
