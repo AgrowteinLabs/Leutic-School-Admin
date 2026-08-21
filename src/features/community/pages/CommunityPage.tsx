@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AppDatePicker } from "../../../components/AppDatePicker";
 import { AppTimePicker } from "../../../components/AppTimePicker";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 const GET_COMMUNITY_POSTS = `
   query GetCommunityPosts($schoolId: String!, $targetClassId: String) {
@@ -422,7 +423,7 @@ export const CommunityPost = ({ post }: { post: Post }) => {
                                 e.stopPropagation();
                                 try {
                                     await graphqlRequest(ACKNOWLEDGE_POST, { postId: post.id });
-                                    alert("Announcement Acknowledged!");
+                                    showToast("success", "Announcement Acknowledged!");
                                 } catch (err) {
                                     console.error("Failed to acknowledge post:", err);
                                 }
@@ -553,6 +554,7 @@ const readFileAsBase64 = (file: File): Promise<string> => {
 export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
     const { tab } = useParams();
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const activeTab = tab || "feed";
     const [activeCategory, setActiveCategory] = useState<"all" | "school" | "interschool" | "events">("all");
     const [expandedModerationId, setExpandedModerationId] = useState<string | number | null>(null);
@@ -740,7 +742,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             fetchData();
         } catch (err) {
             console.error("Error moderating post:", err);
-            alert("Failed to moderate post.");
+            showToast("error", "Failed to moderate post.");
         }
     };
 
@@ -954,7 +956,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 setExpandedId(questionId);
             } catch (err) {
                 console.error("Failed to post reply:", err);
-                alert("Failed to submit reply.");
+                showToast("error", "Failed to submit reply.");
             }
         };
 
@@ -964,7 +966,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 fetchData();
             } catch (err) {
                 console.error("Failed to verify reply:", err);
-                alert("Failed to verify reply.");
+                showToast("error", "Failed to verify reply.");
             }
         };
 
@@ -974,7 +976,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                 fetchData();
             } catch (err) {
                 console.error("Failed to upvote reply:", err);
-                alert("Failed to upvote reply.");
+                showToast("error", "Failed to upvote reply.");
             }
         };
 
@@ -1785,7 +1787,7 @@ export const CommunityPage = ({ isHubChild }: { isHubChild?: boolean }) => {
                                                                                 fetchData();
                                                                             } catch (err) {
                                                                                 console.error("Error creating post:", err);
-                                                                                alert("Failed to publish post.");
+                                                                                showToast("error", "Failed to publish post.");
                                                                             }
                                                                         }}
                                                                         className="px-8 rounded-xl h-10 shadow-lg shadow-primary/10"

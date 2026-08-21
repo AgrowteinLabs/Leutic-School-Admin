@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
@@ -295,7 +295,7 @@ export const AttendanceTab = () => {
                         </div>
                         <div>
                           <p className="text-[13px] font-semibold text-foreground">{s.name}</p>
-                          <p className="text-[10px] text-[#B0AFA8]">{s.id}</p>
+                          <p className="text-[10px] text-[#B0AFA8]">{formatDisplayId(s.id, 'STU')}</p>
                         </div>
                       </div>
                     </td>

@@ -8,6 +8,7 @@ import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 interface RouteItem {
     id: string;
@@ -234,6 +235,7 @@ const RouteCard = ({
 };
 
 export const RoutesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
+    const { showToast } = useToast();
     const [routes, setRoutes] = useState<RouteItem[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("All Status");
@@ -408,18 +410,18 @@ export const RoutesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             });
         } catch (err) {
             console.error("Failed to delete route:", err);
-            alert("Failed to delete route. Please try again.");
+            showToast("error", "Failed to delete route. Please try again.");
         }
     };
 
     // Save Drawer Changes — persists via backend API
     const handleSaveRoute = async () => {
         if (!formName.trim()) {
-            alert("Please enter a route name.");
+            showToast("error", "Please enter a route name.");
             return;
         }
         if (formStops.length === 0) {
-            alert("Please add at least one stop to the route.");
+            showToast("error", "Please add at least one stop to the route.");
             return;
         }
 
@@ -535,7 +537,7 @@ export const RoutesPage = ({ isHubChild }: { isHubChild?: boolean }) => {
             setIsDrawerOpen(false);
         } catch (err) {
             console.error("Failed to save route:", err);
-            alert("Failed to save route. Please try again.");
+            showToast("error", "Failed to save route. Please try again.");
         }
     };
 

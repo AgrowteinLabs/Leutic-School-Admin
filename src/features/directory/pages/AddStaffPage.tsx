@@ -112,8 +112,10 @@ export const AddStaffPage = () => {
   const validateFields = (): boolean => {
     const errors: Record<string, string> = {};
     if (!fullName.trim()) errors.fullName = "Full name is required";
-    if (mobile && !/^[+]?[\d\s-]{7,15}$/.test(mobile)) errors.mobile = "Enter a valid mobile number";
+    if (!mobile.trim()) errors.mobile = "Mobile number is required";
+    else if (!/^[+]?[\d\s(). -]{7,20}$/.test(mobile)) errors.mobile = "Enter a valid mobile number";
     if (personalEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalEmail)) errors.personalEmail = "Enter a valid email address";
+    if (!dept) errors.dept = "Subject area is required";
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -457,7 +459,8 @@ export const AddStaffPage = () => {
                                   ]}
                                   searchable
                                   value={dept}
-                                  onChange={setDept}
+                                  onChange={(val) => { setDept(val); setFieldErrors(prev => ({ ...prev, dept: '' })); }}
+                                  error={fieldErrors.dept}
                                 />
                                 <PDSFormGroup
                                   label="Designation"

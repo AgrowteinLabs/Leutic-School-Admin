@@ -14,6 +14,32 @@ interface ParticipationOverviewProps {
     error?: string | null;
 }
 
+/** Convert polar coordinates to SVG cartesian */
+const polarToCartesian = (cx: number, cy: number, r: number, angleDeg: number) => {
+    const rad = ((angleDeg - 90) * Math.PI) / 180; // -90 to start from top (12 o'clock)
+    return {
+        x: cx + r * Math.cos(rad),
+        y: cy + r * Math.sin(rad),
+    };
+};
+
+/** Create an SVG arc path between two angles */
+const describeArc = (
+    cx: number,
+    cy: number,
+    r: number,
+    startAngle: number,
+    endAngle: number,
+): string => {
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end = polarToCartesian(cx, cy, r, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+    return [
+        "M", start.x, start.y,
+        "A", r, r, 0, largeArcFlag, 0, end.x, end.y,
+    ].join(" ");
+};
+
 export const ParticipationOverview = ({ stats, isLoading = false, error = null }: ParticipationOverviewProps) => {
     const navigate = useNavigate();
 
@@ -41,34 +67,29 @@ export const ParticipationOverview = ({ stats, isLoading = false, error = null }
     const late = stats.lateCount;
     const percent = stats.attendancePercentage;
 
-    const C = 351.86; // circumference at r=56: 2 × π × 56 ≈ 351.86
+    const CX = 70;
+    const CY = 70;
+    const R = 56;
+    const STROKE = 14;
+    const GAP_DEGREES = 3; // gap between segments in degrees
 
-    // Determine active segments
-    const activeSegments = [
-        { label: "Present", count: present },
-        { label: "Absent", count: absent },
-        { label: "Late", count: late }
-    ].filter(s => s.count > 0);
+    const segments = [
+        { label: "Present", count: present, stroke: "#2E7D32", color: "bg-[#2E7D32]" },
+        { label: "Absent", count: absent, stroke: "#E63535", color: "bg-[#E63535]" },
+        { label: "Late", count: late, stroke: "#EF9800", color: "bg-[#EF9800]" },
+    ].filter((s) => s.count > 0);
 
-    const numActive = activeSegments.length;
-    const gap = numActive > 1 ? 4 : 0;
-    const totalGap = numActive * gap;
-    const C_usable = total > 0 && C > totalGap ? C - totalGap : C;
+    const activeCount = segments.length;
+    const totalGapDegrees = activeCount > 1 ? activeCount * GAP_DEGREES : 0;
+    const usableDegrees = total > 0 ? 360 - totalGapDegrees : 0;
 
-    let currentOffset = -2; // Start offset to visually center slightly
-    const attendanceData = [
-        { label: "Present", count: present, color: "bg-[#2E7D32]", arc: 0, offset: 0, stroke: "#2E7D32" },
-        { label: "Absent", count: absent, color: "bg-[#E63535]", arc: 0, offset: 0, stroke: "#E63535" },
-        { label: "Late", count: late, color: "bg-[#EF9800]", arc: 0, offset: 0, stroke: "#EF9800" }
-    ];
-
-    attendanceData.forEach(item => {
-        if (item.count > 0 && total > 0) {
-            const arc = (item.count / total) * C_usable;
-            item.arc = arc;
-            item.offset = currentOffset;
-            currentOffset = currentOffset - arc - gap;
-        }
+    let currentAngle = 0;
+    const renderedSegments = segments.map((seg) => {
+        const sweep = total > 0 ? (seg.count / total) * usableDegrees : 0;
+        const startAngle = currentAngle;
+        const endAngle = currentAngle + sweep;
+        currentAngle = endAngle + GAP_DEGREES;
+        return { ...seg, startAngle, endAngle };
     });
 
     return (
@@ -78,7 +99,7 @@ export const ParticipationOverview = ({ stats, isLoading = false, error = null }
                     <h3 className="text-foreground text-[15px] font-semibold">Today's Attendance</h3>
                     <p className="text-[#B0AFA8] text-[11px] font-medium mt-0.5">{total.toLocaleString()} total students</p>
                 </div>
-                <button 
+                <button
                     onClick={() => navigate("/attendance")}
                     className="text-[11px] font-medium text-[#3D6B2C] hover:underline underline-offset-2"
                 >
@@ -89,15 +110,18 @@ export const ParticipationOverview = ({ stats, isLoading = false, error = null }
             {/* Segmented ring */}
             <div className="flex items-center justify-center py-4 flex-1">
                 <div className="relative">
-                    <svg width="140" height="140" viewBox="0 0 140 140" className="transform -rotate-90">
-                        <circle cx="70" cy="70" r="56" fill="none" stroke="#F0F0EC" strokeWidth="14" />
-                        {attendanceData.map(s => (
-                            <circle key={s.label}
-                                cx="70" cy="70" r="56" fill="none"
-                                stroke={s.stroke} strokeWidth="14"
-                                strokeDasharray={`${s.arc} ${C - s.arc}`}
-                                strokeDashoffset={s.offset}
-                                strokeLinecap="butt"
+                    <svg width="140" height="140" viewBox="0 0 140 140">
+                        {/* Background ring */}
+                        <circle cx={CX} cy={CY} r={R} fill="none" stroke="#F0F0EC" strokeWidth={STROKE} />
+                        {/* Segments as arcs */}
+                        {renderedSegments.map((seg) => (
+                            <path
+                                key={seg.label}
+                                d={describeArc(CX, CY, R, seg.startAngle, seg.endAngle)}
+                                fill="none"
+                                stroke={seg.stroke}
+                                strokeWidth={STROKE}
+                                strokeLinecap="round"
                             />
                         ))}
                     </svg>
@@ -110,7 +134,7 @@ export const ParticipationOverview = ({ stats, isLoading = false, error = null }
 
             {/* Breakdown */}
             <div className="flex items-center justify-between w-full pt-5 border-t border-slate-50 mt-auto">
-                {attendanceData.map((item) => (
+                {segments.map((item) => (
                     <div key={item.label} className="flex flex-col items-center gap-1 w-full">
                         <span className="text-[18px] font-semibold text-foreground tracking-tight">{item.count}</span>
                         <div className="flex items-center gap-1.5">
@@ -123,4 +147,3 @@ export const ParticipationOverview = ({ stats, isLoading = false, error = null }
         </div>
     );
 };
-

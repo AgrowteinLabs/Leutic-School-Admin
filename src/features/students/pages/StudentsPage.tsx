@@ -426,7 +426,7 @@ export const StudentsPage = ({
     const errors: Record<string, string> = {};
     if (!editName.trim()) errors.name = "Full name is required";
     if (!editGuardianName.trim()) errors.guardianName = "Guardian name is required";
-    if (editPhone && !/^[+]?[\d\s-]{7,15}$/.test(editPhone)) {
+    if (editPhone && !/^[+]?[\d\s(). -]{7,20}$/.test(editPhone)) {
       errors.phone = "Enter a valid mobile number";
     }
     setEditErrors(errors);

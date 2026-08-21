@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { cn, formatDisplayId } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 import { useApp } from "../../../lib/AppContext";
 import {
   GraduationCap,
@@ -127,6 +128,7 @@ interface StudentProfile {
 export const StudentProfilePage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState("Overview");
   const { schoolProfile } = useApp();
 
@@ -145,7 +147,7 @@ export const StudentProfilePage = () => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("File size exceeds the 5MB limit.");
+      showToast("error", "File size exceeds the 5MB limit.");
       return;
     }
 
@@ -176,11 +178,11 @@ export const StudentProfilePage = () => {
       if (resJson.success) {
         setRefreshTrigger(prev => prev + 1);
       } else {
-        alert("Failed to upload image. Please try again.");
+        showToast("error", "Failed to upload image. Please try again.");
       }
     } catch (err) {
       console.error("Profile image upload error:", err);
-      alert("An error occurred while uploading the image.");
+      showToast("error", "An error occurred while uploading the image.");
     } finally {
       setIsUploading(false);
     }
@@ -210,7 +212,7 @@ export const StudentProfilePage = () => {
       setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       console.error("Failed to create behavioral record:", err);
-      alert("Failed to save secure entry. Please try again.");
+      showToast("error", "Failed to save secure entry. Please try again.");
     } finally {
       setIsSubmittingEntry(false);
     }

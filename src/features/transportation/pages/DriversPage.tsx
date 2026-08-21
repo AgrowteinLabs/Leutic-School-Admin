@@ -7,6 +7,7 @@ import { StatCard } from "../../../components/StatCard";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 const GET_DRIVERS = `
   query GetDrivers($schoolId: String, $search: String, $driverStatus: String) {
@@ -192,6 +193,7 @@ export const DriversPage = ({
   isHubChild?: boolean;
 }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [driverToDelete, setDriverToDelete] = useState<any>(null);
@@ -287,7 +289,7 @@ export const DriversPage = ({
         fetchDrivers();
       } catch (err) {
         console.error("Failed to delete driver:", err);
-        alert("Failed to delete driver.");
+        showToast("error", "Failed to delete driver.");
       }
     }
   };
@@ -493,7 +495,7 @@ export const DriversPage = ({
                 </button>
                 <button
                   onClick={confirmDelete}
-                  disabled={deleteConfirmationText !== driverToDelete.name}
+                  disabled={deleteConfirmationText.toLowerCase() !== driverToDelete.name.toLowerCase()}
                   className="flex-1 h-12 bg-red-600 text-white text-[14px] font-bold rounded-2xl hover:bg-red-700 disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-red-600/20 transition-all"
                 >
                   Confirm Revoke

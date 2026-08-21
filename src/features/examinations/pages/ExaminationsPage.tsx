@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "../../../lib/utils";
+import { cn, formatDisplayId } from "../../../lib/utils";
 import { TopBar } from "../../../components/Header";
 import { StatCard } from "../../../components/StatCard";
 import { AppDropdown } from "../../../components/AppDropdown";
@@ -84,7 +84,7 @@ export const ExaminationsPage = ({ isHubChild }: { isHubChild?: boolean }) => {
       }
 
       return {
-        id: exam.id,
+        id: formatDisplayId(exam.id, 'EXM'),
         title: exam.name,
         category: exam.type || "General Assessment",
         term: "Academic Term",

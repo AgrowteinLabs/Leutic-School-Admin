@@ -143,7 +143,7 @@ export const DirectoryPage = () => {
   };
 
   const downloadTemplate = (type: "staff" | "students" | "drivers") => {
-    console.log("[downloadTemplate] Triggered for type:", type);
+
     let content = "";
     let filename = "";
     if (type === "students") {
@@ -156,7 +156,7 @@ export const DirectoryPage = () => {
       content = DRIVER_CSV_TEMPLATE;
       filename = "driver_import_template.csv";
     }
-    console.log("[downloadTemplate] Filename:", filename, "Content length:", content.length);
+
 
     const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

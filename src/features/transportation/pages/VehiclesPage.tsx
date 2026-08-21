@@ -7,6 +7,7 @@ import { StatCard } from "../../../components/StatCard";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 const VehicleRow = ({
   vehicle,
@@ -124,7 +125,7 @@ export const VehiclesPage = ({
 }: {
   isHubChild?: boolean;
 }) => {
-  const navigate = useNavigate();
+  const { showToast } = useToast();  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [vehicleToDelete, setVehicleToDelete] = useState<any>(null);
@@ -284,7 +285,7 @@ export const VehiclesPage = ({
       fetchVehiclesData();
     } catch (err) {
       console.error("Failed to update vehicle:", err);
-      alert("Failed to update vehicle. Please try again.");
+      showToast("error", "Failed to update vehicle. Please try again.");
     } finally {
       setIsSavingEdit(false);
     }
@@ -303,7 +304,7 @@ export const VehiclesPage = ({
       fetchVehiclesData();
     } catch (err) {
       console.error("Failed to decommission vehicle:", err);
-      alert("Failed to decommission vehicle. Please try again.");
+      showToast("error", "Failed to decommission vehicle. Please try again.");
     } finally {
       setIsDecommissioning(false);
     }

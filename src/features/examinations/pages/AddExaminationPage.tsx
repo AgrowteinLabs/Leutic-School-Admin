@@ -6,6 +6,7 @@ import { PDSButton } from "../../../components/pds/PDSButton";
 import { PDSSuccessModal } from "../../../components/pds/PDSSuccessModal";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 import { useApp } from "../../../lib/AppContext";
+import { useToast } from "../../../components/Toast";
 
 const CREATE_EXAM = `
   mutation CreateExam($input: CreateExamDto!) {
@@ -18,6 +19,7 @@ const CREATE_EXAM = `
 
 export const AddExaminationPage = () => {
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const { schoolProfile, activeAcademicYear, academicYears } = useApp();
     const activeGrades = schoolProfile?.activeGrades || ["Grade 9", "Grade 10", "Grade 11", "Grade 12"];
 
@@ -46,7 +48,7 @@ export const AddExaminationPage = () => {
 
     const handleCreateExam = async () => {
         if (!examTitle) {
-            alert("Please provide an examination title.");
+            showToast("error", "Please provide an examination title.");
             return;
         }
 
@@ -78,7 +80,7 @@ export const AddExaminationPage = () => {
             setShowSuccess(true);
         } catch (err) {
             console.error("Error creating exam:", err);
-            alert("Failed to create exam: " + (err as Error).message);
+            showToast("error", "Failed to create exam: " + (err as Error).message);
         } finally {
             setIsLoading(false);
         }

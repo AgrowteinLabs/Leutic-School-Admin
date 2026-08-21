@@ -10,6 +10,7 @@ import { StatCard } from "../../../components/StatCard";
 import { TablePagination } from "../../../components/TablePagination";
 import { cn } from "../../../lib/utils";
 import { PDSButton } from "../../../components/pds/PDSButton";
+import { useToast } from "../../../components/Toast";
 import { graphqlRequest } from "../../../lib/graphqlClient";
 
 const GET_CLASSES = `
@@ -177,6 +178,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const { tab } = useParams();
   const navigate = useNavigate();
   const activeTab = (tab as "students" | "staff") || "students";
+  const { showToast } = useToast();
 
   const [classes, setClasses] = useState<ClassItem[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("");
@@ -446,7 +448,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
       await fetchAttendanceData();
     } catch (err) {
       console.error("Failed to save attendance:", err);
-      alert("Error saving attendance records. Please try again.");
+      showToast("error", "Error saving attendance records. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -527,7 +529,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
   const handleExportCSV = () => {
     const dataToExport = activeTab === 'students' ? students : staff;
     if (dataToExport.length === 0) {
-      alert("No data available to export.");
+      showToast("info", "No data available to export.");
       return;
     }
 
@@ -595,7 +597,7 @@ export const AttendancePage = ({ isHubChild }: { isHubChild?: boolean }) => {
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      alert("Please allow pop-ups to download the PDF report.");
+      showToast("info", "Please allow pop-ups to download the PDF report.");
       return;
     }
 

@@ -7,6 +7,7 @@ import { StatCard } from "../../../components/StatCard";
 import { MenuDropdown } from "../../../components/MenuDropdown";
 import { TablePagination } from "../../../components/TablePagination";
 import { graphqlRequest } from "../../../lib/graphqlClient";
+import { useToast } from "../../../components/Toast";
 
 interface TeacherRecord {
   uid: string;
@@ -406,8 +407,10 @@ export const StaffPage = ({
     setDeleteConfirmationText("");
   };
 
+  const { showToast } = useToast();
+
   const confirmDelete = async () => {
-    if (deleteConfirmationText === staffToDelete?.name) {
+    if (deleteConfirmationText.toLowerCase() === staffToDelete?.name.toLowerCase()) {
       const deleteMutation = `
         mutation RemoveUser($id: ID!) {
           removeUser(id: $id) {
@@ -417,14 +420,16 @@ export const StaffPage = ({
       `;
       try {
         await graphqlRequest(deleteMutation, { id: staffToDelete.uid });
+        const deletedName = staffToDelete.name;
         setTeachers((prev) =>
           prev.filter((staff) => staff.uid !== staffToDelete.uid),
         );
         setStaffToDelete(null);
         setDeleteConfirmationText("");
+        showToast("success", `Staff member "${deletedName}" has been deleted successfully.`);
       } catch (err: any) {
         console.error("Delete failed:", err);
-        alert(err.message || "Failed to delete staff member.");
+        showToast("error", err.message || "Failed to delete staff member.");
       }
     }
   };
@@ -955,7 +960,7 @@ export const StaffPage = ({
                   Cancel
                 </button>
                 <button
-                  disabled={deleteConfirmationText !== staffToDelete.name}
+                  disabled={deleteConfirmationText.toLowerCase() !== staffToDelete.name.toLowerCase()}
                   onClick={confirmDelete}
                   className="flex-[2] bg-red-600 text-white h-12 rounded-2xl text-[14px] font-bold shadow-xl shadow-red-500/20 disabled:opacity-30 disabled:grayscale transition-all"
                 >
